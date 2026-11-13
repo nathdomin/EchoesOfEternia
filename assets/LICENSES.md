@@ -2,16 +2,20 @@
 
 Registre aqui **todo** pacote adicionado ao projeto, antes do primeiro commit que o usa.
 
-| Pacote | Autor | Licença | Link | Usado em |
+| Pacote | Autor | Licença | Link | Onde está |
 |---|---|---|---|---|
-| Roguelike Characters | Kenney | CC0 1.0 | https://kenney.nl/assets/roguelike-characters | personagens (`assets/characters/kenney_roguelike_characters/`) |
-| Roguelike/RPG Pack | Kenney | CC0 1.0 | https://kenney.nl/assets/roguelike-rpg-pack | tiles e itens (`assets/environments/kenney_roguelike_rpg/`) |
-| Tiny Town | Kenney | CC0 1.0 | https://kenney.nl/assets/tiny-town | vila inicial (`assets/environments/kenney_tiny_town/`) |
+| Ninja Adventure Asset Pack | Pixel-Boy & AAA | CC0 1.0 (`assets/NINJA_ADVENTURE_LICENSE.txt`) | https://pixel-boy.itch.io/ninja-adventure-asset-pack | `assets/*/ninja/`, `audio/music/` |
 
-Regra: só pacotes **top-down 16×16** compatíveis com o Roguelike/RPG Pack. Nada isométrico.
-Pacotes do itch.io: conferir a licença um a um e anotar aqui antes de usar.
+**Regra:** o jogo usa **um único estilo** (Ninja Adventure, top-down 16×16). Não adicionar pacotes de outro estilo.
+O pacote completo (89 MB) não está no repositório: só copiamos o que é usado. Para adicionar algo, baixe o pacote no link acima e copie apenas o necessário.
 
-## Notas de uso das folhas
-- `roguelike_characters.png` e `roguelike_rpg.png`: tiles 16×16 com **1 px de margem** (passo de 17 px). Tile (coluna c, linha r) = `Rect2(c*17, r*17, 16, 16)`.
-- `tiny_town.png` (versão *packed*): tiles 16×16 **sem margem**, 12×11 tiles.
-- Personagens prontos: colunas 0–1, linhas 5–11 da folha de personagens. Herói atual: c0 r11 (guerreiro). Candidatos: maga c1 r5, arqueira c1 r7.
+## O que foi copiado
+- **Personagens** (`assets/characters/ninja/`): Knight (Guerreiro), SorcererBlack (Mago), Hunter (Arqueiro), OldMan e Noble (NPCs), `Shadow.png`.
+  Folhas: `Walk.png` = 4 colunas (baixo, cima, esquerda, direita) × 4 frames; `Idle.png`/`Attack.png` = 4 direções × 1 frame.
+  As animações prontas ficam em `resources/characters/*_frames.tres`.
+- **Monstros** (`assets/enemies/ninja/`): Slime, Slime2, Mushroom, Skull, BlueBat; chefe GiantSlime.
+- **Tilesets** (`assets/environments/ninja/tilesets/`): Floor, FloorDetail, Nature, House, Water, Dungeon, Relief. TileSet do jogo: `assets/environments/ninja/ninja_tileset.tres`.
+- **Cenário animado** (`assets/environments/ninja/animated/`): Flag, Flower, Water Ripples, Plant.
+- **Efeitos** (`assets/effects/ninja/`): Attack, Elemental, Environment, Magic, Particle, Projectile, Slash, Smoke.
+- **UI** (`assets/ui/ninja/`): Dialog, Emote, Font, Receptacle (barras/corações), Skill Icon, Theme Wood.
+- **Músicas** (`audio/music/`): Village, Dark Forest, Dungeon, Fight.

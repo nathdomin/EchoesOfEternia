@@ -1,0 +1,107 @@
+[gd_scene load_steps=12 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Particle/Leaf.png" id="1_leaf"]
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Environment/Raylight.png" id="2_ray"]
+[ext_resource type="Shader" path="res://shaders/vignette.gdshader" id="3_vig"]
+
+[sub_resource type="CanvasItemMaterial" id="Mat_leaf"]
+particles_animation = true
+particles_anim_h_frames = 6
+particles_anim_v_frames = 1
+particles_anim_loop = true
+
+[sub_resource type="Gradient" id="Grad_leaf"]
+offsets = PackedFloat32Array(0, 0.1, 0.85, 1)
+colors = PackedColorArray(1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="Gradient" id="Grad_dot"]
+offsets = PackedFloat32Array(0, 0.35, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.6, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="Tex_dot"]
+gradient = SubResource("Grad_dot")
+width = 6
+height = 6
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="CanvasItemMaterial" id="Mat_add"]
+blend_mode = 1
+
+[sub_resource type="Gradient" id="Grad_firefly"]
+offsets = PackedFloat32Array(0, 0.2, 0.5, 0.8, 1)
+colors = PackedColorArray(1, 0.95, 0.5, 0, 1, 0.95, 0.5, 0.9, 0.85, 1, 0.55, 0.3, 1, 0.95, 0.5, 0.9, 1, 0.95, 0.5, 0)
+
+[sub_resource type="ShaderMaterial" id="Mat_vig"]
+shader = ExtResource("3_vig")
+shader_parameter/strength = 0.35
+shader_parameter/radius = 0.55
+shader_parameter/softness = 0.45
+
+[sub_resource type="CanvasItemMaterial" id="Mat_ray"]
+blend_mode = 1
+
+[node name="Ambience" type="Node2D"]
+
+[node name="Tint" type="CanvasModulate" parent="."]
+color = Color(1, 0.96, 0.9, 1)
+
+[node name="Leaves" type="CPUParticles2D" parent="."]
+z_index = 10
+material = SubResource("Mat_leaf")
+position = Vector2(448, 288)
+amount = 28
+lifetime = 9.0
+preprocess = 9.0
+texture = ExtResource("1_leaf")
+emission_shape = 3
+emission_rect_extents = Vector2(460, 300)
+direction = Vector2(1, 0.4)
+spread = 25.0
+gravity = Vector2(0, 6)
+initial_velocity_min = 8.0
+initial_velocity_max = 18.0
+angular_velocity_min = -40.0
+angular_velocity_max = 40.0
+color_ramp = SubResource("Grad_leaf")
+anim_speed_min = 0.6
+anim_speed_max = 1.0
+anim_offset_max = 1.0
+
+[node name="Fireflies" type="CPUParticles2D" parent="."]
+z_index = 10
+material = SubResource("Mat_add")
+position = Vector2(448, 288)
+amount = 40
+lifetime = 6.0
+preprocess = 6.0
+texture = SubResource("Tex_dot")
+emission_shape = 3
+emission_rect_extents = Vector2(440, 280)
+direction = Vector2(0, -1)
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 2.0
+initial_velocity_max = 6.0
+scale_amount_min = 0.6
+scale_amount_max = 1.0
+color_ramp = SubResource("Grad_firefly")
+
+[node name="Screen" type="CanvasLayer" parent="."]
+layer = 5
+
+[node name="Raylight" type="Sprite2D" parent="Screen"]
+modulate = Color(1, 0.95, 0.8, 0.35)
+material = SubResource("Mat_ray")
+texture = ExtResource("2_ray")
+centered = false
+
+[node name="Vignette" type="ColorRect" parent="Screen"]
+material = SubResource("Mat_vig")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2

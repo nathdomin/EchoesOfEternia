@@ -34,10 +34,10 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - Balanceamento sempre em Resources (`resources/*.tres`), nunca hardcoded.
 
 ## Pixel art e assets
-- Viewport 640×360, stretch `viewport`, scale `integer`, filtro padrão Nearest, janela 1280×720, renderer Compatibility.
-- Base visual: Kenney Roguelike/RPG Pack (top-down 16×16, CC0). Tiny Town só na vila. Nunca misturar perspectivas.
-- Personagens Kenney têm 1 frame: animar com tween ("bob"), flip_h e flash.
-- Registrar todo pacote em `assets/LICENSES.md`.
+- Viewport 480×270, stretch `viewport`, scale `integer`, filtro padrão Nearest, janela 1440×810 (3×), renderer Compatibility (por isso partículas são `CPUParticles2D`).
+- Base visual única: **Ninja Adventure Asset Pack** (Pixel-Boy & AAA, CC0), top-down 16×16. Não misturar com outros estilos. Detalhes do que foi copiado em `assets/LICENSES.md`.
+- Personagens: `AnimatedSprite2D` com `resources/characters/<nome>_frames.tres` (animações `idle_/walk_/attack_` + `down/up/left/right`, e `dead`). Sombra `assets/characters/ninja/Shadow.png` sob cada personagem.
+- Atmosfera: `scenes/maps/ambience.tscn` (CanvasModulate, folhas, vaga-lumes, feixe de luz, vinheta `shaders/vignette.gdshader`).
 
 ## Convenções
 - GDScript com tipagem estática (`:=`, `-> void`), tabs, snake_case para arquivos.
@@ -45,9 +45,15 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - `*.import` são versionados; `.godot/` e `export/` não.
 - Cena principal: `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
 - Input actions: `move_left/right/up/down` (WASD + setas), definidas no `project.godot`.
-- Gráficos atuais são placeholders (`assets/*/placeholder_*.png`) até o pacote Kenney ser baixado.
 
 ## Estado das etapas
 - E1 ✅ estrutura e config pixel art
-- E2 ✅ player local (8 direções, bob/flip, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
+- E2 ✅ player local (8 direções de movimento, animação em 4 direções, sombra, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
+- E3 ✅ vila 56×36 — `scenes/maps/village.tscn`, `scripts/maps/village.gd` (SpawnPoint, `get_bounds()`), `scripts/main/main.gd`
 - Gate 0 ⏳ falta o teste entre 2 PCs reais
+
+## Mapas
+- TileSet `assets/environments/ninja/ninja_tileset.tres`: fontes 0 Floor, 1 Nature, 2 House, 3 Water, 4 FloorDetail; physics layer 0 = colisão.
+- Camadas da vila: `Ground` (chão/terra/água, z -3), `GroundDetail` (flores pequenas, z -2), `Objects` (árvores, casas, props; y-sort).
+- Objetos grandes são tiles multi-célula com colisão só na base (tronco/parede) e `y_sort_origin` na base: o player passa atrás de copas e telhados.
+- Para adicionar um objeto grande novo no TileSet: criar o tile com o tamanho certo no atlas, `texture_origin` −8 nos eixos de tamanho par, colisão na base e `y_sort_origin` na base.
