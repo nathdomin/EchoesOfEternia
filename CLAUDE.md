@@ -46,7 +46,7 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - Cena inicial: `scenes/ui/main_menu.tscn` (menu). O jogo é `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
 - Autoload `Session` (`scripts/systems/session.gd`): modo HOST/JOIN, IP, porta e nome escolhidos no menu. O NetworkManager (E5) lê daqui.
 - `NetUtils` (`scripts/multiplayer/net_utils.gd`): porta padrão, lista de IPv4 (LAN/Tailscale) e validação de IP/porta. Reutilizar em vez de duplicar.
-- UI: tema global `resources/ui/ninja_theme.tres` (Theme Wood do Ninja Adventure). Fontes Kenney (CC0) em `assets/ui/fonts/`: `kenney_pixel.ttf` tamanho 16 (texto) e `kenney_mini.ttf` tamanhos 8/16/24 (títulos). Não usar a `NormalFont.ttf` do Ninja Adventure: o "i" e o espaço são defeituosos.
+- UI: tema global `resources/ui/ninja_theme.tres` (Theme Wood do Ninja Adventure). Variações: `TextMenuButton` (botão só texto, dourado ao focar; o menu põe a seta como ícone) e `DarkPanel` (painel escuro translúcido). Não nomear variações com nomes de classes do Godot (ex.: `MenuButton`), senão o tema não aplica. Fontes Kenney (CC0) em `assets/ui/fonts/`: `kenney_pixel.ttf` tamanho 16 (texto) e `kenney_mini.ttf` tamanhos 8/16/24 (títulos). Não usar a `NormalFont.ttf` do Ninja Adventure: o "i" e o espaço são defeituosos.
 - Input actions: `move_left/right/up/down` (WASD + setas), definidas no `project.godot`.
 
 ## Estado das etapas

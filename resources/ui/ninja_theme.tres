@@ -7,6 +7,7 @@
 [ext_resource type="Texture2D" path="res://assets/ui/ninja/Theme/Theme Wood/button_pressed.png" id="5_5f4pu"]
 [ext_resource type="Texture2D" path="res://assets/ui/ninja/Theme/Theme Wood/nine_path_bg_2.png" id="6_mugdm"]
 [ext_resource type="Texture2D" path="res://assets/ui/ninja/Theme/Theme Wood/nine_path_bg.png" id="7_fq5qa"]
+[ext_resource type="FontFile" path="res://assets/ui/fonts/kenney_mini.ttf" id="8_0ielm"]
 [ext_resource type="Texture2D" path="res://assets/ui/ninja/Theme/Theme Wood/nine_path_panel.png" id="8_7f7ag"]
 [ext_resource type="FontFile" path="res://assets/ui/fonts/kenney_pixel.ttf" id="9_kdb4h"]
 
@@ -66,6 +67,18 @@ texture_margin_right = 3.0
 texture_margin_bottom = 3.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_fq5qa"]
+content_margin_left = 10.0
+content_margin_top = 5.0
+content_margin_right = 10.0
+content_margin_bottom = 5.0
+texture = ExtResource("7_fq5qa")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+modulate_color = Color(1, 1, 1, 0.82)
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_7f7ag"]
 content_margin_left = 0.0
 content_margin_top = 0.0
 content_margin_right = 0.0
@@ -76,7 +89,7 @@ texture_margin_top = 3.0
 texture_margin_right = 3.0
 texture_margin_bottom = 3.0
 
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_7f7ag"]
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qsvre"]
 content_margin_left = 6.0
 content_margin_top = 3.0
 content_margin_right = 6.0
@@ -87,7 +100,7 @@ texture_margin_top = 3.0
 texture_margin_right = 3.0
 texture_margin_bottom = 3.0
 
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_qsvre"]
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1da6r"]
 content_margin_left = 6.0
 content_margin_top = 3.0
 content_margin_right = 6.0
@@ -97,17 +110,6 @@ texture_margin_left = 3.0
 texture_margin_top = 3.0
 texture_margin_right = 3.0
 texture_margin_bottom = 3.0
-
-[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_1da6r"]
-content_margin_left = 10.0
-content_margin_top = 8.0
-content_margin_right = 10.0
-content_margin_bottom = 8.0
-texture = ExtResource("8_7f7ag")
-texture_margin_left = 5.0
-texture_margin_top = 5.0
-texture_margin_right = 5.0
-texture_margin_bottom = 5.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_6sw47"]
 content_margin_left = 10.0
@@ -121,15 +123,15 @@ texture_margin_right = 5.0
 texture_margin_bottom = 5.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_s8cay"]
-content_margin_left = 6.0
-content_margin_top = 3.0
-content_margin_right = 6.0
-content_margin_bottom = 3.0
-texture = ExtResource("6_mugdm")
-texture_margin_left = 3.0
-texture_margin_top = 3.0
-texture_margin_right = 3.0
-texture_margin_bottom = 3.0
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+texture = ExtResource("8_7f7ag")
+texture_margin_left = 5.0
+texture_margin_top = 5.0
+texture_margin_right = 5.0
+texture_margin_bottom = 5.0
 
 [sub_resource type="StyleBoxTexture" id="StyleBoxTexture_u5ump"]
 content_margin_left = 6.0
@@ -141,6 +143,29 @@ texture_margin_left = 3.0
 texture_margin_top = 3.0
 texture_margin_right = 3.0
 texture_margin_bottom = 3.0
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_dilft"]
+content_margin_left = 6.0
+content_margin_top = 3.0
+content_margin_right = 6.0
+content_margin_bottom = 3.0
+texture = ExtResource("6_mugdm")
+texture_margin_left = 3.0
+texture_margin_top = 3.0
+texture_margin_right = 3.0
+texture_margin_bottom = 3.0
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_hgswk"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_glh6n"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rut7u"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_4ym1c"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_umuv0"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_rsk3h"]
 
 [resource]
 default_font = ExtResource("9_kdb4h")
@@ -156,17 +181,36 @@ Button/styles/focus = SubResource("StyleBoxTexture_euacf")
 Button/styles/hover = SubResource("StyleBoxTexture_vrjk8")
 Button/styles/normal = SubResource("StyleBoxTexture_5f4pu")
 Button/styles/pressed = SubResource("StyleBoxTexture_mugdm")
+DarkPanel/base_type = &"PanelContainer"
+DarkPanel/styles/panel = SubResource("StyleBoxTexture_fq5qa")
 Label/colors/font_color = Color(1, 0.96, 0.88, 1)
 Label/colors/font_outline_color = Color(0.15, 0.07, 0.05, 1)
 Label/constants/outline_size = 4
 LineEdit/colors/caret_color = Color(1, 0.96, 0.88, 1)
 LineEdit/colors/font_color = Color(1, 0.96, 0.88, 1)
 LineEdit/colors/font_placeholder_color = Color(1, 0.96, 0.88, 0.45)
-LineEdit/styles/focus = SubResource("StyleBoxTexture_fq5qa")
-LineEdit/styles/normal = SubResource("StyleBoxTexture_7f7ag")
-LineEdit/styles/read_only = SubResource("StyleBoxTexture_qsvre")
-Panel/styles/panel = SubResource("StyleBoxTexture_1da6r")
-PanelContainer/styles/panel = SubResource("StyleBoxTexture_6sw47")
+LineEdit/styles/focus = SubResource("StyleBoxTexture_7f7ag")
+LineEdit/styles/normal = SubResource("StyleBoxTexture_qsvre")
+LineEdit/styles/read_only = SubResource("StyleBoxTexture_1da6r")
+Panel/styles/panel = SubResource("StyleBoxTexture_6sw47")
+PanelContainer/styles/panel = SubResource("StyleBoxTexture_s8cay")
 TextEdit/colors/font_readonly_color = Color(1, 0.96, 0.88, 1)
-TextEdit/styles/normal = SubResource("StyleBoxTexture_s8cay")
-TextEdit/styles/read_only = SubResource("StyleBoxTexture_u5ump")
+TextEdit/styles/normal = SubResource("StyleBoxTexture_u5ump")
+TextEdit/styles/read_only = SubResource("StyleBoxTexture_dilft")
+TextMenuButton/base_type = &"Button"
+TextMenuButton/colors/font_color = Color(0.93, 0.86, 0.72, 1)
+TextMenuButton/colors/font_focus_color = Color(1, 0.82, 0.35, 1)
+TextMenuButton/colors/font_hover_color = Color(1, 0.82, 0.35, 1)
+TextMenuButton/colors/font_hover_pressed_color = Color(1, 0.95, 0.7, 1)
+TextMenuButton/colors/font_outline_color = Color(0.12, 0.05, 0.08, 1)
+TextMenuButton/colors/font_pressed_color = Color(1, 0.95, 0.7, 1)
+TextMenuButton/constants/h_separation = 4
+TextMenuButton/constants/outline_size = 6
+TextMenuButton/font_sizes/font_size = 16
+TextMenuButton/fonts/font = ExtResource("8_0ielm")
+TextMenuButton/styles/disabled = SubResource("StyleBoxEmpty_hgswk")
+TextMenuButton/styles/focus = SubResource("StyleBoxEmpty_glh6n")
+TextMenuButton/styles/hover = SubResource("StyleBoxEmpty_rut7u")
+TextMenuButton/styles/hover_pressed = SubResource("StyleBoxEmpty_4ym1c")
+TextMenuButton/styles/normal = SubResource("StyleBoxEmpty_umuv0")
+TextMenuButton/styles/pressed = SubResource("StyleBoxEmpty_rsk3h")
