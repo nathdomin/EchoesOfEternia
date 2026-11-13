@@ -1,5 +1,5 @@
 extends CanvasLayer
-## HUD de rede (E5): status (HOST/CLIENTE e jogadores conectados) no canto
+## HUD de rede (E5): status (online e jogadores conectados) no canto
 ## superior e mensagens de sistema estilo MMO no canto inferior, que somem
 ## sozinhas depois de alguns segundos.
 
@@ -34,5 +34,4 @@ func _update_status() -> void:
 	if not NetworkManager.is_online:
 		_status.text = "Offline"
 		return
-	var role := "HOST" if multiplayer.is_server() else "CLIENTE"
-	_status.text = "%s  -  %d/%d jogadores" % [role, NetworkManager.players.size(), NetworkManager.MAX_PLAYERS]
+	_status.text = "Online  -  %d/%d jogadores" % [NetworkManager.players.size(), NetworkManager.max_players]

@@ -1,9 +1,9 @@
 extends Node2D
-## Cena principal: inicia a rede escolhida no menu (E5), posiciona o player no
-## SpawnPoint da vila e limita a camera ao mapa. Na E6 o spawn dos jogadores
-## passa a ser feito pelo MultiplayerSpawner.
+## Cena do cliente: conecta ao servidor escolhido no menu (E5/E6), posiciona o
+## player no SpawnPoint da vila e limita a camera ao mapa. Na E9 o spawn dos
+## jogadores passa a ser feito pelo servidor (MultiplayerSpawner).
 ##
-## Esc sai da partida e volta ao menu. Se a conexao cair ou for recusada,
+## Esc sai do mundo e volta ao menu. Se a conexao cair ou for recusada,
 ## volta ao menu mostrando o motivo.
 
 const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
@@ -19,9 +19,7 @@ func _ready() -> void:
 	NetworkManager.connection_ended.connect(_back_to_menu)
 	var err := NetworkManager.start_from_session()
 	if err != OK:
-		var what := "hospedar na porta %d (já está em uso?)" % Session.port if Session.mode == Session.Mode.HOST \
-				else "conectar em %s:%d" % [Session.host_ip, Session.port]
-		_back_to_menu.call_deferred("Não foi possível %s" % what)
+		_back_to_menu.call_deferred("Não foi possível conectar em %s:%d" % [Session.host_ip, Session.port])
 
 
 func _unhandled_input(event: InputEvent) -> void:

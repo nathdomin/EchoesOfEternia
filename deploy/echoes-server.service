@@ -1,0 +1,19 @@
+[Unit]
+Description=Echoes of Eternia - servidor dedicado
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=echoes
+Group=echoes
+WorkingDirectory=/opt/echoes
+EnvironmentFile=-/etc/default/echoes-server
+ExecStart=/opt/echoes/echoes_server --headless --port=${ECHOES_PORT} --max-players=${ECHOES_MAX_PLAYERS}
+Restart=always
+RestartSec=5
+# Da tempo para o servidor salvar e avisar os jogadores ao parar
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

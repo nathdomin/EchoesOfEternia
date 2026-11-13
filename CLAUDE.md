@@ -42,8 +42,8 @@
 - GDScript com tipagem estática (`:=`, `-> void`), tabs, snake_case para arquivos.
 - Scripts em `scripts/<sistema>/`, cenas em `scenes/<categoria>/`.
 - `*.import` são versionados; `.godot/` e `export/` não.
-- Cena inicial: `scenes/ui/main_menu.tscn` (menu). O jogo é `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
-- Autoload `Session` (`scripts/systems/session.gd`): modo HOST/JOIN, IP, porta e nome escolhidos no menu. O NetworkManager (E5) lê daqui.
+- Cena inicial: `scenes/boot.tscn` (vai para o servidor ou para o menu `scenes/ui/main_menu.tscn`). O jogo do cliente é `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
+- Autoload `Session` (`scripts/systems/session.gd`): IP, porta e nome escolhidos no menu e leitura da linha de comando (modo servidor, porta, vagas). O NetworkManager lê daqui.
 - `NetUtils` (`scripts/multiplayer/net_utils.gd`): porta padrão, lista de IPv4 (LAN/Tailscale) e validação de IP/porta. Reutilizar em vez de duplicar.
 - UI: tema global `resources/ui/ninja_theme.tres` (Theme Wood do Ninja Adventure). Variações: `TextMenuButton` (botão só texto, dourado ao focar; o menu põe a seta como ícone) e `DarkPanel` (painel escuro translúcido). Não nomear variações com nomes de classes do Godot (ex.: `MenuButton`), senão o tema não aplica. Fontes Kenney (CC0) em `assets/ui/fonts/`: `kenney_pixel.ttf` tamanho 16 (texto) e `kenney_mini.ttf` tamanhos 8/16/24 (títulos). Não usar a `NormalFont.ttf` do Ninja Adventure: o "i" e o espaço são defeituosos.
 - Identidade visual do menu: **manuscrito medieval iluminado**. Pergaminho e moldura com vinhas em `shaders/parchment.gdshader`; capitular azul e dourada em `shaders/illuminated_box.gdshader`, com janela em arco mostrando a vila ao vivo (SubViewport). Letra gótica pixel **Jacquard 24** (títulos, tamanhos múltiplos de 24) e **Jacquard 12** (opções, tamanho 24). Variações de tema em tinta: `InkMenuButton` (vermelho de rubrica ao focar), `InkLabel`, `InkLineEdit` (só linha embaixo), `InkFlatButton`. Usar o mesmo estilo nas próximas telas (pausa, diálogo, missão).
@@ -55,12 +55,13 @@
 - E3 ✅ vila 56×36 — `scenes/maps/village.tscn`, `scripts/maps/village.gd` (SpawnPoint, `get_bounds()`), `scripts/main/main.gd`
 - E4 ✅ menu Hospedar/Entrar — `scenes/ui/main_menu.tscn`, `scripts/ui/main_menu.gd` (valida IP/porta, lista IPs com clique para copiar, grava em `Session`; ainda sem rede real)
 - E5 ✅ NetworkManager — `scripts/multiplayer/network_manager.gd` (autoload): host/cliente a partir de `Session`, aperto de mão (versão + nome, nomes repetidos viram "Nome 2"), lista `players` sincronizada só para jogadores aceitos, recusa por versão/partida cheia, timeouts de 3–6 s, mensagens de sistema. HUD de rede `scenes/ui/net_hud.tscn`. Esc no jogo volta ao menu; o motivo da saída aparece no menu.
+- E6 ✅ servidor dedicado — `scenes/boot.tscn` decide servidor/cliente (`Session.is_server_mode()`: `--server` ou feature `dedicated_server`); `scenes/server/server_main.tscn` + `scripts/server/server_main.gd` (sem jogador, logs com hora, status a cada 60 s); `NetworkManager.start_server(port, max_players)` (padrão 16, servidor não está em `players`); menu só com "Entrar no mundo"; presets de exportação Linux x86_64/ARM64; `deploy/` (systemd, install/update, guia Oracle/Azure). Versão 0.1.0.
 - Gate 0 ⏳ falta o teste entre 2 PCs reais
 
 ## Rede (como usar)
 - Lógica de jogo que muda estado oficial roda só no servidor (`multiplayer.is_server()`); RPCs do servidor para clientes usam `NetworkManager._broadcast` (só jogadores aceitos).
 - Sinais úteis: `connection_ready`, `connection_ended(reason)`, `player_joined(id, name)`, `player_left(id, name)`, `players_changed`, `system_message(text)`.
-- Linha de comando (pula o menu): `--host`, `--join=IP`, `--port=N`, `--name=X`. Só em build de debug: `--fake-version=X` (testa a recusa por versão).
+- Linha de comando: servidor `--server [--port=N] [--max-players=N]` (use `--headless` fora do editor); cliente `--join=IP [--port=N] [--name=X]` (pula o menu). Só em build de debug: `--fake-version=X`.
 
 ## Mapas
 - TileSet `assets/environments/ninja/ninja_tileset.tres`: fontes 0 Floor, 1 Nature, 2 House, 3 Water, 4 FloorDetail; physics layer 0 = colisão.
