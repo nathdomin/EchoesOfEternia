@@ -4,12 +4,16 @@ extends Node
 ##
 ## Rodar:  EchoesOfEternia --headless --server [--port=7777] [--max-players=16]
 
-const STATUS_INTERVAL := 60.0   ## segundos entre linhas de status no console
+const STATUS_INTERVAL := 600.0  ## segundos entre linhas de status no console
+## Sem janela o Godot roda sem limite de quadros e gasta CPU a toa na VM.
+## 60 = mesma frequencia da fisica (medido: ~7% de um nucleo ocioso).
+const SERVER_FPS := 60
 
 @onready var _world: Node = $World
 
 
 func _ready() -> void:
+	Engine.max_fps = SERVER_FPS
 	var port := Session.server_port()
 	var max_players := Session.server_max_players()
 	_print_banner(port, max_players)

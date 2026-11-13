@@ -53,7 +53,7 @@
 - E1 ✅ estrutura e config pixel art
 - E2 ✅ player local (8 direções de movimento, animação em 4 direções, sombra, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
 - E3 ✅ vila 56×36 — `scenes/maps/village.tscn`, `scripts/maps/village.gd` (SpawnPoint, `get_bounds()`), `scripts/main/main.gd`
-- E4 ✅ menu Hospedar/Entrar — `scenes/ui/main_menu.tscn`, `scripts/ui/main_menu.gd` (valida IP/porta, lista IPs com clique para copiar, grava em `Session`; ainda sem rede real)
+- E4 ✅ menu em estilo manuscrito — `scenes/ui/main_menu.tscn`, `scripts/ui/main_menu.gd` (Entrar no mundo: nome, IP ou endereço DNS e porta, validados; grava em `Session`)
 - E5 ✅ NetworkManager — `scripts/multiplayer/network_manager.gd` (autoload): host/cliente a partir de `Session`, aperto de mão (versão + nome, nomes repetidos viram "Nome 2"), lista `players` sincronizada só para jogadores aceitos, recusa por versão/partida cheia, timeouts de 3–6 s, mensagens de sistema. HUD de rede `scenes/ui/net_hud.tscn`. Esc no jogo volta ao menu; o motivo da saída aparece no menu.
 - E6 ✅ servidor dedicado — `scenes/boot.tscn` decide servidor/cliente (`Session.is_server_mode()`: `--server` ou feature `dedicated_server`); `scenes/server/server_main.tscn` + `scripts/server/server_main.gd` (sem jogador, logs com hora, status a cada 60 s); `NetworkManager.start_server(port, max_players)` (padrão 16, servidor não está em `players`); menu só com "Entrar no mundo"; presets de exportação Linux x86_64/ARM64; `deploy/` (systemd, install/update, guia Oracle/Azure). Versão 0.1.0.
 - Gate 0 ⏳ falta o teste entre 2 PCs reais

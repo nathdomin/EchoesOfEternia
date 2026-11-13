@@ -255,8 +255,8 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme_type_variation = &"InkLineEdit"
-placeholder_text = "192.168.0.10"
-max_length = 15
+placeholder_text = "IP ou endereço do servidor"
+max_length = 64
 
 [node name="PortRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2

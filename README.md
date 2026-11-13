@@ -1,6 +1,6 @@
 # Echoes of Eternia
 
-RPG de ação multiplayer em pixel art — demo acadêmica em Godot 4.
+MMORPG em pixel art feito em Godot 4 — servidor dedicado, contas e personagens salvos.
 
 📄 **Plano de trabalho da equipe:** [docs/Echoes_of_Eternia_Plano_de_Trabalho.pdf](docs/Echoes_of_Eternia_Plano_de_Trabalho.pdf) (também em `.docx`). Leia antes de começar.
 

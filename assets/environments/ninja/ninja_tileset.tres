@@ -1,10 +1,10 @@
-[gd_resource type="TileSet" format=3]
+[gd_resource type="TileSet" format=3 uid="uid://c5w11nhsvirgo"]
 
-[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetFloor.png" id="1_sgxsu"]
-[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetNature.png" id="2_2nnm5"]
-[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetHouse.png" id="3_mhip8"]
-[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetWater.png" id="4_iyow5"]
-[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetFloorDetail.png" id="5_6t04o"]
+[ext_resource type="Texture2D" uid="uid://cvkefhhji21kh" path="res://assets/environments/ninja/tilesets/TilesetFloor.png" id="1_sgxsu"]
+[ext_resource type="Texture2D" uid="uid://bnbq4kr2pynr0" path="res://assets/environments/ninja/tilesets/TilesetNature.png" id="2_2nnm5"]
+[ext_resource type="Texture2D" uid="uid://bqxkjomulcu3k" path="res://assets/environments/ninja/tilesets/TilesetHouse.png" id="3_mhip8"]
+[ext_resource type="Texture2D" uid="uid://dinnfs2wr7cyb" path="res://assets/environments/ninja/tilesets/TilesetWater.png" id="4_iyow5"]
+[ext_resource type="Texture2D" uid="uid://delda0teombeq" path="res://assets/environments/ninja/tilesets/TilesetFloorDetail.png" id="5_6t04o"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4fslg"]
 texture = ExtResource("1_sgxsu")

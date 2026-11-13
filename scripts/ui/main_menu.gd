@@ -114,14 +114,11 @@ func _set_error(label: Label, msg: String) -> void:
 	label.visible = not msg.is_empty()
 
 
-
-
 # ---------- acoes ----------
-
 
 func _on_join_connect() -> void:
 	if not NetUtils.is_valid_host(_join_ip.text):
-		_set_error(_join_error, "IP inválido (ex.: 192.168.0.10)")
+		_set_error(_join_error, "Endereço inválido (ex.: 192.168.0.10)")
 		return
 	if not NetUtils.is_valid_port(_join_port.text):
 		_set_error(_join_error, "Porta inválida (1024 a 65535)")

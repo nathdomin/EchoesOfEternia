@@ -17,6 +17,7 @@ signal players_changed
 signal system_message(text: String)
 
 const DEFAULT_MAX_PLAYERS := 16
+const MAX_NAME_LENGTH := 16
 const REGISTER_TIMEOUT := 5.0   ## segundos para o cliente se apresentar
 ## Tempo (ms) para considerar uma conexao perdida: min e max do ENet.
 const TIMEOUT_MIN_MS := 3000
@@ -147,6 +148,8 @@ func _register(version: String, wanted_name: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
+	if players.has(id):
+		return  # ja registrado: ignora tentativa de trocar de nome
 	if version != GameVersion.VERSION:
 		_rejected.rpc_id(id, "Versão diferente: o servidor usa %s e você %s. Atualize o jogo." % [GameVersion.VERSION, version])
 		_kick_later(id)
@@ -155,7 +158,7 @@ func _register(version: String, wanted_name: String) -> void:
 		_rejected.rpc_id(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
 		_kick_later(id)
 		return
-	players[id] = {"name": _unique_name(wanted_name)}
+	players[id] = {"name": _unique_name(_sanitize_name(wanted_name))}
 	_broadcast(_sync_players, [players])
 	_broadcast(_notify_join, [id, players[id].name], true)
 
@@ -217,6 +220,17 @@ func _kick_later(id: int) -> void:
 	await get_tree().create_timer(0.3).timeout
 	if is_online and id in multiplayer.get_peers():
 		multiplayer.multiplayer_peer.disconnect_peer(id)
+
+
+## O servidor nunca confia no nome vindo do cliente: remove caracteres de
+## controle, junta espacos repetidos e corta no tamanho maximo.
+func _sanitize_name(raw: String) -> String:
+	var out := ""
+	for ch in raw.left(64):
+		out += ch if ch.unicode_at(0) >= 32 and ch.unicode_at(0) != 127 else " "
+	while out.contains("  "):
+		out = out.replace("  ", " ")
+	return out.strip_edges().left(MAX_NAME_LENGTH).strip_edges()
 
 
 func _unique_name(wanted: String) -> String:

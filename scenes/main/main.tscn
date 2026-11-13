@@ -1,21 +1,23 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://ckbk5ksrxr4aq"]
 
-[ext_resource type="Script" path="res://scripts/main/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://be8hnk8kpdgrv" path="res://scripts/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
 [ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/maps/ambience.tscn" id="4_amb"]
 [ext_resource type="PackedScene" path="res://scenes/ui/net_hud.tscn" id="5_hud"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1005394235]
 script = ExtResource("1_main")
 
-[node name="World" type="Node2D" parent="."]
+[node name="World" type="Node2D" parent="." unique_id=1881602507]
 y_sort_enabled = true
 
-[node name="Village" parent="World" instance=ExtResource("2_village")]
+[node name="Village" parent="World" unique_id=327483045 instance=ExtResource("2_village")]
 
-[node name="Player" parent="World" instance=ExtResource("3_player")]
+[node name="Player" parent="World" unique_id=648134771 instance=ExtResource("3_player")]
+position = Vector2(446, 174)
 
-[node name="Ambience" parent="." instance=ExtResource("4_amb")]
+[node name="Ambience" parent="." unique_id=690444539 instance=ExtResource("4_amb")]
+position = Vector2(9, 58)
 
-[node name="NetHud" parent="." instance=ExtResource("5_hud")]
+[node name="NetHud" parent="." unique_id=2003567790 instance=ExtResource("5_hud")]

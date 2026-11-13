@@ -40,11 +40,19 @@ func is_server_mode() -> bool:
 
 ## Porta e vagas do servidor vindas da linha de comando.
 func server_port() -> int:
-	return int(_arg_value("--port=", str(NetUtils.DEFAULT_PORT)))
+	var p := _arg_value("--port=", str(NetUtils.DEFAULT_PORT))
+	if not NetUtils.is_valid_port(p):
+		push_warning("--port=%s invalida; usando %d" % [p, NetUtils.DEFAULT_PORT])
+		return NetUtils.DEFAULT_PORT
+	return int(p)
 
 
 func server_max_players() -> int:
-	return clampi(int(_arg_value("--max-players=", "16")), 1, 64)
+	var n := _arg_value("--max-players=", "16")
+	if not n.is_valid_int():
+		push_warning("--max-players=%s invalido; usando 16" % n)
+		return 16
+	return clampi(int(n), 1, 64)
 
 
 ## Le --join=IP, --port=N e --name=X (apenas na primeira vez).
