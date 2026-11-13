@@ -1,47 +1,36 @@
 # Echoes of Eternia — instruções para o Claude Code
 
-Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, Godot 4 + GDScript.
-**É uma demo de MMORPG, não um MMORPG.** Plano completo da equipe: `docs/Echoes_of_Eternia_Plano_de_Trabalho.docx`.
+**MMORPG** em pixel art (Godot 4 + GDScript): servidor dedicado na nuvem, contas com senha, personagens salvos, até 16 jogadores, zonas. Pequeno, mas um MMO de verdade — **não é uma demo**. Plano completo da equipe (v3): `docs/Echoes_of_Eternia_Plano_de_Trabalho.docx`.
 
 ## Regras de execução
-1. Uma etapa (E1…E19) por vez. **Não avançar para a próxima etapa sem autorização.**
+1. Uma etapa (E1…E24) por vez. **Não avançar para a próxima etapa sem autorização.**
 2. Entregar funcionalidade **testável** e dizer como testar. Código "aparentemente completo" não conta.
 3. Corrigir erros antes de adicionar recursos. Não substituir o que já funciona sem necessidade.
-4. Multiplayer é prioridade desde o início. Nada de sistemas complexos que a demo não precisa.
+4. Servidor e rede são prioridade. Todo sistema novo nasce pensando em servidor dedicado + persistência.
 5. Respeitar o dono de cada cena (tabela no README). Não editar `.tscn` de outro papel sem pedido explícito.
 
-## Estilo de MMO (P1, entra junto das etapas)
-A demo deve **parecer um MMORPG** sem virar um. Ao implementar cada etapa, incluir:
-- E5: mensagens de sistema ("Fulano entrou/saiu da partida").
-- E6: nome sobre cada jogador (cor por jogador); mundo compartilhado com late join.
-- E12/E16: barra de vida sobre inimigos; quadro do alvo selecionado.
-- E16/E18: hotbar de habilidades (teclas 1–4) com recarga; quadro do grupo (retrato, nome, vida).
-- E15/E19: mensagens de level up e missão; rastreador de missão; diálogo de NPC no estilo manuscrito com retrato.
-- Fase 5: números de dano flutuantes, efeito de level up, painel de rede F3.
-- Bônus (P2): chat de texto + emotes; minimapa.
-
-## Gates (sem datas — uma fase só começa quando o gate anterior passa)
-- **Gate 0:** 2 PCs reais trocam ping/pong (`scenes/debug/net_test.tscn`) via LAN e Tailscale; `.exe` abre num PC sem Godot.
-- **Gate 1:** multiplayer (E5–E9) funcionando em 2 PCs reais. Nada de P1 antes disso.
-- **Gate 2 / tag `v0.1-p0-completo`:** P0 inteiro (combate, vida, morte, respawn) entre PCs pelo `.exe`.
-- **Gate 3 / feature freeze:** P1 testado. Depois só Fase 5 (polimento) e correção de bugs.
-
-## Prioridades
-- P0: jogo abre, movimento + mapa, multiplayer, combate + inimigos, vida/dano/morte.
-- P1: classes + habilidades, XP/níveis, NPC + missão, HUD.
-- P2 (bônus): floresta, dungeon, chefe, inventário, chat, persistência, web.
+## Roteiro (fases e gates, sem datas)
+- **Fase 1 ✅ Fundação:** E1 projeto · E2 personagem · E3 vila · E4 menu · E5 NetworkManager.
+- **Fase 2 Servidor e contas:** E6 servidor dedicado (`--server`, 16 vagas, exportação Linux, deploy na VM) · E7 cadastro/login (hash + salt) + DTLS · E8 personagem salvo · E9 jogadores por zona (spawner, nomes, interpolação, late join) · E10 quedas/reconexão + teste com a VM. **Gate 1:** servidor na VM com contas e persistência, 2+ PCs jogando.
+- **Fase 3 Combate:** E11 Health/Hitbox · E12 ataque validado no servidor + quadro do alvo · E13 monstros por zona com barra de vida · E14 morte/respawn · E15 teste pela internet. **Gate 2 / tag `v0.2-p0`.**
+- **Fase 4 Sistemas de MMO:** E16 XP/níveis · E17 classes + habilidades + hotbar · E18 inventário/itens/loot/equipamento · E19 chat · E20 grupo · E21 NPC/missões + rastreador · E22 HUD completa. **Gate 3.**
+- **Fase 5 Zonas:** E23 floresta + passagem entre zonas · E24 dungeon + chefe (bônus). **Feature freeze.**
+- **Fase 6** polimento + teste de carga com 16 clientes · **Fase 7** entrega (servidor na VM, cliente .exe, apresentação).
+- P2 (só depois do freeze): comércio, guildas, ranking, minimapa, emotes, web.
 
 ## Arquitetura (decisões fechadas)
-- ENet, porta 7777, `create_server(7777, 3)` — host joga como 4º jogador.
-- **Cliente** é autoridade do movimento do próprio player (authority = peer id).
-- **Servidor** é autoridade de: IA dos inimigos, dano, vida, morte, respawn, XP, nível, missões. Toda lógica disso roda sob `multiplayer.is_server()`.
-- Ataque: cliente pede via RPC → servidor valida (alcance, cooldown) → aplica → estado sincronizado.
-- Tudo que existe na rede nasce por `MultiplayerSpawner` (garante late join).
-- `MultiplayerSynchronizer` para posição + estado de animação; remotos interpolados.
-- Checagem de versão no handshake com `GameVersion.VERSION` (`scripts/systems/game_version.gd`).
-- Argumentos `--host` e `--join=IP` (ler `OS.get_cmdline_args()` + `OS.get_cmdline_user_args()`).
-- Componentes: `HealthComponent`, `HitboxComponent`; classes como `ClassData` (Resource) — uma cena de player + 3 `.tres`.
-- Balanceamento sempre em Resources (`resources/*.tres`), nunca hardcoded.
+- **Servidor dedicado headless**, mesmo projeto: `--server` (ou export com a feature `dedicated_server`) abre `scenes/server/server_main.tscn`, sem jogador próprio, câmera, som ou HUD. Exportado para Linux (x86_64 e ARM64) e hospedado em VM gratuita (Oracle Always Free São Paulo; alternativa Azure for Students).
+- ENet UDP porta 7777, até **16 jogadores**; DTLS a partir da E7.
+- **Cliente** é autoridade do movimento do próprio personagem (servidor confere velocidade). **Servidor** é autoridade de: contas, persistência, IA dos monstros, dano, vida, morte, XP, itens, loot, missões, chat e grupo. Lógica disso roda sob `multiplayer.is_server()`.
+- Contas: senha só como hash + salt. Persistência em JSON por conta/personagem no servidor (`user://`), salvamento atômico e periódico.
+- Zonas: vila, floresta, dungeon como cenas separadas; o servidor mantém todas; cada cliente só recebe a sua zona (visibilidade do sincronizador/spawner por zona).
+- Ataque: cliente pede via RPC → servidor valida (alcance, recarga) → aplica → estado sincronizado.
+- Tudo que existe na rede nasce por `MultiplayerSpawner` (late join). `MultiplayerSynchronizer` para posição + animação; remotos interpolados.
+- Checagem de versão no aperto de mão com `GameVersion.VERSION`.
+- Componentes: `HealthComponent`, `HitboxComponent`; dados em Resources (`ClassData`, `ItemData`, tabela de XP) — nunca hardcoded.
+
+## Sistemas de MMO (onde cada um entra)
+- E5 mensagens de sistema · E9 nome sobre cada jogador, mundo compartilhado · E12/E13 barra de vida, quadro do alvo · E16 level up · E17 hotbar 1–4 · E18 inventário/loot/equipamento · E19 chat (global, grupo, sistema) · E20 grupo + quadro do grupo · E21 NPC com diálogo no estilo manuscrito + rastreador de missão · Fase 6 números de dano, painel F3.
 
 ## Pixel art e assets
 - Viewport 480×270, stretch `viewport`, scale `integer`, filtro padrão Nearest, janela 1440×810 (3×), renderer Compatibility (por isso partículas são `CPUParticles2D`).
