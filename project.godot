@@ -19,6 +19,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 [autoload]
 
 Session="*res://scripts/systems/session.gd"
+NetworkManager="*res://scripts/multiplayer/network_manager.gd"
 
 [display]
 

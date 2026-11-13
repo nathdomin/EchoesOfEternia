@@ -10,6 +10,16 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 4. Multiplayer é prioridade desde o início. Nada de sistemas complexos que a demo não precisa.
 5. Respeitar o dono de cada cena (tabela no README). Não editar `.tscn` de outro papel sem pedido explícito.
 
+## Estilo de MMO (P1, entra junto das etapas)
+A demo deve **parecer um MMORPG** sem virar um. Ao implementar cada etapa, incluir:
+- E5: mensagens de sistema ("Fulano entrou/saiu da partida").
+- E6: nome sobre cada jogador (cor por jogador); mundo compartilhado com late join.
+- E12/E16: barra de vida sobre inimigos; quadro do alvo selecionado.
+- E16/E18: hotbar de habilidades (teclas 1–4) com recarga; quadro do grupo (retrato, nome, vida).
+- E15/E19: mensagens de level up e missão; rastreador de missão; diálogo de NPC no estilo manuscrito com retrato.
+- Fase 5: números de dano flutuantes, efeito de level up, painel de rede F3.
+- Bônus (P2): chat de texto + emotes; minimapa.
+
 ## Gates (sem datas — uma fase só começa quando o gate anterior passa)
 - **Gate 0:** 2 PCs reais trocam ping/pong (`scenes/debug/net_test.tscn`) via LAN e Tailscale; `.exe` abre num PC sem Godot.
 - **Gate 1:** multiplayer (E5–E9) funcionando em 2 PCs reais. Nada de P1 antes disso.
@@ -55,7 +65,13 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - E2 ✅ player local (8 direções de movimento, animação em 4 direções, sombra, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
 - E3 ✅ vila 56×36 — `scenes/maps/village.tscn`, `scripts/maps/village.gd` (SpawnPoint, `get_bounds()`), `scripts/main/main.gd`
 - E4 ✅ menu Hospedar/Entrar — `scenes/ui/main_menu.tscn`, `scripts/ui/main_menu.gd` (valida IP/porta, lista IPs com clique para copiar, grava em `Session`; ainda sem rede real)
+- E5 ✅ NetworkManager — `scripts/multiplayer/network_manager.gd` (autoload): host/cliente a partir de `Session`, aperto de mão (versão + nome, nomes repetidos viram "Nome 2"), lista `players` sincronizada só para jogadores aceitos, recusa por versão/partida cheia, timeouts de 3–6 s, mensagens de sistema. HUD de rede `scenes/ui/net_hud.tscn`. Esc no jogo volta ao menu; o motivo da saída aparece no menu.
 - Gate 0 ⏳ falta o teste entre 2 PCs reais
+
+## Rede (como usar)
+- Lógica de jogo que muda estado oficial roda só no servidor (`multiplayer.is_server()`); RPCs do servidor para clientes usam `NetworkManager._broadcast` (só jogadores aceitos).
+- Sinais úteis: `connection_ready`, `connection_ended(reason)`, `player_joined(id, name)`, `player_left(id, name)`, `players_changed`, `system_message(text)`.
+- Linha de comando (pula o menu): `--host`, `--join=IP`, `--port=N`, `--name=X`. Só em build de debug: `--fake-version=X` (testa a recusa por versão).
 
 ## Mapas
 - TileSet `assets/environments/ninja/ninja_tileset.tres`: fontes 0 Floor, 1 Nature, 2 House, 3 Water, 4 FloorDetail; physics layer 0 = colisão.

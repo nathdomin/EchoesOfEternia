@@ -1,0 +1,38 @@
+extends CanvasLayer
+## HUD de rede (E5): status (HOST/CLIENTE e jogadores conectados) no canto
+## superior e mensagens de sistema estilo MMO no canto inferior, que somem
+## sozinhas depois de alguns segundos.
+
+const MESSAGE_TIME := 6.0
+const MAX_MESSAGES := 6
+
+@onready var _status: Label = %Status
+@onready var _log: VBoxContainer = %Log
+
+
+func _ready() -> void:
+	NetworkManager.players_changed.connect(_update_status)
+	NetworkManager.connection_ready.connect(_update_status)
+	NetworkManager.system_message.connect(add_message)
+	_update_status()
+
+
+func add_message(text: String) -> void:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
+	_log.add_child(l)
+	while _log.get_child_count() > MAX_MESSAGES:
+		_log.get_child(0).free()
+	var t := l.create_tween()
+	t.tween_interval(MESSAGE_TIME)
+	t.tween_property(l, "modulate:a", 0.0, 1.0)
+	t.tween_callback(l.queue_free)
+
+
+func _update_status() -> void:
+	if not NetworkManager.is_online:
+		_status.text = "Offline"
+		return
+	var role := "HOST" if multiplayer.is_server() else "CLIENTE"
+	_status.text = "%s  -  %d/%d jogadores" % [role, NetworkManager.players.size(), NetworkManager.MAX_PLAYERS]
