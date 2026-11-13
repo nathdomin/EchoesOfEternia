@@ -43,4 +43,11 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - GDScript com tipagem estática (`:=`, `-> void`), tabs, snake_case para arquivos.
 - Scripts em `scripts/<sistema>/`, cenas em `scenes/<categoria>/`.
 - `*.import` são versionados; `.godot/` e `export/` não.
-- Cena principal hoje é `net_test.tscn` (Gate 0); passa a ser `scenes/main/main.tscn` a partir da E4.
+- Cena principal: `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
+- Input actions: `move_left/right/up/down` (WASD + setas), definidas no `project.godot`.
+- Gráficos atuais são placeholders (`assets/*/placeholder_*.png`) até o pacote Kenney ser baixado.
+
+## Estado das etapas
+- E1 ✅ estrutura e config pixel art
+- E2 ✅ player local (8 direções, bob/flip, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
+- Gate 0 ⏳ falta o teste entre 2 PCs reais

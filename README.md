@@ -27,9 +27,15 @@ Só o dono edita as cenas `.tscn` da sua área.
 2. Abra o `project.godot` no Godot.
 3. Rode o teste de rede (Gate 0) — veja abaixo.
 
+## Rodar o jogo
+
+**F5** abre a cena principal (`scenes/main/main.tscn`). Controles: **WASD** ou **setas**.
+
+Os gráficos ainda são provisórios (`placeholder_*.png`). Para usar o pacote Kenney, troque a textura do `Sprite2D` em `scenes/characters/player.tscn`.
+
 ## Teste de rede (Gate 0)
 
-A cena principal atual é `scenes/debug/net_test.tscn`.
+A cena de teste fica em `scenes/debug/net_test.tscn` (não é a cena principal: abra-a e rode com **F6**, "Run Current Scene").
 
 **No editor (mesmo PC):** Debug → Customize Run Instances → ative *Enable Multiple Instances*, quantidade 2.
 Na instância 1 clique **Hospedar**; na 2, **Entrar** com `127.0.0.1`. O log deve mostrar `pong ... ms` nas duas.
@@ -40,7 +46,7 @@ Na primeira execução o Windows pergunta sobre o firewall: permita em **redes p
 
 **Entre PCs (Tailscale):** igual, usando o IP `100.x.y.z` do host mostrado no app do Tailscale.
 
-**Pelo .exe:** `EchoesOfEternia.exe -- --host` ou `EchoesOfEternia.exe -- --join=192.168.0.10`.
+**Pelo .exe:** `EchoesOfEternia.exe res://scenes/debug/net_test.tscn -- --host` (ou `-- --join=192.168.0.10`).
 
 ## Exportar para Windows
 
