@@ -25,6 +25,15 @@ func _ready() -> void:
 	_camera.make_current()
 
 
+## Impede a camera de mostrar a area fora do mapa.
+func set_camera_limits(bounds: Rect2) -> void:
+	_camera.limit_left = int(bounds.position.x)
+	_camera.limit_top = int(bounds.position.y)
+	_camera.limit_right = int(bounds.end.x)
+	_camera.limit_bottom = int(bounds.end.y)
+	_camera.reset_smoothing()
+
+
 func _physics_process(delta: float) -> void:
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 

@@ -31,7 +31,7 @@ Só o dono edita as cenas `.tscn` da sua área.
 
 **F5** abre a cena principal (`scenes/main/main.tscn`). Controles: **WASD** ou **setas**.
 
-Os gráficos ainda são provisórios (`placeholder_*.png`). Para usar o pacote Kenney, troque a textura do `Sprite2D` em `scenes/characters/player.tscn`.
+**Mapa da vila:** `scenes/maps/village.tscn`. Para editar, abra a cena, selecione a camada `Ground` (chão) ou `Objects` (casas, árvores, cercas — têm colisão) e pinte com o painel TileMap. Mantenha as saídas norte e leste livres: elas levam às futuras áreas.
 
 ## Teste de rede (Gate 0)
 

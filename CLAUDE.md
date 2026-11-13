@@ -45,9 +45,10 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - `*.import` são versionados; `.godot/` e `export/` não.
 - Cena principal: `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
 - Input actions: `move_left/right/up/down` (WASD + setas), definidas no `project.godot`.
-- Gráficos atuais são placeholders (`assets/*/placeholder_*.png`) até o pacote Kenney ser baixado.
+- Mapas: `TileMapLayer` com o TileSet `assets/environments/kenney_tiny_town/tiny_town_tileset.tres` (physics layer 0 = colisão). Camada `Ground` sem colisão (z -1); camada `Objects` com colisão e y-sort, ordenada junto com o player dentro de `World` (y_sort).
 
 ## Estado das etapas
 - E1 ✅ estrutura e config pixel art
 - E2 ✅ player local (8 direções, bob/flip, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
+- E3 ✅ vila 48×32 com colisões — `scenes/maps/village.tscn`, `scripts/maps/village.gd` (SpawnPoint, limites da câmera)
 - Gate 0 ⏳ falta o teste entre 2 PCs reais
