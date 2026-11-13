@@ -1,462 +1,399 @@
-[gd_scene load_steps=22 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
 [ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
-[ext_resource type="PackedScene" path="res://scenes/maps/ambience.tscn" id="3_amb"]
-[ext_resource type="FontFile" path="res://assets/ui/fonts/kenney_mini.ttf" id="4_title"]
-[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetNature.png" id="5_nature"]
+[ext_resource type="Shader" path="res://shaders/parchment.gdshader" id="3_parch"]
+[ext_resource type="Shader" path="res://shaders/illuminated_box.gdshader" id="4_box"]
+[ext_resource type="FontFile" path="res://assets/ui/fonts/jacquard24.ttf" id="5_gothic"]
 [ext_resource type="AudioStream" path="res://audio/music/36 - Village.ogg" id="6_music"]
+[ext_resource type="SpriteFrames" path="res://resources/characters/knight_frames.tres" id="7_knight"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Shadow.png" id="8_shadow"]
 
-[sub_resource type="AtlasTexture" id="Tex_tree_orange"]
-atlas = ExtResource("5_nature")
-region = Rect2(144, 288, 48, 48)
+[sub_resource type="ShaderMaterial" id="Mat_parch"]
+shader = ExtResource("3_parch")
 
-[sub_resource type="AtlasTexture" id="Tex_tree_green"]
-atlas = ExtResource("5_nature")
-region = Rect2(48, 288, 48, 48)
-
-[sub_resource type="AtlasTexture" id="Tex_pines"]
-atlas = ExtResource("5_nature")
-region = Rect2(0, 32, 64, 48)
-
-[sub_resource type="AtlasTexture" id="Tex_bush"]
-atlas = ExtResource("5_nature")
-region = Rect2(16, 160, 16, 16)
-
-[sub_resource type="AtlasTexture" id="Tex_bush2"]
-atlas = ExtResource("5_nature")
-region = Rect2(96, 160, 16, 16)
+[sub_resource type="ShaderMaterial" id="Mat_box"]
+shader = ExtResource("4_box")
+shader_parameter/size = Vector2(136, 176)
+shader_parameter/window_rect = Vector4(34, 22, 88, 140)
 
 [sub_resource type="Gradient" id="Grad_dot"]
-offsets = PackedFloat32Array(0, 0.4, 1)
-colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.5, 1, 1, 1, 0)
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.4, 1, 1, 1, 0)
 
 [sub_resource type="GradientTexture2D" id="Tex_dot"]
 gradient = SubResource("Grad_dot")
-width = 5
-height = 5
+width = 3
+height = 3
 fill = 1
 fill_from = Vector2(0.5, 0.5)
 fill_to = Vector2(1, 0.5)
-
-[sub_resource type="CanvasItemMaterial" id="Mat_add"]
-blend_mode = 1
 
 [sub_resource type="Gradient" id="Grad_mote"]
-offsets = PackedFloat32Array(0, 0.15, 0.7, 1)
-colors = PackedColorArray(1, 0.8, 0.4, 0, 1, 0.85, 0.45, 0.9, 1, 0.7, 0.35, 0.6, 1, 0.6, 0.3, 0)
+offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
+colors = PackedColorArray(0.85, 0.6, 0.2, 0, 0.85, 0.62, 0.22, 0.55, 0.85, 0.6, 0.2, 0.4, 0.85, 0.6, 0.2, 0)
 
-[sub_resource type="Gradient" id="Grad_glow"]
-offsets = PackedFloat32Array(0, 1)
-colors = PackedColorArray(1, 0.72, 0.38, 0.32, 1, 0.6, 0.3, 0)
+[sub_resource type="Gradient" id="Grad_rule"]
+offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
+colors = PackedColorArray(0.85, 0.64, 0.24, 0, 0.85, 0.64, 0.24, 1, 0.85, 0.64, 0.24, 1, 0.85, 0.64, 0.24, 0)
 
-[sub_resource type="GradientTexture2D" id="Tex_glow"]
-gradient = SubResource("Grad_glow")
-width = 380
-height = 130
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 0.5)
+[sub_resource type="GradientTexture1D" id="Tex_rule"]
+gradient = SubResource("Grad_rule")
+width = 200
 
-[sub_resource type="Gradient" id="Grad_shade"]
-offsets = PackedFloat32Array(0, 0.6, 1)
-colors = PackedColorArray(0.06, 0.02, 0.06, 0.62, 0.06, 0.02, 0.06, 0.4, 0.06, 0.02, 0.06, 0)
-
-[sub_resource type="GradientTexture2D" id="Tex_shade"]
-gradient = SubResource("Grad_shade")
-width = 420
-height = 260
-fill = 1
-fill_from = Vector2(0.5, 0.5)
-fill_to = Vector2(1, 0.5)
-
-[sub_resource type="CanvasItemMaterial" id="Mat_glow"]
-blend_mode = 1
-
-[node name="MainMenu" type="Node2D"]
-script = ExtResource("1_menu")
-
-[node name="Village" parent="." instance=ExtResource("2_village")]
-
-[node name="Camera2D" type="Camera2D" parent="."]
-
-[node name="Ambience" parent="." instance=ExtResource("3_amb")]
-
-[node name="Music" type="AudioStreamPlayer" parent="."]
-stream = ExtResource("6_music")
-volume_db = -30.0
-
-[node name="Foreground" type="CanvasLayer" parent="."]
-layer = 6
-
-[node name="Pines" type="Sprite2D" parent="Foreground"]
-modulate = Color(0.3, 0.18, 0.24, 1)
-position = Vector2(-92, 150)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_pines")
-centered = false
-
-[node name="TreeLeft" type="Sprite2D" parent="Foreground"]
-modulate = Color(0.36, 0.2, 0.24, 1)
-position = Vector2(-6, 222)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_tree_orange")
-offset = Vector2(0, -20)
-
-[node name="TreeRight" type="Sprite2D" parent="Foreground"]
-modulate = Color(0.32, 0.19, 0.25, 1)
-position = Vector2(486, 214)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_tree_green")
-offset = Vector2(0, -20)
-flip_h = true
-
-[node name="Bushes" type="Node2D" parent="Foreground"]
-modulate = Color(0.24, 0.14, 0.2, 1)
-
-[node name="Bush1" type="Sprite2D" parent="Foreground/Bushes"]
-position = Vector2(104, 262)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_bush")
-
-[node name="Bush2" type="Sprite2D" parent="Foreground/Bushes"]
-position = Vector2(150, 268)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_bush2")
-
-[node name="Bush3" type="Sprite2D" parent="Foreground/Bushes"]
-position = Vector2(338, 266)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_bush2")
-flip_h = true
-
-[node name="Bush4" type="Sprite2D" parent="Foreground/Bushes"]
-position = Vector2(384, 260)
-scale = Vector2(3, 3)
-texture = SubResource("Tex_bush")
-flip_h = true
-
-[node name="Motes" type="CPUParticles2D" parent="Foreground"]
-material = SubResource("Mat_add")
-position = Vector2(240, 285)
-amount = 36
-lifetime = 8.0
-preprocess = 8.0
-texture = SubResource("Tex_dot")
-emission_shape = 3
-emission_rect_extents = Vector2(260, 20)
-direction = Vector2(0, -1)
-spread = 30.0
-gravity = Vector2(0, -2)
-initial_velocity_min = 6.0
-initial_velocity_max = 16.0
-scale_amount_min = 0.5
-scale_amount_max = 1.2
-color_ramp = SubResource("Grad_mote")
-
-[node name="UI" type="CanvasLayer" parent="."]
-layer = 10
-
-[node name="Root" type="Control" parent="UI"]
+[node name="MainMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("1_menu")
 
-[node name="Shade" type="TextureRect" parent="UI/Root"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -210.0
-offset_top = -130.0
-offset_right = 210.0
-offset_bottom = 130.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-texture = SubResource("Tex_shade")
+[node name="VillageViewport" type="SubViewport" parent="."]
+canvas_item_default_texture_filter = 0
+snap_2d_transforms_to_pixel = true
+size = Vector2i(88, 140)
+render_target_update_mode = 4
 
-[node name="Glow" type="TextureRect" parent="UI/Root"]
-material = SubResource("Mat_glow")
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -190.0
-offset_top = -6.0
-offset_right = 190.0
-offset_bottom = 124.0
-grow_horizontal = 2
-mouse_filter = 2
-texture = SubResource("Tex_glow")
+[node name="Village" parent="VillageViewport" instance=ExtResource("2_village")]
 
-[node name="Logo" type="VBoxContainer" parent="UI/Root"]
-unique_name_in_owner = true
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 8.0
-offset_bottom = 90.0
-grow_horizontal = 2
-mouse_filter = 2
-theme_override_constants/separation = 0
+[node name="Tint" type="CanvasModulate" parent="VillageViewport"]
+color = Color(1, 0.9, 0.78, 1)
 
-[node name="LogoMain" type="Label" parent="UI/Root/Logo"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.9, 0.62, 1)
-theme_override_colors/font_shadow_color = Color(0.32, 0.12, 0.2, 1)
-theme_override_colors/font_outline_color = Color(0.14, 0.05, 0.1, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 4
-theme_override_constants/outline_size = 10
-theme_override_fonts/font = ExtResource("4_title")
-theme_override_font_sizes/font_size = 40
-text = "ECHOES"
-horizontal_alignment = 1
+[node name="Camera2D" type="Camera2D" parent="VillageViewport"]
 
-[node name="LogoSub" type="Label" parent="UI/Root/Logo"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.98, 0.78, 0.5, 1)
-theme_override_colors/font_shadow_color = Color(0.32, 0.12, 0.2, 1)
-theme_override_colors/font_outline_color = Color(0.14, 0.05, 0.1, 1)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 2
-theme_override_constants/outline_size = 6
-theme_override_fonts/font = ExtResource("4_title")
-theme_override_font_sizes/font_size = 24
-text = "- of Eternia -"
-horizontal_alignment = 1
+[node name="Knight" type="Node2D" parent="VillageViewport/Camera2D"]
+position = Vector2(0, 14)
 
-[node name="Tagline" type="Label" parent="UI/Root/Logo"]
-modulate = Color(1, 1, 1, 0.85)
-layout_mode = 2
-text = "RPG de ação multiplayer"
-horizontal_alignment = 1
+[node name="Shadow" type="Sprite2D" parent="VillageViewport/Camera2D/Knight"]
+modulate = Color(1, 1, 1, 0.6)
+position = Vector2(0, -1)
+texture = ExtResource("8_shadow")
 
-[node name="Pages" type="CenterContainer" parent="UI/Root"]
+[node name="Sprite" type="AnimatedSprite2D" parent="VillageViewport/Camera2D/Knight"]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("7_knight")
+animation = &"walk_down"
+
+[node name="Parchment" type="ColorRect" parent="."]
+material = SubResource("Mat_parch")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = 96.0
-offset_bottom = -18.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 
-[node name="MainPage" type="VBoxContainer" parent="UI/Root/Pages"]
+[node name="Motes" type="CPUParticles2D" parent="."]
+position = Vector2(240, 140)
+amount = 22
+lifetime = 9.0
+preprocess = 9.0
+texture = SubResource("Tex_dot")
+emission_shape = 3
+emission_rect_extents = Vector2(210, 110)
+direction = Vector2(1, -0.3)
+spread = 60.0
+gravity = Vector2(0, -1)
+initial_velocity_min = 2.0
+initial_velocity_max = 6.0
+color_ramp = SubResource("Grad_mote")
+
+[node name="Capital" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 36.0
+offset_top = 40.0
+offset_right = 172.0
+offset_bottom = 216.0
+mouse_filter = 2
+
+[node name="VillageView" type="TextureRect" parent="Capital"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 34.0
+offset_top = 22.0
+offset_right = 122.0
+offset_bottom = 162.0
+mouse_filter = 2
+stretch_mode = 2
+
+[node name="Box" type="ColorRect" parent="Capital"]
+material = SubResource("Mat_box")
+layout_mode = 0
+offset_right = 136.0
+offset_bottom = 176.0
+mouse_filter = 2
+
+[node name="Letter" type="Label" parent="Capital"]
+layout_mode = 0
+offset_left = -22.0
+offset_top = -10.0
+offset_right = 86.0
+offset_bottom = 150.0
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.98, 0.82, 0.38, 1)
+theme_override_colors/font_shadow_color = Color(0.32, 0.12, 0.08, 1)
+theme_override_colors/font_outline_color = Color(0.14, 0.06, 0.06, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("5_gothic")
+theme_override_font_sizes/font_size = 144
+text = "E"
+horizontal_alignment = 1
+
+[node name="Text" type="VBoxContainer" parent="."]
+anchors_preset = 0
+offset_left = 182.0
+offset_top = 34.0
+offset_right = 446.0
+offset_bottom = 248.0
+theme_override_constants/separation = 0
+
+[node name="TitleRest" type="Label" parent="Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 2
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_shadow_color = Color(0.2, 0.11, 0.08, 0.25)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("5_gothic")
+theme_override_font_sizes/font_size = 48
+text = "choes"
 
-[node name="HostButton" type="Button" parent="UI/Root/Pages/MainPage" groups=["menu_buttons"]]
+[node name="TitleSub" type="Label" parent="Text"]
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
+theme_override_fonts/font = ExtResource("5_gothic")
+theme_override_font_sizes/font_size = 24
+text = "of Eternia"
+
+[node name="Tagline" type="Label" parent="Text"]
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Um RPG de ação para até quatro aventureiros"
+
+[node name="Rule" type="TextureRect" parent="Text"]
+custom_minimum_size = Vector2(200, 1)
+layout_mode = 2
+size_flags_horizontal = 0
+texture = SubResource("Tex_rule")
+expand_mode = 1
+
+[node name="Gap" type="Control" parent="Text"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="MainPage" type="VBoxContainer" parent="Text"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TextMenuButton"
+theme_override_constants/separation = -2
+
+[node name="HostButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
 text = "Hospedar partida"
 alignment = 0
 
-[node name="JoinButton" type="Button" parent="UI/Root/Pages/MainPage" groups=["menu_buttons"]]
+[node name="JoinButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TextMenuButton"
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
 text = "Entrar em partida"
 alignment = 0
 
-[node name="QuitButton" type="Button" parent="UI/Root/Pages/MainPage" groups=["menu_buttons"]]
+[node name="QuitButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TextMenuButton"
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
 text = "Sair"
 alignment = 0
 
-[node name="HostPage" type="PanelContainer" parent="UI/Root/Pages"]
+[node name="HostPage" type="VBoxContainer" parent="Text"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(230, 0)
-layout_mode = 2
-theme_type_variation = &"DarkPanel"
-
-[node name="Rows" type="VBoxContainer" parent="UI/Root/Pages/HostPage"]
 layout_mode = 2
 theme_override_constants/separation = 1
 
-[node name="NameRow" type="HBoxContainer" parent="UI/Root/Pages/HostPage/Rows"]
+[node name="NameRow" type="HBoxContainer" parent="Text/HostPage"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="UI/Root/Pages/HostPage/Rows/NameRow"]
-custom_minimum_size = Vector2(40, 0)
+[node name="NameLabel" type="Label" parent="Text/HostPage/NameRow"]
+custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
+theme_type_variation = &"InkLabel"
 text = "Nome"
 
-[node name="HostName" type="LineEdit" parent="UI/Root/Pages/HostPage/Rows/NameRow"]
+[node name="HostName" type="LineEdit" parent="Text/HostPage/NameRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"InkLineEdit"
 placeholder_text = "Jogador"
 max_length = 16
 
-[node name="PortRow" type="HBoxContainer" parent="UI/Root/Pages/HostPage/Rows"]
+[node name="PortRow" type="HBoxContainer" parent="Text/HostPage"]
 layout_mode = 2
 
-[node name="PortLabel" type="Label" parent="UI/Root/Pages/HostPage/Rows/PortRow"]
-custom_minimum_size = Vector2(40, 0)
+[node name="PortLabel" type="Label" parent="Text/HostPage/PortRow"]
+custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
+theme_type_variation = &"InkLabel"
 text = "Porta"
 
-[node name="HostPort" type="LineEdit" parent="UI/Root/Pages/HostPage/Rows/PortRow"]
+[node name="HostPort" type="LineEdit" parent="Text/HostPage/PortRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"InkLineEdit"
 max_length = 5
 
-[node name="IpHint" type="Label" parent="UI/Root/Pages/HostPage/Rows"]
-modulate = Color(1, 1, 1, 0.8)
+[node name="IpHint" type="Label" parent="Text/HostPage"]
+modulate = Color(1, 1, 1, 0.75)
 layout_mode = 2
+theme_type_variation = &"InkLabel"
 text = "Seus IPs (clique para copiar):"
 
-[node name="IpList" type="VBoxContainer" parent="UI/Root/Pages/HostPage/Rows"]
+[node name="IpList" type="VBoxContainer" parent="Text/HostPage"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = -2
 
-[node name="HostError" type="Label" parent="UI/Root/Pages/HostPage/Rows"]
+[node name="HostError" type="Label" parent="Text/HostPage"]
 unique_name_in_owner = true
-layout_mode = 2
 visible = false
-theme_override_colors/font_color = Color(1, 0.5, 0.42, 1)
-horizontal_alignment = 1
-
-[node name="Buttons" type="HBoxContainer" parent="UI/Root/Pages/HostPage/Rows"]
 layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 16
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
 
-[node name="HostBack" type="Button" parent="UI/Root/Pages/HostPage/Rows/Buttons" groups=["menu_buttons"]]
+[node name="Buttons" type="HBoxContainer" parent="Text/HostPage"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="HostStart" type="Button" parent="Text/HostPage/Buttons" groups=["menu_buttons"]]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TextMenuButton"
-text = "Voltar"
-
-[node name="HostStart" type="Button" parent="UI/Root/Pages/HostPage/Rows/Buttons" groups=["menu_buttons"]]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"TextMenuButton"
+theme_type_variation = &"InkMenuButton"
 text = "Iniciar"
 
-[node name="JoinPage" type="PanelContainer" parent="UI/Root/Pages"]
+[node name="HostBack" type="Button" parent="Text/HostPage/Buttons" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkMenuButton"
+text = "Voltar"
+
+[node name="JoinPage" type="VBoxContainer" parent="Text"]
 unique_name_in_owner = true
 visible = false
-custom_minimum_size = Vector2(230, 0)
-layout_mode = 2
-theme_type_variation = &"DarkPanel"
-
-[node name="Rows" type="VBoxContainer" parent="UI/Root/Pages/JoinPage"]
 layout_mode = 2
 theme_override_constants/separation = 1
 
-[node name="NameRow" type="HBoxContainer" parent="UI/Root/Pages/JoinPage/Rows"]
+[node name="NameRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="UI/Root/Pages/JoinPage/Rows/NameRow"]
-custom_minimum_size = Vector2(40, 0)
+[node name="NameLabel" type="Label" parent="Text/JoinPage/NameRow"]
+custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
+theme_type_variation = &"InkLabel"
 text = "Nome"
 
-[node name="JoinName" type="LineEdit" parent="UI/Root/Pages/JoinPage/Rows/NameRow"]
+[node name="JoinName" type="LineEdit" parent="Text/JoinPage/NameRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"InkLineEdit"
 placeholder_text = "Jogador"
 max_length = 16
 
-[node name="IpRow" type="HBoxContainer" parent="UI/Root/Pages/JoinPage/Rows"]
+[node name="IpRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
 
-[node name="IpLabel" type="Label" parent="UI/Root/Pages/JoinPage/Rows/IpRow"]
-custom_minimum_size = Vector2(40, 0)
+[node name="IpLabel" type="Label" parent="Text/JoinPage/IpRow"]
+custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
+theme_type_variation = &"InkLabel"
 text = "IP"
 
-[node name="JoinIp" type="LineEdit" parent="UI/Root/Pages/JoinPage/Rows/IpRow"]
+[node name="JoinIp" type="LineEdit" parent="Text/JoinPage/IpRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"InkLineEdit"
 placeholder_text = "192.168.0.10"
 max_length = 15
 
-[node name="PortRow" type="HBoxContainer" parent="UI/Root/Pages/JoinPage/Rows"]
+[node name="PortRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
 
-[node name="PortLabel" type="Label" parent="UI/Root/Pages/JoinPage/Rows/PortRow"]
-custom_minimum_size = Vector2(40, 0)
+[node name="PortLabel" type="Label" parent="Text/JoinPage/PortRow"]
+custom_minimum_size = Vector2(44, 0)
 layout_mode = 2
+theme_type_variation = &"InkLabel"
 text = "Porta"
 
-[node name="JoinPort" type="LineEdit" parent="UI/Root/Pages/JoinPage/Rows/PortRow"]
+[node name="JoinPort" type="LineEdit" parent="Text/JoinPage/PortRow"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
 layout_mode = 2
-size_flags_horizontal = 3
+theme_type_variation = &"InkLineEdit"
 max_length = 5
 
-[node name="JoinError" type="Label" parent="UI/Root/Pages/JoinPage/Rows"]
+[node name="JoinError" type="Label" parent="Text/JoinPage"]
 unique_name_in_owner = true
-layout_mode = 2
 visible = false
-theme_override_colors/font_color = Color(1, 0.5, 0.42, 1)
-horizontal_alignment = 1
-
-[node name="Buttons" type="HBoxContainer" parent="UI/Root/Pages/JoinPage/Rows"]
 layout_mode = 2
-alignment = 1
-theme_override_constants/separation = 16
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
 
-[node name="JoinBack" type="Button" parent="UI/Root/Pages/JoinPage/Rows/Buttons" groups=["menu_buttons"]]
+[node name="Buttons" type="HBoxContainer" parent="Text/JoinPage"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JoinConnect" type="Button" parent="Text/JoinPage/Buttons" groups=["menu_buttons"]]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"TextMenuButton"
-text = "Voltar"
-
-[node name="JoinConnect" type="Button" parent="UI/Root/Pages/JoinPage/Rows/Buttons" groups=["menu_buttons"]]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"TextMenuButton"
+theme_type_variation = &"InkMenuButton"
 text = "Conectar"
 
-[node name="Hint" type="Label" parent="UI/Root"]
-modulate = Color(1, 1, 1, 0.6)
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 6.0
-offset_top = -18.0
+[node name="JoinBack" type="Button" parent="Text/JoinPage/Buttons" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkMenuButton"
+text = "Voltar"
+
+[node name="Hint" type="Label" parent="."]
+modulate = Color(1, 1, 1, 0.55)
+layout_mode = 0
+offset_left = 36.0
+offset_top = 228.0
 offset_right = 260.0
-offset_bottom = -2.0
-grow_vertical = 0
+offset_bottom = 244.0
+theme_type_variation = &"InkLabel"
 text = "Setas escolhem - Enter confirma - Esc volta"
 
-[node name="Version" type="Label" parent="UI/Root"]
+[node name="Version" type="Label" parent="."]
 unique_name_in_owner = true
-modulate = Color(1, 1, 1, 0.6)
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -60.0
-offset_top = -18.0
-offset_right = -6.0
-offset_bottom = -2.0
-grow_horizontal = 0
-grow_vertical = 0
+modulate = Color(1, 1, 1, 0.55)
+layout_mode = 0
+offset_left = 380.0
+offset_top = 228.0
+offset_right = 444.0
+offset_bottom = 244.0
+theme_type_variation = &"InkLabel"
 text = "v0.0.1"
 horizontal_alignment = 2
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_music")
+volume_db = -30.0
 
 [node name="FadeLayer" type="CanvasLayer" parent="."]
 layer = 20

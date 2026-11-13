@@ -1,22 +1,23 @@
-extends Node2D
+extends Control
 ## Menu principal (E4): Hospedar (nome, porta, IPs) e Entrar (nome, IP, porta).
 ## Grava a escolha em Session e abre o jogo. A rede de verdade entra na E5.
 ##
-## Visual: vila ao entardecer ao fundo com camera passeando, vegetacao em
-## silhueta no primeiro plano, particulas, logo com brilho, menu so de texto
-## com seta na opcao selecionada, musica e fade de entrada/saida.
+## Visual de manuscrito iluminado: pagina de pergaminho (shader), letra
+## capitular "E" com janela em arco mostrando a vila ao vivo (SubViewport)
+## com um cavaleiro andando, titulo em letra gotica e opcoes em tinta que
+## ficam vermelhas (rubrica) ao selecionar.
 
 const GAME_SCENE := "res://scenes/main/main.tscn"
-const PAN_SPEED := 12.0                   ## px/s do passeio da camera
-const SUNSET_TINT := Color(0.86, 0.62, 0.56)
+const PAN_SPEED := 16.0                   ## px/s do passeio na janela
 const MUSIC_DB := -12.0
 const ARROW := preload("res://assets/ui/ninja/Theme/Theme Wood/arrow_right.png")
 
-@onready var _camera: Camera2D = $Camera2D
-@onready var _village: Village = $Village
+@onready var _viewport: SubViewport = $VillageViewport
+@onready var _village: Village = $VillageViewport/Village
+@onready var _camera: Camera2D = $VillageViewport/Camera2D
+@onready var _knight: AnimatedSprite2D = $VillageViewport/Camera2D/Knight/Sprite
 @onready var _music: AudioStreamPlayer = $Music
 @onready var _fade: ColorRect = $FadeLayer/Fade
-@onready var _logo: Control = %Logo
 
 @onready var _main_page: Control = %MainPage
 @onready var _host_page: Control = %HostPage
@@ -54,9 +55,10 @@ func _ready() -> void:
 	_join_port.text = str(Session.port)
 	_join_ip.text = Session.host_ip
 
+	%VillageView.texture = _viewport.get_texture()
 	_setup_menu_buttons()
 	_fill_ip_list()
-	_setup_background()
+	_setup_window_scene()
 	_show_page(_main_page)
 	_play_intro()
 
@@ -71,7 +73,9 @@ func _process(delta: float) -> void:
 	if _pan_points.is_empty():
 		return
 	var target := _pan_points[_pan_index]
+	var dir := target - _camera.position
 	_camera.position = _camera.position.move_toward(target, PAN_SPEED * delta)
+	_update_knight(dir)
 	if _camera.position.distance_to(target) < 1.0:
 		_pan_index = (_pan_index + 1) % _pan_points.size()
 
@@ -102,9 +106,8 @@ func _show_page(page: Control) -> void:
 		%HostStart.grab_focus()
 	else:
 		_join_ip.grab_focus()
-	# entrada suave da pagina
 	page.modulate.a = 0.0
-	create_tween().tween_property(page, "modulate:a", 1.0, 0.2)
+	create_tween().tween_property(page, "modulate:a", 1.0, 0.25)
 
 
 ## A mensagem de erro so ocupa espaco quando existe.
@@ -119,15 +122,16 @@ func _fill_ip_list() -> void:
 	var ips := NetUtils.local_ipv4()
 	if ips.is_empty():
 		var l := Label.new()
+		l.theme_type_variation = &"InkLabel"
 		l.text = "Nenhuma rede encontrada"
 		_ip_list.add_child(l)
 		return
 	for item in ips:
 		var b := Button.new()
-		b.flat = true
+		b.theme_type_variation = &"InkFlatButton"
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.text = "%s  (%s)" % [item.ip, item.kind]
 		b.tooltip_text = "Clique para copiar"
-		b.add_theme_color_override("font_color", Color(1, 0.86, 0.5))
 		b.pressed.connect(_copy_ip.bind(b, item.ip))
 		_ip_list.add_child(b)
 
@@ -181,33 +185,43 @@ func _leave_to(scene: String) -> void:
 		get_tree().change_scene_to_file(scene)
 
 
-# ---------- fundo e animacoes ----------
+# ---------- cena viva na janela da capitular ----------
 
-func _setup_background() -> void:
+func _setup_window_scene() -> void:
 	var b := _village.get_bounds()
 	_camera.limit_left = int(b.position.x)
 	_camera.limit_top = int(b.position.y)
 	_camera.limit_right = int(b.end.x)
 	_camera.limit_bottom = int(b.end.y)
-	var c := b.get_center()
-	_pan_points = [c + Vector2(-150, -60), c + Vector2(150, -70), c + Vector2(140, 80), c + Vector2(-140, 70)]
-	_camera.position = _village.get_spawn_position()
+	# Rota do cavaleiro passando pelas casas, mercado, lago e area de treino
+	var spawn := _village.get_spawn_position()
+	_pan_points = [
+		spawn + Vector2(0, -100),     # mercado / estrada norte
+		Vector2(330, 180),            # casa bege
+		Vector2(232, 205),            # casa laranja
+		Vector2(140, 300),            # area de treino
+		Vector2(380, 450),            # loja ao sul
+		Vector2(690, 430),            # lago
+		Vector2(650, 230),            # casas do leste
+		Vector2(560, 175),            # casa vermelha
+	]
+	# comeca em frente a casa bege, ja com algo bonito na janela
+	_camera.position = _pan_points[1]
+	_pan_index = 2
 
-	# Entardecer: tom quente e vinheta mais forte so no menu
-	($Ambience/Tint as CanvasModulate).color = SUNSET_TINT
-	var vignette := $Ambience/Screen/Vignette as ColorRect
-	var mat := vignette.material.duplicate() as ShaderMaterial
-	mat.set_shader_parameter("strength", 0.6)
-	mat.set_shader_parameter("radius", 0.45)
-	vignette.material = mat
 
-	# Vegetacao do primeiro plano balancando com o vento
-	for path in ["Foreground/TreeLeft", "Foreground/TreeRight", "Foreground/Pines"]:
-		var n := get_node(path) as Node2D
-		var sway := create_tween().set_loops().set_trans(Tween.TRANS_SINE)
-		var amount := randf_range(0.025, 0.04)
-		sway.tween_property(n, "skew", amount, randf_range(2.2, 3.0))
-		sway.tween_property(n, "skew", -amount, randf_range(2.2, 3.0))
+## O cavaleiro fica no centro da janela e anda na direcao do passeio.
+func _update_knight(dir: Vector2) -> void:
+	if dir.length() < 0.5:
+		_knight.play("idle_down")
+		return
+	var anim := "walk_"
+	if absf(dir.x) > absf(dir.y):
+		anim += "right" if dir.x > 0.0 else "left"
+	else:
+		anim += "down" if dir.y > 0.0 else "up"
+	if _knight.animation != anim:
+		_knight.play(anim)
 
 
 func _play_intro() -> void:
@@ -219,9 +233,3 @@ func _play_intro() -> void:
 	if stream:
 		stream.loop = true
 	_music.play()
-
-	# Logo flutuando devagar
-	var y := _logo.position.y
-	var bob := create_tween().set_loops().set_trans(Tween.TRANS_SINE)
-	bob.tween_property(_logo, "position:y", y + 3.0, 1.8)
-	bob.tween_property(_logo, "position:y", y, 1.8)
