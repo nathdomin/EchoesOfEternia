@@ -1,0 +1,234 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
+[ext_resource type="PackedScene" path="res://scenes/maps/ambience.tscn" id="3_amb"]
+[ext_resource type="FontFile" path="res://assets/ui/fonts/kenney_mini.ttf" id="4_title"]
+
+[node name="MainMenu" type="Node2D"]
+script = ExtResource("1_menu")
+
+[node name="Village" parent="." instance=ExtResource("2_village")]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+
+[node name="Ambience" parent="." instance=ExtResource("3_amb")]
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="Root" type="Control" parent="UI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.06, 0.03, 0.1, 0.3)
+
+[node name="Layout" type="VBoxContainer" parent="UI/Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 14.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="UI/Root/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("4_title")
+theme_override_font_sizes/font_size = 24
+text = "Echoes of Eternia"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="UI/Root/Layout"]
+layout_mode = 2
+text = "RPG de ação multiplayer"
+horizontal_alignment = 1
+
+[node name="Spacer" type="Control" parent="UI/Root/Layout"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="Panel" type="PanelContainer" parent="UI/Root/Layout"]
+custom_minimum_size = Vector2(220, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="Pages" type="VBoxContainer" parent="UI/Root/Layout/Panel"]
+layout_mode = 2
+
+[node name="MainPage" type="VBoxContainer" parent="UI/Root/Layout/Panel/Pages"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="NameLabel" type="Label" parent="UI/Root/Layout/Panel/Pages/MainPage"]
+layout_mode = 2
+text = "Seu nome"
+
+[node name="NameEdit" type="LineEdit" parent="UI/Root/Layout/Panel/Pages/MainPage"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "Jogador"
+max_length = 16
+
+[node name="HostButton" type="Button" parent="UI/Root/Layout/Panel/Pages/MainPage"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Hospedar partida"
+
+[node name="JoinButton" type="Button" parent="UI/Root/Layout/Panel/Pages/MainPage"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Entrar em partida"
+
+[node name="QuitButton" type="Button" parent="UI/Root/Layout/Panel/Pages/MainPage"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Sair"
+
+[node name="HostPage" type="VBoxContainer" parent="UI/Root/Layout/Panel/Pages"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="HostTitle" type="Label" parent="UI/Root/Layout/Panel/Pages/HostPage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+text = "Hospedar partida"
+horizontal_alignment = 1
+
+[node name="IpHint" type="Label" parent="UI/Root/Layout/Panel/Pages/HostPage"]
+layout_mode = 2
+text = "Passe um destes IPs aos amigos:"
+
+[node name="IpList" type="VBoxContainer" parent="UI/Root/Layout/Panel/Pages/HostPage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="PortRow" type="HBoxContainer" parent="UI/Root/Layout/Panel/Pages/HostPage"]
+layout_mode = 2
+
+[node name="PortLabel" type="Label" parent="UI/Root/Layout/Panel/Pages/HostPage/PortRow"]
+layout_mode = 2
+text = "Porta"
+
+[node name="HostPort" type="LineEdit" parent="UI/Root/Layout/Panel/Pages/HostPage/PortRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 5
+
+[node name="HostError" type="Label" parent="UI/Root/Layout/Panel/Pages/HostPage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.06, 0.04, 1)
+theme_override_constants/outline_size = 0
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="UI/Root/Layout/Panel/Pages/HostPage"]
+layout_mode = 2
+
+[node name="HostBack" type="Button" parent="UI/Root/Layout/Panel/Pages/HostPage/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Voltar"
+
+[node name="HostStart" type="Button" parent="UI/Root/Layout/Panel/Pages/HostPage/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Iniciar"
+
+[node name="JoinPage" type="VBoxContainer" parent="UI/Root/Layout/Panel/Pages"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="JoinTitle" type="Label" parent="UI/Root/Layout/Panel/Pages/JoinPage"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.5, 1)
+text = "Entrar em partida"
+horizontal_alignment = 1
+
+[node name="IpLabel" type="Label" parent="UI/Root/Layout/Panel/Pages/JoinPage"]
+layout_mode = 2
+text = "IP do host"
+
+[node name="JoinIp" type="LineEdit" parent="UI/Root/Layout/Panel/Pages/JoinPage"]
+unique_name_in_owner = true
+layout_mode = 2
+placeholder_text = "192.168.0.10"
+max_length = 15
+
+[node name="PortRow" type="HBoxContainer" parent="UI/Root/Layout/Panel/Pages/JoinPage"]
+layout_mode = 2
+
+[node name="PortLabel" type="Label" parent="UI/Root/Layout/Panel/Pages/JoinPage/PortRow"]
+layout_mode = 2
+text = "Porta"
+
+[node name="JoinPort" type="LineEdit" parent="UI/Root/Layout/Panel/Pages/JoinPage/PortRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+max_length = 5
+
+[node name="JoinError" type="Label" parent="UI/Root/Layout/Panel/Pages/JoinPage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.06, 0.04, 1)
+theme_override_constants/outline_size = 0
+horizontal_alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="UI/Root/Layout/Panel/Pages/JoinPage"]
+layout_mode = 2
+
+[node name="JoinBack" type="Button" parent="UI/Root/Layout/Panel/Pages/JoinPage/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Voltar"
+
+[node name="JoinConnect" type="Button" parent="UI/Root/Layout/Panel/Pages/JoinPage/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Conectar"
+
+[node name="Version" type="Label" parent="UI/Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -60.0
+offset_top = -20.0
+offset_right = -6.0
+offset_bottom = -2.0
+grow_horizontal = 0
+grow_vertical = 0
+text = "v0.0.1"
+horizontal_alignment = 2

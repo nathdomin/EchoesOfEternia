@@ -29,7 +29,9 @@ Só o dono edita as cenas `.tscn` da sua área.
 
 ## Rodar o jogo
 
-**F5** abre a cena principal (`scenes/main/main.tscn`). Controles: **WASD** ou **setas**.
+**F5** abre o **menu**: digite seu nome e escolha **Hospedar partida** (mostra seus IPs — clique para copiar — e a porta) ou **Entrar em partida** (IP e porta do host). Por enquanto os dois botões só abrem o jogo local; a conexão real chega na E5.
+
+No jogo, controles: **WASD** ou **setas**.
 
 **Mapa da vila:** `scenes/maps/village.tscn`. Para editar, abra a cena e pinte com o painel TileMap: `Ground` (chão, terra, água), `GroundDetail` (flores pequenas) ou `Objects` (árvores, casas, barracas — com colisão). Mantenha as saídas norte e leste livres: elas levam às futuras áreas.
 
