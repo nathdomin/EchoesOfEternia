@@ -1,0 +1,408 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu"]
+[ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
+[ext_resource type="Shader" path="res://shaders/parchment.gdshader" id="3_parch"]
+[ext_resource type="Shader" path="res://shaders/illuminated_box.gdshader" id="4_box"]
+[ext_resource type="FontFile" path="res://assets/ui/fonts/jacquard24.ttf" id="5_gothic"]
+[ext_resource type="AudioStream" path="res://audio/music/36 - Village.ogg" id="6_music"]
+[ext_resource type="SpriteFrames" path="res://resources/characters/knight_frames.tres" id="7_knight"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Shadow.png" id="8_shadow"]
+
+[sub_resource type="ShaderMaterial" id="Mat_parch"]
+shader = ExtResource("3_parch")
+
+[sub_resource type="ShaderMaterial" id="Mat_box"]
+shader = ExtResource("4_box")
+shader_parameter/size = Vector2(136, 176)
+shader_parameter/window_rect = Vector4(12, 22, 88, 140)
+
+[sub_resource type="Gradient" id="Grad_dot"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.4, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="Tex_dot"]
+gradient = SubResource("Grad_dot")
+width = 3
+height = 3
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[sub_resource type="Gradient" id="Grad_mote"]
+offsets = PackedFloat32Array(0, 0.2, 0.8, 1)
+colors = PackedColorArray(0.85, 0.6, 0.2, 0, 0.85, 0.62, 0.22, 0.55, 0.85, 0.6, 0.2, 0.4, 0.85, 0.6, 0.2, 0)
+
+[sub_resource type="Gradient" id="Grad_rule"]
+offsets = PackedFloat32Array(0, 0.15, 0.85, 1)
+colors = PackedColorArray(0.85, 0.64, 0.24, 0, 0.85, 0.64, 0.24, 1, 0.85, 0.64, 0.24, 1, 0.85, 0.64, 0.24, 0)
+
+[sub_resource type="GradientTexture1D" id="Tex_rule"]
+gradient = SubResource("Grad_rule")
+width = 200
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="VillageViewport" type="SubViewport" parent="."]
+canvas_item_default_texture_filter = 0
+snap_2d_transforms_to_pixel = true
+size = Vector2i(88, 140)
+render_target_update_mode = 4
+
+[node name="Village" parent="VillageViewport" instance=ExtResource("2_village")]
+
+[node name="Tint" type="CanvasModulate" parent="VillageViewport"]
+color = Color(1, 0.9, 0.78, 1)
+
+[node name="Camera2D" type="Camera2D" parent="VillageViewport"]
+
+[node name="Knight" type="Node2D" parent="VillageViewport/Camera2D"]
+position = Vector2(0, 14)
+
+[node name="Shadow" type="Sprite2D" parent="VillageViewport/Camera2D/Knight"]
+modulate = Color(1, 1, 1, 0.6)
+position = Vector2(0, -1)
+texture = ExtResource("8_shadow")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="VillageViewport/Camera2D/Knight"]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("7_knight")
+animation = &"walk_down"
+
+[node name="Parchment" type="ColorRect" parent="."]
+material = SubResource("Mat_parch")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Motes" type="CPUParticles2D" parent="."]
+position = Vector2(240, 140)
+amount = 22
+lifetime = 9.0
+preprocess = 9.0
+texture = SubResource("Tex_dot")
+emission_shape = 3
+emission_rect_extents = Vector2(210, 110)
+direction = Vector2(1, -0.3)
+spread = 60.0
+gravity = Vector2(0, -1)
+initial_velocity_min = 2.0
+initial_velocity_max = 6.0
+color_ramp = SubResource("Grad_mote")
+
+[node name="Capital" type="Control" parent="."]
+anchors_preset = 0
+offset_left = 36.0
+offset_top = 40.0
+offset_right = 172.0
+offset_bottom = 216.0
+mouse_filter = 2
+
+[node name="VillageView" type="TextureRect" parent="Capital"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 12.0
+offset_top = 22.0
+offset_right = 100.0
+offset_bottom = 162.0
+mouse_filter = 2
+stretch_mode = 2
+
+[node name="Box" type="ColorRect" parent="Capital"]
+material = SubResource("Mat_box")
+layout_mode = 0
+offset_right = 136.0
+offset_bottom = 176.0
+mouse_filter = 2
+
+[node name="Letter" type="Label" parent="Capital"]
+layout_mode = 0
+offset_left = 44.0
+offset_top = -42.0
+offset_right = 152.0
+offset_bottom = 118.0
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.98, 0.82, 0.38, 1)
+theme_override_colors/font_shadow_color = Color(0.32, 0.12, 0.08, 1)
+theme_override_colors/font_outline_color = Color(0.14, 0.06, 0.06, 1)
+theme_override_constants/shadow_offset_x = 2
+theme_override_constants/shadow_offset_y = 3
+theme_override_constants/outline_size = 8
+theme_override_fonts/font = ExtResource("5_gothic")
+theme_override_font_sizes/font_size = 144
+text = "E"
+horizontal_alignment = 2
+
+[node name="Text" type="VBoxContainer" parent="."]
+anchors_preset = 0
+offset_left = 186.0
+offset_top = 34.0
+offset_right = 446.0
+offset_bottom = 248.0
+theme_override_constants/separation = 0
+
+[node name="TitleRest" type="Label" parent="Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_shadow_color = Color(0.2, 0.11, 0.08, 0.25)
+theme_override_constants/shadow_offset_x = 1
+theme_override_constants/shadow_offset_y = 2
+theme_override_fonts/font = ExtResource("5_gothic")
+theme_override_font_sizes/font_size = 48
+text = "choes"
+
+[node name="TitleSub" type="Label" parent="Text"]
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
+theme_override_fonts/font = ExtResource("5_gothic")
+theme_override_font_sizes/font_size = 24
+text = "of Eternia"
+
+[node name="Tagline" type="Label" parent="Text"]
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Um RPG de ação para até quatro aventureiros"
+
+[node name="Rule" type="TextureRect" parent="Text"]
+custom_minimum_size = Vector2(200, 1)
+layout_mode = 2
+size_flags_horizontal = 0
+texture = SubResource("Tex_rule")
+expand_mode = 1
+
+[node name="Gap" type="Control" parent="Text"]
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+
+[node name="MainPage" type="VBoxContainer" parent="Text"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = -2
+
+[node name="HostButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
+text = "Hospedar partida"
+alignment = 0
+
+[node name="JoinButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
+text = "Entrar em partida"
+alignment = 0
+
+[node name="QuitButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
+text = "Sair"
+alignment = 0
+
+[node name="HostPage" type="VBoxContainer" parent="Text"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="NameRow" type="HBoxContainer" parent="Text/HostPage"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Text/HostPage/NameRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Nome"
+
+[node name="HostName" type="LineEdit" parent="Text/HostPage/NameRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+placeholder_text = "Jogador"
+max_length = 16
+
+[node name="PortRow" type="HBoxContainer" parent="Text/HostPage"]
+layout_mode = 2
+
+[node name="PortLabel" type="Label" parent="Text/HostPage/PortRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Porta"
+
+[node name="HostPort" type="LineEdit" parent="Text/HostPage/PortRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+max_length = 5
+
+[node name="IpHint" type="Label" parent="Text/HostPage"]
+modulate = Color(1, 1, 1, 0.75)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Seus IPs (clique para copiar):"
+
+[node name="IpList" type="VBoxContainer" parent="Text/HostPage"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = -2
+
+[node name="HostError" type="Label" parent="Text/HostPage"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
+
+[node name="Buttons" type="HBoxContainer" parent="Text/HostPage"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="HostStart" type="Button" parent="Text/HostPage/Buttons" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkMenuButton"
+text = "Iniciar"
+
+[node name="HostBack" type="Button" parent="Text/HostPage/Buttons" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkMenuButton"
+text = "Voltar"
+
+[node name="JoinPage" type="VBoxContainer" parent="Text"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 1
+
+[node name="NameRow" type="HBoxContainer" parent="Text/JoinPage"]
+layout_mode = 2
+
+[node name="NameLabel" type="Label" parent="Text/JoinPage/NameRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Nome"
+
+[node name="JoinName" type="LineEdit" parent="Text/JoinPage/NameRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+placeholder_text = "Jogador"
+max_length = 16
+
+[node name="IpRow" type="HBoxContainer" parent="Text/JoinPage"]
+layout_mode = 2
+
+[node name="IpLabel" type="Label" parent="Text/JoinPage/IpRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "IP"
+
+[node name="JoinIp" type="LineEdit" parent="Text/JoinPage/IpRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+placeholder_text = "192.168.0.10"
+max_length = 15
+
+[node name="PortRow" type="HBoxContainer" parent="Text/JoinPage"]
+layout_mode = 2
+
+[node name="PortLabel" type="Label" parent="Text/JoinPage/PortRow"]
+custom_minimum_size = Vector2(44, 0)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Porta"
+
+[node name="JoinPort" type="LineEdit" parent="Text/JoinPage/PortRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+max_length = 5
+
+[node name="JoinError" type="Label" parent="Text/JoinPage"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
+
+[node name="Buttons" type="HBoxContainer" parent="Text/JoinPage"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="JoinConnect" type="Button" parent="Text/JoinPage/Buttons" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkMenuButton"
+text = "Conectar"
+
+[node name="JoinBack" type="Button" parent="Text/JoinPage/Buttons" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"InkMenuButton"
+text = "Voltar"
+
+[node name="Hint" type="Label" parent="."]
+modulate = Color(1, 1, 1, 0.55)
+layout_mode = 0
+offset_left = 36.0
+offset_top = 228.0
+offset_right = 260.0
+offset_bottom = 244.0
+theme_type_variation = &"InkLabel"
+text = "Setas escolhem - Enter confirma - Esc volta"
+
+[node name="Version" type="Label" parent="."]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.55)
+layout_mode = 0
+offset_left = 380.0
+offset_top = 228.0
+offset_right = 444.0
+offset_bottom = 244.0
+theme_type_variation = &"InkLabel"
+text = "v0.0.1"
+horizontal_alignment = 2
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("6_music")
+volume_db = -30.0
+
+[node name="FadeLayer" type="CanvasLayer" parent="."]
+layer = 20
+
+[node name="Fade" type="ColorRect" parent="FadeLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.03, 0.01, 0.03, 1)

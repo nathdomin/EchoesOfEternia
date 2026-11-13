@@ -8,7 +8,7 @@ extends Control
 ##   --host          hospeda na porta 7777
 ##   --join=IP       conecta no IP informado
 
-const PORT := 7777
+const PORT := NetUtils.DEFAULT_PORT
 const MAX_CLIENTS := 3 # o host ja e o jogador 4
 
 var _ip_edit: LineEdit
@@ -140,14 +140,6 @@ func _handle_cmdline() -> void:
 			return
 
 
-func _local_ipv4() -> PackedStringArray:
-	var out := PackedStringArray()
-	for addr in IP.get_local_addresses():
-		if addr.count(".") == 3 and not addr.begins_with("127.") and not addr.begins_with("169.254."):
-			out.append(addr)
-	return out
-
-
 func _write(msg: String) -> void:
 	var line := "[%s] %s" % [Time.get_time_string_from_system(), msg]
 	print(line)
@@ -174,7 +166,9 @@ func _build_ui() -> void:
 	box.add_child(title)
 
 	var ips := Label.new()
-	var list := _local_ipv4()
+	var list := PackedStringArray()
+	for item in NetUtils.local_ipv4():
+		list.append("%s (%s)" % [item.ip, item.kind])
 	ips.text = "Meus IPv4: " + (", ".join(list) if not list.is_empty() else "(nenhum encontrado)")
 	ips.autowrap_mode = TextServer.AUTOWRAP_WORD
 	box.add_child(ips)

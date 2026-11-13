@@ -43,13 +43,18 @@ Demo acadêmica de RPG de ação multiplayer (2–4 jogadores) em pixel art, God
 - GDScript com tipagem estática (`:=`, `-> void`), tabs, snake_case para arquivos.
 - Scripts em `scripts/<sistema>/`, cenas em `scenes/<categoria>/`.
 - `*.import` são versionados; `.godot/` e `export/` não.
-- Cena principal: `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
+- Cena inicial: `scenes/ui/main_menu.tscn` (menu). O jogo é `scenes/main/main.tscn`. `scenes/debug/net_test.tscn` é o teste de rede do Gate 0 (rodar com F6).
+- Autoload `Session` (`scripts/systems/session.gd`): modo HOST/JOIN, IP, porta e nome escolhidos no menu. O NetworkManager (E5) lê daqui.
+- `NetUtils` (`scripts/multiplayer/net_utils.gd`): porta padrão, lista de IPv4 (LAN/Tailscale) e validação de IP/porta. Reutilizar em vez de duplicar.
+- UI: tema global `resources/ui/ninja_theme.tres` (Theme Wood do Ninja Adventure). Variações: `TextMenuButton` (botão só texto, dourado ao focar; o menu põe a seta como ícone) e `DarkPanel` (painel escuro translúcido). Não nomear variações com nomes de classes do Godot (ex.: `MenuButton`), senão o tema não aplica. Fontes Kenney (CC0) em `assets/ui/fonts/`: `kenney_pixel.ttf` tamanho 16 (texto) e `kenney_mini.ttf` tamanhos 8/16/24 (títulos). Não usar a `NormalFont.ttf` do Ninja Adventure: o "i" e o espaço são defeituosos.
+- Identidade visual do menu: **manuscrito medieval iluminado**. Pergaminho e moldura com vinhas em `shaders/parchment.gdshader`; capitular azul e dourada em `shaders/illuminated_box.gdshader`, com janela em arco mostrando a vila ao vivo (SubViewport). Letra gótica pixel **Jacquard 24** (títulos, tamanhos múltiplos de 24) e **Jacquard 12** (opções, tamanho 24). Variações de tema em tinta: `InkMenuButton` (vermelho de rubrica ao focar), `InkLabel`, `InkLineEdit` (só linha embaixo), `InkFlatButton`. Usar o mesmo estilo nas próximas telas (pausa, diálogo, missão).
 - Input actions: `move_left/right/up/down` (WASD + setas), definidas no `project.godot`.
 
 ## Estado das etapas
 - E1 ✅ estrutura e config pixel art
 - E2 ✅ player local (8 direções de movimento, animação em 4 direções, sombra, câmera) — `scenes/characters/player.tscn`, `scripts/player/player.gd`
 - E3 ✅ vila 56×36 — `scenes/maps/village.tscn`, `scripts/maps/village.gd` (SpawnPoint, `get_bounds()`), `scripts/main/main.gd`
+- E4 ✅ menu Hospedar/Entrar — `scenes/ui/main_menu.tscn`, `scripts/ui/main_menu.gd` (valida IP/porta, lista IPs com clique para copiar, grava em `Session`; ainda sem rede real)
 - Gate 0 ⏳ falta o teste entre 2 PCs reais
 
 ## Mapas
