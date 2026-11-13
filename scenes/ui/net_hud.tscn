@@ -1,0 +1,29 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/net_hud.gd" id="1_hud"]
+
+[node name="NetHud" type="CanvasLayer"]
+layer = 8
+script = ExtResource("1_hud")
+
+[node name="Status" type="Label" parent="."]
+unique_name_in_owner = true
+offset_left = 6.0
+offset_top = 4.0
+offset_right = 240.0
+offset_bottom = 20.0
+text = "Offline"
+
+[node name="Log" type="VBoxContainer" parent="."]
+unique_name_in_owner = true
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = -110.0
+offset_right = 300.0
+offset_bottom = -4.0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/separation = -2
+alignment = 2

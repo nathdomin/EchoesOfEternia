@@ -38,6 +38,13 @@ var _leaving := false
 
 
 func _ready() -> void:
+	# --host / --join=IP na linha de comando: pula o menu (testes rapidos)
+	if Session.apply_cmdline():
+		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
+		return
+	_show_notice(Session.last_error)
+	Session.last_error = ""
+
 	%HostButton.pressed.connect(_show_page.bind(_host_page))
 	%JoinButton.pressed.connect(_show_page.bind(_join_page))
 	%QuitButton.pressed.connect(_quit)
@@ -108,6 +115,12 @@ func _show_page(page: Control) -> void:
 		_join_ip.grab_focus()
 	page.modulate.a = 0.0
 	create_tween().tween_property(page, "modulate:a", 1.0, 0.25)
+
+
+## Aviso no topo das opcoes (ex.: motivo de ter voltado da partida).
+func _show_notice(msg: String) -> void:
+	%Notice.text = msg
+	%Notice.visible = not msg.is_empty()
 
 
 ## A mensagem de erro so ocupa espaco quando existe.

@@ -29,13 +29,22 @@ Só o dono edita as cenas `.tscn` da sua área.
 
 ## Rodar o jogo
 
-**F5** abre o **menu**: digite seu nome e escolha **Hospedar partida** (mostra seus IPs — clique para copiar — e a porta) ou **Entrar em partida** (IP e porta do host). Por enquanto os dois botões só abrem o jogo local; a conexão real chega na E5.
+**F5** abre o **menu**: digite seu nome e escolha **Hospedar partida** (mostra seus IPs — clique para copiar — e a porta) ou **Entrar em partida** (IP e porta do host). A conexão é real: quem hospeda vê "Fulano entrou na partida" e o contador de jogadores no canto. **Esc** sai da partida e volta ao menu.
 
 No jogo, controles: **WASD** ou **setas**.
 
 **Mapa da vila:** `scenes/maps/village.tscn`. Para editar, abra a cena e pinte com o painel TileMap: `Ground` (chão, terra, água), `GroundDetail` (flores pequenas) ou `Objects` (árvores, casas, barracas — com colisão). Mantenha as saídas norte e leste livres: elas levam às futuras áreas.
 
 **Arte:** pacote Ninja Adventure (CC0). Veja `assets/LICENSES.md` antes de adicionar qualquer asset.
+
+## Testar com várias janelas (sem clicar no menu)
+
+No editor: **Debug → Customize Run Instances**, ative *Enable Multiple Instances* e use nos argumentos de cada instância:
+
+- instância 1: `--host --name=Ana`
+- instância 2: `--join=127.0.0.1 --name=Bia`
+
+Também funcionam `--port=N` e, só em build de debug, `--fake-version=0.0.0` (testa a recusa por versão diferente).
 
 ## Teste de rede (Gate 0)
 
