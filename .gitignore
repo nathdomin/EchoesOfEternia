@@ -1,0 +1,13 @@
+# Godot
+.godot/
+
+# Exportacoes (vao para a Release do GitHub, nao para o repo)
+export/*
+!export/.gdignore
+
+# Diversos
+*.tmp
+*.translation
+.DS_Store
+Thumbs.db
+~$*
