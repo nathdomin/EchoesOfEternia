@@ -15,7 +15,7 @@ shader = ExtResource("3_parch")
 [sub_resource type="ShaderMaterial" id="Mat_box"]
 shader = ExtResource("4_box")
 shader_parameter/size = Vector2(136, 176)
-shader_parameter/window_rect = Vector4(34, 22, 88, 140)
+shader_parameter/window_rect = Vector4(12, 22, 88, 140)
 
 [sub_resource type="Gradient" id="Grad_dot"]
 offsets = PackedFloat32Array(0, 0.5, 1)
@@ -112,9 +112,9 @@ mouse_filter = 2
 [node name="VillageView" type="TextureRect" parent="Capital"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 34.0
+offset_left = 12.0
 offset_top = 22.0
-offset_right = 122.0
+offset_right = 100.0
 offset_bottom = 162.0
 mouse_filter = 2
 stretch_mode = 2
@@ -128,10 +128,10 @@ mouse_filter = 2
 
 [node name="Letter" type="Label" parent="Capital"]
 layout_mode = 0
-offset_left = -22.0
-offset_top = -10.0
-offset_right = 86.0
-offset_bottom = 150.0
+offset_left = 44.0
+offset_top = -42.0
+offset_right = 152.0
+offset_bottom = 118.0
 theme_type_variation = &"InkLabel"
 theme_override_colors/font_color = Color(0.98, 0.82, 0.38, 1)
 theme_override_colors/font_shadow_color = Color(0.32, 0.12, 0.08, 1)
@@ -142,11 +142,11 @@ theme_override_constants/outline_size = 8
 theme_override_fonts/font = ExtResource("5_gothic")
 theme_override_font_sizes/font_size = 144
 text = "E"
-horizontal_alignment = 1
+horizontal_alignment = 2
 
 [node name="Text" type="VBoxContainer" parent="."]
 anchors_preset = 0
-offset_left = 182.0
+offset_left = 186.0
 offset_top = 34.0
 offset_right = 446.0
 offset_bottom = 248.0
