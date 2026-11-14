@@ -1,17 +1,25 @@
 extends Node
-## Autoload "NetworkManager" (E5-E7): servidor dedicado ou cliente ENet com
-## DTLS, login com conta e senha e lista de jogadores igual em todas as maquinas.
+## Autoload "NetworkManager" (E5-E10): servidor dedicado ou cliente ENet com
+## DTLS, login com conta e senha, reconexao com token e lista de jogadores
+## igual em todas as maquinas.
 ##
 ## O servidor e dedicado (E6): nao e um jogador. Ele so existe no peer 1 e
 ## nunca aparece em `players`.
 ##
-## Fluxo do cliente: conecta (DTLS) -> envia _login(versao, conta, senha,
-## criar) -> o servidor valida e confere a senha -> todos recebem
+## Fluxo do cliente: conecta (DTLS) -> envia _login(versao, conta, segredo,
+## modo) -> o servidor valida -> envia o token de reconexao -> todos recebem
 ## _sync_players e _notify_join. Uma tentativa de login por conexao.
+## Modos: LOGIN (senha), CREATE (cria a conta) e RESUME (token, E10).
+##
+## Queda (E10): se a conexao de um cliente ja aceito cair sem o servidor ter
+## dado motivo, sai `connection_lost` em vez de `connection_ended`, e a cena
+## do jogo tenta reconectar com o token.
 ## O servidor e a autoridade: so ele altera `players`.
 
 signal connection_ready                 ## servidor iniciou / cliente foi aceito
 signal connection_ended(reason: String) ## caiu, foi recusado ou saiu
+## Cliente: a conexao caiu sem motivo do servidor (da para reconectar).
+signal connection_lost
 signal player_joined(id: int, player_name: String)
 signal player_left(id: int, player_name: String)
 signal players_changed
@@ -20,8 +28,12 @@ signal system_message(text: String)
 signal account_logged_in(id: int, account_key: String, display_name: String)
 signal account_logged_out(id: int, account_key: String)
 
+enum LoginMode { LOGIN, CREATE, RESUME }
+
 const DEFAULT_MAX_PLAYERS := 16
 const LOGIN_TIMEOUT := 10.0  ## segundos para o cliente fazer login (inclui o DTLS)
+## Cliente: desiste de conectar depois disso (o ENet sozinho demora ~10 s).
+const CONNECT_TIMEOUT := 5.0
 ## Tempo (ms) para considerar uma conexao perdida: min e max do ENet.
 const TIMEOUT_MIN_MS := 3000
 const TIMEOUT_MAX_MS := 6000
@@ -31,9 +43,12 @@ var players: Dictionary = {}
 var is_online := false
 ## Vagas do servidor (configuravel com --max-players=N).
 var max_players := DEFAULT_MAX_PLAYERS
+## Cliente: o ultimo fim de conexao foi uma recusa do servidor (com motivo).
+var last_end_was_rejection := false
 
 # So no servidor:
 var _accounts: AccountStore
+var _tokens: SessionTokens
 var _guard := LoginGuard.new()
 ## peer_id -> chave da conta logada nessa conexao
 var _peer_account: Dictionary = {}
@@ -42,6 +57,7 @@ var _login_tried: Dictionary = {}
 
 var _accepted := false
 var _end_reason := ""
+var _end_reason_from_server := false
 ## Versao enviada no aperto de mao. Em builds de debug pode ser trocada com
 ## --fake-version=X para testar a recusa por versao diferente.
 var _version := GameVersion.VERSION
@@ -69,10 +85,11 @@ func start_from_session() -> Error:
 
 
 ## Inicia o servidor dedicado (sem jogador proprio), com DTLS.
-func start_server(port: int, p_max_players: int, accounts: AccountStore, tls: TLSOptions) -> Error:
+func start_server(port: int, p_max_players: int, accounts: AccountStore, tokens: SessionTokens, tls: TLSOptions) -> Error:
 	_reset()
 	max_players = p_max_players
 	_accounts = accounts
+	_tokens = tokens
 	var peer := ENetMultiplayerPeer.new()
 	# Uma vaga a mais no ENet: quem chega com o servidor cheio recebe a
 	# mensagem "servidor cheio" em vez de um erro generico de conexao.
@@ -105,6 +122,10 @@ func join(ip: String, port: int) -> Error:
 	_set_timeout(peer, 1)
 	is_online = true
 	_log("Conectando em %s:%d..." % [ip, port])
+	get_tree().create_timer(CONNECT_TIMEOUT).timeout.connect(func() -> void:
+		# ainda e a mesma tentativa e nao conectou: falhou
+		if multiplayer.multiplayer_peer == peer and 				peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTING:
+			_on_connection_failed())
 	if not NetSecurity.is_pinned():
 		print("[Rede] Conexao cifrada (DTLS) sem certificado fixo: o servidor nao e verificado.")
 	return OK
@@ -173,7 +194,11 @@ func _drop_player(id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
-	_login.rpc_id(1, _version, Session.account, Session.take_password(), Session.create_account)
+	if Session.resuming:
+		_login.rpc_id(1, _version, Session.account, Session.resume_token, LoginMode.RESUME)
+	else:
+		_login.rpc_id(1, _version, Session.account, Session.take_password(),
+				LoginMode.CREATE if Session.create_account else LoginMode.LOGIN)
 
 
 func _on_connection_failed() -> void:
@@ -181,6 +206,12 @@ func _on_connection_failed() -> void:
 
 
 func _on_server_disconnected() -> void:
+	# Queda de uma sessao aceita, sem motivo do servidor: da para reconectar
+	if _accepted and _end_reason.is_empty() and not Session.resume_token.is_empty():
+		_log("Conexão perdida")
+		leave()
+		connection_lost.emit()
+		return
 	if _end_reason.is_empty():
 		_end_reason = "O servidor foi desligado ou a conexão caiu" if _accepted else "O servidor recusou a conexão"
 	_finish(_end_reason)
@@ -188,10 +219,10 @@ func _on_server_disconnected() -> void:
 
 # ---------- RPCs ----------
 
-## Cliente -> servidor: versao, conta e senha (cifradas pelo DTLS).
-## `create` = criar a conta nova em vez de entrar numa existente.
+## Cliente -> servidor: versao, conta e segredo (cifrados pelo DTLS).
+## `secret` e a senha (LOGIN/CREATE) ou o token de reconexao (RESUME).
 @rpc("any_peer", "call_remote", "reliable")
-func _login(version: String, username: String, password: String, create: bool) -> void:
+func _login(version: String, username: String, secret: String, mode: int) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
@@ -204,6 +235,7 @@ func _login(version: String, username: String, password: String, create: bool) -
 	if players.size() >= max_players:
 		_reject(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
 		return
+	var create := mode == LoginMode.CREATE
 	username = username.strip_edges()
 	var ip := _peer_ip(id)
 	var key := AccountStore.key_of(username)
@@ -212,7 +244,14 @@ func _login(version: String, username: String, password: String, create: bool) -
 		_reject(id, blocked)
 		return
 
-	var result := _accounts.create(username, password) if create else _accounts.verify(username, password)
+	var result: Dictionary
+	match mode:
+		LoginMode.CREATE:
+			result = _accounts.create(username, secret)
+		LoginMode.RESUME:
+			result = _resume(secret)
+		_:
+			result = _accounts.verify(username, secret)
 	if not result.ok:
 		if not create:  # so senha errada conta como tentativa (forca bruta)
 			_guard.login_failed(ip, key)
@@ -232,16 +271,35 @@ func _login(version: String, username: String, password: String, create: bool) -
 		_drop_player(old_id)
 		_reject(old_id, "Sua conta entrou em outro lugar.")
 	_peer_account[id] = result.key
+	# Token de reconexao (antes da lista: chega antes do "aceito")
+	_session_token.rpc_id(id, _tokens.issue(result.key))
+	if mode == LoginMode.RESUME:
+		_log("%s reconectou" % result.name, false)
 	account_logged_in.emit(id, result.key, result.name)
 	players[id] = {"name": result.name}
 	_broadcast(_sync_players, [players])
 	_broadcast(_notify_join, [id, players[id].name], true)
 
 
+func _resume(token: String) -> Dictionary:
+	var account := _tokens.consume(token)
+	var display := _accounts.display_name(account) if not account.is_empty() else ""
+	if display.is_empty():
+		return {"ok": false, "error": "A sessão expirou. Entre de novo com a sua senha."}
+	return {"ok": true, "key": account, "name": display}
+
+
+## Servidor -> cliente: token para reconectar sem a senha.
+@rpc("authority", "call_remote", "reliable")
+func _session_token(token: String) -> void:
+	Session.resume_token = token
+
+
 ## Servidor -> cliente: conexao recusada, com o motivo.
 @rpc("authority", "call_remote", "reliable")
 func _rejected(reason: String) -> void:
 	_end_reason = reason
+	_end_reason_from_server = true
 
 
 ## Servidor -> todos: lista oficial de jogadores.
@@ -309,6 +367,7 @@ func _kick_later(id: int) -> void:
 
 
 func _finish(reason: String) -> void:
+	last_end_was_rejection = _end_reason_from_server
 	var was_online := is_online
 	leave()
 	if was_online:
@@ -322,6 +381,7 @@ func _reset() -> void:
 	is_online = false
 	_accepted = false
 	_end_reason = ""
+	_end_reason_from_server = false
 
 
 ## `show` = tambem mostrar como mensagem de sistema no jogo.

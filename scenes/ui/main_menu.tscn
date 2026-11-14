@@ -221,7 +221,7 @@ alignment = 0
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 1
+theme_override_constants/separation = -3
 
 [node name="AccountRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2

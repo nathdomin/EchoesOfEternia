@@ -121,6 +121,12 @@ func verify(username: String, password: String) -> Dictionary:
 	return {"ok": true, "key": account.username, "name": account.display_name}
 
 
+## Nome de exibicao da conta ("" se nao existir). Usado na reconexao.
+func display_name(account_key: String) -> String:
+	var account: Variant = JsonStore.load_json(_path(account_key))
+	return String(account.get("display_name", "")) if account is Dictionary else ""
+
+
 # ---------- hash ----------
 
 ## PBKDF2-HMAC-SHA256 com 32 bytes de saida (conferido com os vetores da RFC 7914).

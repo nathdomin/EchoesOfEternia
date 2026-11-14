@@ -44,7 +44,7 @@ func _ready() -> void:
 	var tls := NetSecurity.server_options(data_dir)
 	_print_banner(port, max_players, data_dir, accounts.count())
 
-	var err := NetworkManager.start_server(port, max_players, accounts, tls)
+	var err := NetworkManager.start_server(port, max_players, accounts, SessionTokens.new(data_dir), tls)
 	if err != OK:
 		printerr("ERRO: nao foi possivel abrir a porta UDP %d com DTLS (%s). Ela ja esta em uso?" % [port, error_string(err)])
 		get_tree().quit(1)

@@ -23,6 +23,10 @@ var account := ""
 ## Senha so fica na memoria ate ser enviada ao servidor (nunca e gravada).
 var password := ""
 var create_account := false
+## Token de reconexao recebido no login (E10). So na memoria.
+var resume_token := ""
+## true = a proxima conexao usa o token em vez da senha
+var resuming := false
 ## Motivo da ultima saida do servidor (mostrado no menu e depois limpo).
 var last_error := ""
 
@@ -39,6 +43,7 @@ func _ready() -> void:
 
 func setup_join(p_ip: String, p_port: int, p_account: String, p_password: String, p_create: bool) -> void:
 	mode = Mode.JOIN
+	resuming = false
 	host_ip = p_ip.strip_edges()
 	port = p_port
 	account = p_account.strip_edges()
@@ -53,9 +58,17 @@ func take_password() -> String:
 	return p
 
 
+## Reconexao: mesmo servidor e conta, com o token.
+func setup_resume() -> void:
+	mode = Mode.JOIN
+	resuming = true
+
+
 func reset() -> void:
 	mode = Mode.NONE
 	password = ""
+	resume_token = ""
+	resuming = false
 
 
 ## Lembra servidor e conta para a proxima vez (nunca a senha).
