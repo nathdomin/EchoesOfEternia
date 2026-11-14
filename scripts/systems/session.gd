@@ -9,7 +9,8 @@ extends Node
 ##   --data=PASTA          servidor: onde ficam contas e chave (padrao user://data)
 ##   --join=IP             cliente: conecta direto, pulando o menu
 ##   --user=X --pass=Y     cliente: conta e senha (so em build de debug)
-##   --create              cliente: cria a conta em vez de entrar (debug)
+##   --create              cliente: cria a conta se ainda nao existir (debug);
+##                         se ja existir, entra com ela
 
 enum Mode { NONE, JOIN }
 
@@ -26,6 +27,9 @@ var create_account := false
 var last_error := ""
 
 var _cmdline_used := false
+## Debug: --create na linha de comando. Se a conta ja existir, o menu tenta
+## entrar com ela usando esta senha (so existe em build de debug).
+var cmdline_retry_password := ""
 
 
 func _ready() -> void:
@@ -126,6 +130,8 @@ func apply_cmdline() -> bool:
 	var p := _arg_value("--port=", str(port))
 	setup_join(ip, int(p) if NetUtils.is_valid_port(p) else port,
 			user, pw, "--create" in _args())
+	if create_account:
+		cmdline_retry_password = pw
 	return true
 
 

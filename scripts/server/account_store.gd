@@ -19,6 +19,7 @@ const USERNAME_MAX := 16
 const PASSWORD_MIN := 6
 const PASSWORD_MAX := 64
 const MAX_ACCOUNTS := 2000
+const MSG_EXISTS := "Esta conta já existe. Escolha outro nome ou entre com ela."
 const RESERVED := ["admin", "administrador", "servidor", "server", "sistema", "system", "moderador", "gm"]
 
 var _dir: String
@@ -75,7 +76,7 @@ func create(username: String, password: String) -> Dictionary:
 	if err.is_empty() and key_of(username) in RESERVED:
 		err = "Este nome de conta é reservado."
 	if err.is_empty() and exists(username):
-		err = "Esta conta já existe. Escolha outro nome ou entre com ela."
+		err = MSG_EXISTS
 	if err.is_empty() and count() >= MAX_ACCOUNTS:
 		err = "O servidor não aceita novas contas no momento."
 	if not err.is_empty():

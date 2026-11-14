@@ -1,7 +1,6 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Texture2D" path="res://assets/effects/ninja/Particle/Leaf.png" id="1_leaf"]
-[ext_resource type="Texture2D" path="res://assets/effects/ninja/Environment/Raylight.png" id="2_ray"]
 [ext_resource type="Shader" path="res://shaders/vignette.gdshader" id="3_vig"]
 
 [sub_resource type="CanvasItemMaterial" id="Mat_leaf"]
@@ -38,9 +37,6 @@ shader = ExtResource("3_vig")
 shader_parameter/strength = 0.35
 shader_parameter/radius = 0.55
 shader_parameter/softness = 0.45
-
-[sub_resource type="CanvasItemMaterial" id="Mat_ray"]
-blend_mode = 1
 
 [node name="Ambience" type="Node2D"]
 
@@ -90,12 +86,6 @@ color_ramp = SubResource("Grad_firefly")
 
 [node name="Screen" type="CanvasLayer" parent="."]
 layer = 5
-
-[node name="Raylight" type="Sprite2D" parent="Screen"]
-modulate = Color(1, 0.95, 0.8, 0.35)
-material = SubResource("Mat_ray")
-texture = ExtResource("2_ray")
-centered = false
 
 [node name="Vignette" type="ColorRect" parent="Screen"]
 material = SubResource("Mat_vig")

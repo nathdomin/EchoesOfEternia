@@ -208,6 +208,7 @@ func _on_login_ok() -> void:
 	if not _connecting:
 		return
 	Session.create_account = false
+	Session.cmdline_retry_password = ""
 	Session.save_prefs()
 	_set_error(_join_error, "Entrando no mundo...", Color(0.24, 0.17, 0.12))
 	_leave_to(GAME_SCENE)
@@ -217,6 +218,16 @@ func _on_login_failed(reason: String) -> void:
 	if not _connecting or _leaving:
 		return
 	print("[Rede] Login nao concluido: ", reason)
+	# --create na linha de comando e a conta ja existe: entra com ela
+	if reason == AccountStore.MSG_EXISTS and not Session.cmdline_retry_password.is_empty():
+		var pw := Session.cmdline_retry_password
+		Session.cmdline_retry_password = ""
+		print("[Rede] Conta ja existe; entrando com ela")
+		Session.setup_join(Session.host_ip, Session.port, Session.account, pw, false)
+		_open_login(false)
+		_start_login.call_deferred()  # fora do sinal da conexao que acabou de fechar
+		return
+	Session.cmdline_retry_password = ""
 	Session.reset()
 	_set_busy(false)
 	_set_error(_join_error, reason)

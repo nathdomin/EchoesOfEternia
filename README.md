@@ -52,7 +52,7 @@ No editor: **Debug → Customize Run Instances**, ative *Enable Multiple Instanc
 - instância 2: `--join=127.0.0.1 --user=Ana --pass=segredo1`
 - instância 3: `--join=127.0.0.1 --user=Bia --pass=segredo2`
 
-Na primeira vez acrescente `--create` em cada cliente (cria a conta). Depois tire o `--create`: a conta já existe.
+Acrescente `--create` para criar a conta se ela ainda não existir (se já existir, o jogo entra com ela). Entrar com uma conta que já está online derruba a sessão anterior, que é salva antes.
 
 Servidor: `--port=N`, `--max-players=N` e `--data=PASTA` (padrão 7777, 16 e `user://data`, onde ficam as contas). Cliente (só em build de debug, pula o menu): `--join=IP`, `--port=N`, `--user=X`, `--pass=Y`, `--create` e `--fake-version=0.0.0` (testa a recusa por versão diferente).
 
