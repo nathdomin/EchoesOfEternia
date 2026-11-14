@@ -104,12 +104,12 @@ func create(username: String, password: String) -> Dictionary:
 func verify(username: String, password: String) -> Dictionary:
 	var wrong := {"ok": false, "error": "Conta ou senha incorretas."}
 	var account: Variant = null
-	if check_username(username).is_empty():
+	if check_username(username).is_empty() and not password.is_empty() 			and password.length() <= PASSWORD_MAX:
 		account = JsonStore.load_json(_path(key_of(username)))
 	if not account is Dictionary or not account.has("hash") or not account.has("salt"):
 		# Gasta o mesmo tempo de um login real (nao da para descobrir pelo
 		# tempo de resposta se a conta existe).
-		hash_password(password, _crypto.generate_random_bytes(SALT_BYTES), ITERATIONS)
+		hash_password("tempo-igual", _crypto.generate_random_bytes(SALT_BYTES), ITERATIONS)
 		return wrong
 	var expected: PackedByteArray = String(account.hash).hex_decode()
 	var got := hash_password(password, String(account.salt).hex_decode(), int(account.get("iterations", ITERATIONS)))
@@ -123,7 +123,11 @@ func verify(username: String, password: String) -> Dictionary:
 # ---------- hash ----------
 
 ## PBKDF2-HMAC-SHA256 com 32 bytes de saida (conferido com os vetores da RFC 7914).
+## Senha vazia nao tem hash (o HMAC do Godot recusa chave vazia): retorna
+## um array vazio, que nunca e igual a um hash salvo.
 func hash_password(password: String, salt: PackedByteArray, iterations: int) -> PackedByteArray:
+	if password.is_empty() or salt.is_empty() or iterations < 1:
+		return PackedByteArray()
 	var pw := password.to_utf8_buffer()
 	var u := _crypto.hmac_digest(HashingContext.HASH_SHA256, pw, salt + PackedByteArray([0, 0, 0, 1]))
 	var t := u.to_int64_array()
@@ -138,7 +142,7 @@ func hash_password(password: String, salt: PackedByteArray, iterations: int) -> 
 
 
 func _constant_time_equals(a: PackedByteArray, b: PackedByteArray) -> bool:
-	if a.size() != b.size():
+	if a.is_empty() or a.size() != b.size():
 		return false
 	var diff := 0
 	for i in a.size():

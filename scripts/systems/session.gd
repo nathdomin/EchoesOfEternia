@@ -115,9 +115,17 @@ func apply_cmdline() -> bool:
 	if not OS.is_debug_build():
 		push_warning("--join so funciona em build de debug (a senha nao deve ir pela linha de comando)")
 		return false
+	var user := _arg_value("--user=", "")
+	var pw := _arg_value("--pass=", "")
+	if user.is_empty() or pw.is_empty():
+		# Sem conta/senha nao da para entrar: abre o formulario com o aviso
+		host_ip = ip
+		last_error = "Linha de comando: use --user=CONTA --pass=SENHA junto com --join (e --create na primeira vez)."
+		push_warning(last_error)
+		return false
 	var p := _arg_value("--port=", str(port))
 	setup_join(ip, int(p) if NetUtils.is_valid_port(p) else port,
-			_arg_value("--user=", account), _arg_value("--pass=", ""), "--create" in _args())
+			user, pw, "--create" in _args())
 	return true
 
 
