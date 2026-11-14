@@ -36,10 +36,13 @@ static func is_valid_ipv4(ip: String) -> bool:
 	return true
 
 
-## Aceita IPv4 ou "localhost".
+## Aceita IPv4 ou nome de dominio (ex.: localhost, meuservidor.duckdns.org).
 static func is_valid_host(host: String) -> bool:
 	host = host.strip_edges()
-	return host == "localhost" or is_valid_ipv4(host)
+	if is_valid_ipv4(host):
+		return true
+	var re := RegEx.create_from_string("^(?=.{1,253}$)([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)([.][A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*$")
+	return re.search(host) != null and not host.replace(".", "").is_valid_int()
 
 
 static func is_valid_port(text: String) -> bool:

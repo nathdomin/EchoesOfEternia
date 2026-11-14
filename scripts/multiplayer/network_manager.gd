@@ -1,22 +1,24 @@
 extends Node
-## Autoload "NetworkManager" (E5): cria o servidor ou o cliente ENet a partir
-## do Session, faz o aperto de mao (versao + nome) e mantem a lista de
-## jogadores igual em todas as maquinas.
+## Autoload "NetworkManager" (E5/E6): servidor dedicado ou cliente ENet,
+## aperto de mao (versao + nome) e lista de jogadores igual em todas as maquinas.
+##
+## O servidor e dedicado (E6): nao e um jogador. Ele so existe no peer 1 e
+## nunca aparece em `players`.
 ##
 ## Fluxo do cliente: conecta -> envia _register(versao, nome) -> o servidor
 ## valida -> todos recebem _sync_players e _notify_join.
 ## O servidor e a autoridade: so ele altera `players`.
 
-signal connection_ready                 ## host iniciou / cliente foi aceito
+signal connection_ready                 ## servidor iniciou / cliente foi aceito
 signal connection_ended(reason: String) ## caiu, foi recusado ou saiu
 signal player_joined(id: int, player_name: String)
 signal player_left(id: int, player_name: String)
 signal players_changed
 signal system_message(text: String)
 
-const MAX_CLIENTS := 3          ## o host ja e o jogador 4
+const DEFAULT_MAX_PLAYERS := 16
+const MAX_NAME_LENGTH := 16
 const REGISTER_TIMEOUT := 5.0   ## segundos para o cliente se apresentar
-const MAX_PLAYERS := MAX_CLIENTS + 1
 ## Tempo (ms) para considerar uma conexao perdida: min e max do ENet.
 const TIMEOUT_MIN_MS := 3000
 const TIMEOUT_MAX_MS := 6000
@@ -24,6 +26,8 @@ const TIMEOUT_MAX_MS := 6000
 ## peer_id -> { "name": String }
 var players: Dictionary = {}
 var is_online := false
+## Vagas do servidor (configuravel com --max-players=N).
+var max_players := DEFAULT_MAX_PLAYERS
 
 var _accepted := false
 var _end_reason := ""
@@ -46,28 +50,27 @@ func _ready() -> void:
 
 # ---------- API publica ----------
 
-## Inicia a rede conforme o que foi escolhido no menu.
+## Conecta ao servidor escolhido no menu.
 func start_from_session() -> Error:
-	match Session.mode:
-		Session.Mode.HOST:
-			return host(Session.port)
-		Session.Mode.JOIN:
-			return join(Session.host_ip, Session.port)
+	if Session.mode == Session.Mode.JOIN:
+		return join(Session.host_ip, Session.port)
 	return OK
 
 
-func host(port: int) -> Error:
+## Inicia o servidor dedicado (sem jogador proprio).
+func start_server(port: int, p_max_players: int) -> Error:
 	_reset()
+	max_players = p_max_players
 	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_server(port, MAX_CLIENTS)
+	# Uma vaga a mais no ENet: quem chega com o servidor cheio recebe a
+	# mensagem "servidor cheio" em vez de um erro generico de conexao.
+	var err := peer.create_server(port, max_players + 1)
 	if err != OK:
 		return err
 	multiplayer.multiplayer_peer = peer
 	is_online = true
 	_accepted = true
-	players = {1: {"name": Session.player_name}}
 	players_changed.emit()
-	_log("Partida hospedada na porta %d" % port)
 	connection_ready.emit()
 	return OK
 
@@ -85,7 +88,7 @@ func join(ip: String, port: int) -> Error:
 	return OK
 
 
-## Sai da partida (host encerra para todos; cliente so se desconecta).
+## Sai do servidor (no servidor, encerra para todos).
 func leave() -> void:
 	if multiplayer.multiplayer_peer and not multiplayer.multiplayer_peer is OfflineMultiplayerPeer:
 		multiplayer.multiplayer_peer.close()
@@ -93,8 +96,8 @@ func leave() -> void:
 	_reset()
 
 
-func is_host() -> bool:
-	return is_online and multiplayer.is_server()
+func is_server() -> bool:
+	return is_online and multiplayer != null and multiplayer.is_server()
 
 
 func player_name(id: int) -> String:
@@ -128,12 +131,12 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
-	_finish("Não foi possível conectar em %s:%d. O host está aberto? A partida pode estar cheia." % [Session.host_ip, Session.port])
+	_finish("Não foi possível conectar em %s:%d. O servidor está ligado e o endereço está certo?" % [Session.host_ip, Session.port])
 
 
 func _on_server_disconnected() -> void:
 	if _end_reason.is_empty():
-		_end_reason = "O host encerrou a partida" if _accepted else "O host recusou a conexão (partida cheia?)"
+		_end_reason = "O servidor foi desligado ou a conexão caiu" if _accepted else "O servidor recusou a conexão"
 	_finish(_end_reason)
 
 
@@ -145,15 +148,17 @@ func _register(version: String, wanted_name: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
+	if players.has(id):
+		return  # ja registrado: ignora tentativa de trocar de nome
 	if version != GameVersion.VERSION:
-		_rejected.rpc_id(id, "Versão diferente: o host usa %s e você %s. Atualize o jogo." % [GameVersion.VERSION, version])
+		_rejected.rpc_id(id, "Versão diferente: o servidor usa %s e você %s. Atualize o jogo." % [GameVersion.VERSION, version])
 		_kick_later(id)
 		return
-	if players.size() >= MAX_PLAYERS:
-		_rejected.rpc_id(id, "A partida está cheia (%d jogadores)." % MAX_PLAYERS)
+	if players.size() >= max_players:
+		_rejected.rpc_id(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
 		_kick_later(id)
 		return
-	players[id] = {"name": _unique_name(wanted_name)}
+	players[id] = {"name": _unique_name(_sanitize_name(wanted_name))}
 	_broadcast(_sync_players, [players])
 	_broadcast(_notify_join, [id, players[id].name], true)
 
@@ -180,7 +185,7 @@ func _notify_join(id: int, n: String) -> void:
 	if multiplayer.is_server():
 		players_changed.emit()
 	if id != multiplayer.get_unique_id():
-		_log("%s entrou na partida" % n)
+		_log("%s entrou no mundo" % n)
 	player_joined.emit(id, n)
 
 
@@ -188,14 +193,14 @@ func _notify_join(id: int, n: String) -> void:
 func _notify_leave(id: int, n: String) -> void:
 	if multiplayer.is_server():
 		players_changed.emit()
-	_log("%s saiu da partida" % n)
+	_log("%s saiu do mundo" % n)
 	player_left.emit(id, n)
 
 
 # ---------- auxiliares ----------
 
 ## Envia um RPC so para os jogadores ja aceitos (quem ainda esta no aperto de
-## mao, ou foi recusado, nao recebe nada). Com `local`, executa tambem no host.
+## mao, ou foi recusado, nao recebe nada). Com `local`, executa tambem no servidor.
 func _broadcast(method: Callable, args: Array, local := false) -> void:
 	for id: int in players:
 		if id != 1:
@@ -215,6 +220,17 @@ func _kick_later(id: int) -> void:
 	await get_tree().create_timer(0.3).timeout
 	if is_online and id in multiplayer.get_peers():
 		multiplayer.multiplayer_peer.disconnect_peer(id)
+
+
+## O servidor nunca confia no nome vindo do cliente: remove caracteres de
+## controle, junta espacos repetidos e corta no tamanho maximo.
+func _sanitize_name(raw: String) -> String:
+	var out := ""
+	for ch in raw.left(64):
+		out += ch if ch.unicode_at(0) >= 32 and ch.unicode_at(0) != 127 else " "
+	while out.contains("  "):
+		out = out.replace("  ", " ")
+	return out.strip_edges().left(MAX_NAME_LENGTH).strip_edges()
 
 
 func _unique_name(wanted: String) -> String:
@@ -245,5 +261,5 @@ func _reset() -> void:
 
 
 func _log(text: String) -> void:
-	print("[Rede] ", text)
+	print("[%s] [Rede] %s" % [Time.get_time_string_from_system(), text])
 	system_message.emit(text)

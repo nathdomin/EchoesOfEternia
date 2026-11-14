@@ -175,7 +175,7 @@ text = "of Eternia"
 modulate = Color(1, 1, 1, 0.75)
 layout_mode = 2
 theme_type_variation = &"InkLabel"
-text = "Um RPG de ação para até quatro aventureiros"
+text = "Um MMORPG de ação em pixel art"
 
 [node name="Rule" type="TextureRect" parent="Text"]
 custom_minimum_size = Vector2(200, 1)
@@ -202,20 +202,12 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = -2
 
-[node name="HostButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 0
-theme_type_variation = &"InkMenuButton"
-text = "Hospedar partida"
-alignment = 0
-
 [node name="JoinButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 0
 theme_type_variation = &"InkMenuButton"
-text = "Entrar em partida"
+text = "Entrar no mundo"
 alignment = 0
 
 [node name="QuitButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
@@ -225,79 +217,6 @@ size_flags_horizontal = 0
 theme_type_variation = &"InkMenuButton"
 text = "Sair"
 alignment = 0
-
-[node name="HostPage" type="VBoxContainer" parent="Text"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_override_constants/separation = 1
-
-[node name="NameRow" type="HBoxContainer" parent="Text/HostPage"]
-layout_mode = 2
-
-[node name="NameLabel" type="Label" parent="Text/HostPage/NameRow"]
-custom_minimum_size = Vector2(44, 0)
-layout_mode = 2
-theme_type_variation = &"InkLabel"
-text = "Nome"
-
-[node name="HostName" type="LineEdit" parent="Text/HostPage/NameRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(150, 0)
-layout_mode = 2
-theme_type_variation = &"InkLineEdit"
-placeholder_text = "Jogador"
-max_length = 16
-
-[node name="PortRow" type="HBoxContainer" parent="Text/HostPage"]
-layout_mode = 2
-
-[node name="PortLabel" type="Label" parent="Text/HostPage/PortRow"]
-custom_minimum_size = Vector2(44, 0)
-layout_mode = 2
-theme_type_variation = &"InkLabel"
-text = "Porta"
-
-[node name="HostPort" type="LineEdit" parent="Text/HostPage/PortRow"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 0)
-layout_mode = 2
-theme_type_variation = &"InkLineEdit"
-max_length = 5
-
-[node name="IpHint" type="Label" parent="Text/HostPage"]
-modulate = Color(1, 1, 1, 0.75)
-layout_mode = 2
-theme_type_variation = &"InkLabel"
-text = "Seus IPs (clique para copiar):"
-
-[node name="IpList" type="VBoxContainer" parent="Text/HostPage"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_constants/separation = -2
-
-[node name="HostError" type="Label" parent="Text/HostPage"]
-unique_name_in_owner = true
-visible = false
-layout_mode = 2
-theme_type_variation = &"InkLabel"
-theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
-
-[node name="Buttons" type="HBoxContainer" parent="Text/HostPage"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="HostStart" type="Button" parent="Text/HostPage/Buttons" groups=["menu_buttons"]]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"InkMenuButton"
-text = "Iniciar"
-
-[node name="HostBack" type="Button" parent="Text/HostPage/Buttons" groups=["menu_buttons"]]
-unique_name_in_owner = true
-layout_mode = 2
-theme_type_variation = &"InkMenuButton"
-text = "Voltar"
 
 [node name="JoinPage" type="VBoxContainer" parent="Text"]
 unique_name_in_owner = true
@@ -336,8 +255,8 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme_type_variation = &"InkLineEdit"
-placeholder_text = "192.168.0.10"
-max_length = 15
+placeholder_text = "IP ou endereço do servidor"
+max_length = 64
 
 [node name="PortRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2

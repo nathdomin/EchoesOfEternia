@@ -1,6 +1,6 @@
 extends Control
-## Menu principal (E4): Hospedar (nome, porta, IPs) e Entrar (nome, IP, porta).
-## Grava a escolha em Session e abre o jogo. A rede de verdade entra na E5.
+## Menu principal: Entrar no mundo (nome, IP e porta do servidor dedicado).
+## Grava a escolha em Session e abre o jogo, que conecta ao servidor (E5/E6).
 ##
 ## Visual de manuscrito iluminado: pagina de pergaminho (shader), letra
 ## capitular "E" com janela em arco mostrando a vila ao vivo (SubViewport)
@@ -20,13 +20,8 @@ const ARROW := preload("res://assets/ui/ninja/Theme/Theme Wood/arrow_right.png")
 @onready var _fade: ColorRect = $FadeLayer/Fade
 
 @onready var _main_page: Control = %MainPage
-@onready var _host_page: Control = %HostPage
 @onready var _join_page: Control = %JoinPage
-@onready var _host_name: LineEdit = %HostName
 @onready var _join_name: LineEdit = %JoinName
-@onready var _ip_list: VBoxContainer = %IpList
-@onready var _host_port: LineEdit = %HostPort
-@onready var _host_error: Label = %HostError
 @onready var _join_ip: LineEdit = %JoinIp
 @onready var _join_port: LineEdit = %JoinPort
 @onready var _join_error: Label = %JoinError
@@ -38,33 +33,26 @@ var _leaving := false
 
 
 func _ready() -> void:
-	# --host / --join=IP na linha de comando: pula o menu (testes rapidos)
+	# --join=IP na linha de comando: pula o menu (testes rapidos)
 	if Session.apply_cmdline():
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 		return
 	_show_notice(Session.last_error)
 	Session.last_error = ""
 
-	%HostButton.pressed.connect(_show_page.bind(_host_page))
 	%JoinButton.pressed.connect(_show_page.bind(_join_page))
 	%QuitButton.pressed.connect(_quit)
-	%HostBack.pressed.connect(_show_page.bind(_main_page))
 	%JoinBack.pressed.connect(_show_page.bind(_main_page))
-	%HostStart.pressed.connect(_on_host_start)
 	%JoinConnect.pressed.connect(_on_join_connect)
 	_join_ip.text_submitted.connect(func(_t: String) -> void: _on_join_connect())
-	_host_port.text_submitted.connect(func(_t: String) -> void: _on_host_start())
 
 	%Version.text = "v" + GameVersion.VERSION
-	_host_name.text = Session.player_name
 	_join_name.text = Session.player_name
-	_host_port.text = str(Session.port)
 	_join_port.text = str(Session.port)
 	_join_ip.text = Session.host_ip
 
 	%VillageView.texture = _viewport.get_texture()
 	_setup_menu_buttons()
-	_fill_ip_list()
 	_setup_window_scene()
 	_show_page(_main_page)
 	_play_intro()
@@ -103,14 +91,11 @@ func _setup_menu_buttons() -> void:
 # ---------- paginas ----------
 
 func _show_page(page: Control) -> void:
-	for p in [_main_page, _host_page, _join_page]:
+	for p in [_main_page, _join_page]:
 		p.visible = p == page
-	_set_error(_host_error, "")
 	_set_error(_join_error, "")
 	if page == _main_page:
-		%HostButton.grab_focus()
-	elif page == _host_page:
-		%HostStart.grab_focus()
+		%JoinButton.grab_focus()
 	else:
 		_join_ip.grab_focus()
 	page.modulate.a = 0.0
@@ -129,48 +114,11 @@ func _set_error(label: Label, msg: String) -> void:
 	label.visible = not msg.is_empty()
 
 
-func _fill_ip_list() -> void:
-	for c in _ip_list.get_children():
-		c.queue_free()
-	var ips := NetUtils.local_ipv4()
-	if ips.is_empty():
-		var l := Label.new()
-		l.theme_type_variation = &"InkLabel"
-		l.text = "Nenhuma rede encontrada"
-		_ip_list.add_child(l)
-		return
-	for item in ips:
-		var b := Button.new()
-		b.theme_type_variation = &"InkFlatButton"
-		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		b.text = "%s  (%s)" % [item.ip, item.kind]
-		b.tooltip_text = "Clique para copiar"
-		b.pressed.connect(_copy_ip.bind(b, item.ip))
-		_ip_list.add_child(b)
-
-
-func _copy_ip(button: Button, ip: String) -> void:
-	DisplayServer.clipboard_set(ip)
-	var old := button.text
-	button.text = "Copiado!"
-	await get_tree().create_timer(1.0).timeout
-	if is_instance_valid(button):
-		button.text = old
-
-
 # ---------- acoes ----------
-
-func _on_host_start() -> void:
-	if not NetUtils.is_valid_port(_host_port.text):
-		_set_error(_host_error, "Porta inválida (1024 a 65535)")
-		return
-	Session.setup_host(int(_host_port.text), _host_name.text)
-	_leave_to(GAME_SCENE)
-
 
 func _on_join_connect() -> void:
 	if not NetUtils.is_valid_host(_join_ip.text):
-		_set_error(_join_error, "IP inválido (ex.: 192.168.0.10)")
+		_set_error(_join_error, "Endereço inválido (ex.: 192.168.0.10)")
 		return
 	if not NetUtils.is_valid_port(_join_port.text):
 		_set_error(_join_error, "Porta inválida (1024 a 65535)")
