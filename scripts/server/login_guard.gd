@@ -32,7 +32,9 @@ func check_login(ip: String, account_key: String) -> String:
 
 
 func check_create(ip: String) -> String:
-	if _recent(_ip_creates, ip, NEW_ACCOUNT_WINDOW_SEC, _now()) >= IP_MAX_NEW_ACCOUNTS:
+	# O proprio PC do servidor (testes locais, teste de carga) nao tem limite
+	# de contas novas. Senha errada continua limitada.
+	if not is_loopback(ip) and _recent(_ip_creates, ip, NEW_ACCOUNT_WINDOW_SEC, _now()) >= IP_MAX_NEW_ACCOUNTS:
 		return "Muitas contas criadas deste endereço. Tente mais tarde."
 	return check_login(ip, "")
 
@@ -55,6 +57,10 @@ func login_succeeded(account_key: String) -> void:
 
 func account_created(ip: String) -> void:
 	_push(_ip_creates, ip)
+
+
+static func is_loopback(ip: String) -> bool:
+	return ip.begins_with("127.") or ip == "::1" or ip == "::ffff:127.0.0.1"
 
 
 func _push(table: Dictionary, key: String) -> void:

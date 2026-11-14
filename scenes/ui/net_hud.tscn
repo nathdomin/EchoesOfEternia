@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/net_hud.gd" id="1_hud"]
 
@@ -27,3 +27,23 @@ grow_vertical = 0
 mouse_filter = 2
 theme_override_constants/separation = -2
 alignment = 2
+
+[node name="Banner" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -130.0
+offset_top = 28.0
+offset_right = 130.0
+offset_bottom = 52.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"DarkPanel"
+
+[node name="BannerText" type="Label" parent="Banner"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+autowrap_mode = 3

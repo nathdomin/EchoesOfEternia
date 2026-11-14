@@ -68,6 +68,20 @@ No menu do cliente: **Entrar no mundo** → IP = IP público da VM, porta 7777.
 | Backup manual das contas | `sudo tar czf ~/echoes-dados.tgz -C /var/lib echoes` |
 | Quantas contas existem | `sudo ls /var/lib/echoes/accounts \| wc -l` |
 
+## Quedas e reconexão
+
+Se a internet do jogador oscilar ou o servidor reiniciar sozinho (o systemd religa em ~6 s), o jogo mostra "Conexão perdida. Reconectando..." e volta sozinho, sem pedir a senha, em até ~40 s. Se o servidor for parado para manutenção (`systemctl stop`/`restart`), os jogadores voltam ao menu com o aviso "Seu personagem foi salvo".
+
+## Teste do Gate 1 (roteiro)
+
+1. Exporte o servidor (preset da arquitetura da VM) e o cliente Windows **da mesma versão**.
+2. Instale na VM (seção 3) e confira `systemctl status echoes-server` e o log (`journalctl -u echoes-server -f`).
+3. Em 2 PCs (redes diferentes, se possível): **Criar conta** com o IP público da VM, porta 7777.
+4. Os dois jogadores se veem e andam; o log da VM mostra as entradas.
+5. `sudo systemctl restart echoes-server`: os dois voltam ao menu com "Seu personagem foi salvo"; ao entrar de novo, aparecem onde estavam.
+6. Desligue o Wi-Fi de um PC por ~5 s e religue: o jogo mostra "Reconectando..." e volta.
+7. `sudo systemctl kill -s KILL echoes-server` (queda brusca): o systemd religa o servidor e os clientes reconectam sozinhos.
+
 ## Certificado fixo no cliente (recomendado para a entrega)
 
 A conexão já é cifrada, mas sem este passo o cliente aceita qualquer servidor que fale DTLS. Para o cliente só aceitar **o seu** servidor:
