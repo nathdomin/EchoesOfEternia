@@ -115,6 +115,11 @@ func leave() -> void:
 	_reset()
 
 
+## Cliente: conectado e com login aceito pelo servidor.
+func is_logged_in() -> bool:
+	return is_online and _accepted and multiplayer != null and not multiplayer.is_server()
+
+
 func is_server() -> bool:
 	return is_online and multiplayer != null and multiplayer.is_server()
 

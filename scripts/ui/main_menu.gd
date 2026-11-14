@@ -1,8 +1,9 @@
 extends Control
 ## Menu principal: Entrar no mundo / Criar conta (E7). A mesma pagina serve
 ## para os dois: conta, senha (e "Repetir" ao criar) e servidor:porta.
-## Grava a escolha em Session e abre o jogo, que conecta ao servidor e faz o
-## login. Se o servidor recusar, o jogo volta para esta pagina com o motivo.
+## O login acontece aqui no menu ("Conectando..." no formulario): o jogo so
+## abre depois que o servidor aceitar. Se recusar (senha errada, conta ja
+## existe...), o motivo aparece no formulario sem sair do menu.
 ##
 ## Visual de manuscrito iluminado: pagina de pergaminho (shader), letra
 ## capitular "E" com janela em arco mostrando a vila ao vivo (SubViewport)
@@ -37,13 +38,17 @@ var _no_arrow: Texture2D
 var _leaving := false
 ## true = pagina no modo "Criar conta"
 var _creating := false
+## true = esperando a resposta do servidor
+var _connecting := false
+var _error_color: Color
 
 
 func _ready() -> void:
-	# --join=IP na linha de comando: pula o menu (testes rapidos)
-	if Session.apply_cmdline():
-		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
-		return
+	# --join=IP --user --pass na linha de comando: faz login direto (testes)
+	var auto_login := Session.apply_cmdline()
+	NetworkManager.connection_ready.connect(_on_login_ok)
+	NetworkManager.connection_ended.connect(_on_login_failed)
+	_error_color = _join_error.get_theme_color("font_color")
 	%JoinButton.pressed.connect(_open_login.bind(false))
 	%CreateButton.pressed.connect(_open_login.bind(true))
 	%QuitButton.pressed.connect(_quit)
@@ -64,7 +69,10 @@ func _ready() -> void:
 	# pagina de login com o motivo, ja com conta e servidor preenchidos.
 	var error := Session.last_error
 	Session.last_error = ""
-	if error.is_empty():
+	if auto_login:
+		_open_login(Session.create_account)
+		_start_login()
+	elif error.is_empty():
 		_show_page(_main_page)
 	else:
 		_open_login(Session.create_account)
@@ -74,7 +82,12 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel") and not _main_page.visible and not _leaving:
-		_show_page(_main_page)
+		if _connecting:  # cancela a tentativa e fica no formulario
+			NetworkManager.leave()
+			_set_busy(false)
+			_set_error(_join_error, "")
+		else:
+			_show_page(_main_page)
 		get_viewport().set_input_as_handled()
 
 
@@ -132,9 +145,21 @@ func _open_login(creating: bool) -> void:
 
 
 ## A mensagem de erro so ocupa espaco quando existe.
-func _set_error(label: Label, msg: String) -> void:
+func _set_error(label: Label, msg: String, color := Color()) -> void:
+	label.add_theme_color_override("font_color", color if color != Color() else _error_color)
 	label.text = msg
 	label.visible = not msg.is_empty()
+
+
+## Trava o formulario enquanto espera o servidor.
+func _set_busy(busy: bool) -> void:
+	_connecting = busy
+	for e: LineEdit in [_join_account, _join_pass, _join_confirm, _join_ip, _join_port]:
+		e.editable = not busy
+	%JoinConnect.disabled = busy
+	%JoinBack.disabled = busy
+	if not busy:
+		_join_pass.grab_focus()
 
 
 # ---------- acoes ----------
@@ -150,6 +175,8 @@ func _on_join_connect() -> void:
 	if not pass_error.is_empty():
 		_set_error(_join_error, pass_error)
 		return
+	if _connecting or _leaving:
+		return
 	if _creating and _join_confirm.text != _join_pass.text:
 		_set_error(_join_error, "As senhas não são iguais.")
 		return
@@ -162,7 +189,37 @@ func _on_join_connect() -> void:
 	Session.setup_join(_join_ip.text, int(_join_port.text), account, _join_pass.text, _creating)
 	_join_pass.clear()
 	_join_confirm.clear()
+	_start_login()
+
+
+## Conecta e envia conta/senha (dados ja em Session). A resposta chega em
+## _on_login_ok ou _on_login_failed.
+func _start_login() -> void:
+	_set_busy(true)
+	_set_error(_join_error, "Criando a conta..." if Session.create_account else "Conectando ao servidor...",
+			Color(0.24, 0.17, 0.12))
+	var err := NetworkManager.start_from_session()
+	if err != OK:
+		_on_login_failed("Não foi possível conectar em %s:%d" % [Session.host_ip, Session.port])
+
+
+## Servidor aceitou: lembra servidor e conta (nunca a senha) e abre o jogo.
+func _on_login_ok() -> void:
+	if not _connecting:
+		return
+	Session.create_account = false
+	Session.save_prefs()
+	_set_error(_join_error, "Entrando no mundo...", Color(0.24, 0.17, 0.12))
 	_leave_to(GAME_SCENE)
+
+
+func _on_login_failed(reason: String) -> void:
+	if not _connecting or _leaving:
+		return
+	print("[Rede] Login nao concluido: ", reason)
+	Session.reset()
+	_set_busy(false)
+	_set_error(_join_error, reason)
 
 
 func _quit() -> void:
