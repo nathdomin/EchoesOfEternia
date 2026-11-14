@@ -1,9 +1,9 @@
-[gd_resource type="SpriteFrames" format=3]
+[gd_resource type="SpriteFrames" format=3 uid="uid://dqma8wsolvqs1"]
 
-[ext_resource type="Texture2D" path="res://assets/characters/ninja/Knight/Attack.png" id="1_mtmt5"]
-[ext_resource type="Texture2D" path="res://assets/characters/ninja/Knight/Dead.png" id="2_6t58t"]
-[ext_resource type="Texture2D" path="res://assets/characters/ninja/Knight/Idle.png" id="3_aqxuv"]
-[ext_resource type="Texture2D" path="res://assets/characters/ninja/Knight/Walk.png" id="4_8pis6"]
+[ext_resource type="Texture2D" uid="uid://c7sfmbvt8nid" path="res://assets/characters/ninja/Knight/Attack.png" id="1_mtmt5"]
+[ext_resource type="Texture2D" uid="uid://bfcm10vswx3kh" path="res://assets/characters/ninja/Knight/Dead.png" id="2_6t58t"]
+[ext_resource type="Texture2D" uid="uid://bu0kdfs0yjk" path="res://assets/characters/ninja/Knight/Idle.png" id="3_aqxuv"]
+[ext_resource type="Texture2D" uid="uid://d1q46talekfbm" path="res://assets/characters/ninja/Knight/Walk.png" id="4_8pis6"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ppvng"]
 atlas = ExtResource("1_mtmt5")

@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/server/server_main.gd" id="1_srv"]
+[ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
+
+[node name="ServerMain" type="Node"]
+script = ExtResource("1_srv")
+
+[node name="World" type="Node2D" parent="."]
+
+[node name="Village" parent="World" instance=ExtResource("2_village")]

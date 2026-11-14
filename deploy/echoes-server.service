@@ -1,0 +1,26 @@
+[Unit]
+Description=Echoes of Eternia - servidor dedicado
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=echoes
+Group=echoes
+WorkingDirectory=/opt/echoes
+EnvironmentFile=-/etc/default/echoes-server
+# Contas e chave do DTLS em /var/lib/echoes (criada pelo systemd, so o
+# usuario echoes le). Faca backup desta pasta.
+StateDirectory=echoes
+StateDirectoryMode=0700
+ExecStart=/opt/echoes/echoes_server --headless --port=${ECHOES_PORT} --max-players=${ECHOES_MAX_PLAYERS} --data=/var/lib/echoes
+Restart=always
+RestartSec=5
+# Da tempo para o servidor salvar e avisar os jogadores ao parar
+TimeoutStopSec=15
+# Protecoes basicas: sem escalar privilegios e /tmp isolado
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

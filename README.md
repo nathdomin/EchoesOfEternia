@@ -1,6 +1,6 @@
 # Echoes of Eternia
 
-RPG de ação multiplayer em pixel art — demo acadêmica em Godot 4.
+MMORPG em pixel art feito em Godot 4 — servidor dedicado, contas e personagens salvos.
 
 📄 **Plano de trabalho da equipe:** [docs/Echoes_of_Eternia_Plano_de_Trabalho.pdf](docs/Echoes_of_Eternia_Plano_de_Trabalho.pdf) (também em `.docx`). Leia antes de começar.
 
@@ -29,7 +29,14 @@ Só o dono edita as cenas `.tscn` da sua área.
 
 ## Rodar o jogo
 
-**F5** abre o **menu**: digite seu nome e escolha **Hospedar partida** (mostra seus IPs — clique para copiar — e a porta) ou **Entrar em partida** (IP e porta do host). A conexão é real: quem hospeda vê "Fulano entrou na partida" e o contador de jogadores no canto. **Esc** sai da partida e volta ao menu.
+O jogo é um **MMORPG com servidor dedicado**: o servidor roda separado (na nuvem ou no seu PC) e os jogadores entram nele.
+
+1. Rode um servidor: abra o projeto e use **Debug → Customize Run Instances** (veja abaixo) ou, com o jogo exportado, `EchoesOfEternia.exe --headless --server`.
+2. **F5** abre o **menu**. Na primeira vez use **Criar conta**: nome da conta, senha (mínimo 6 caracteres, digitada duas vezes) e servidor (`127.0.0.1` se for no seu PC) com porta 7777. Depois é só **Entrar no mundo** com a mesma conta e senha.
+
+A conexão é cifrada (DTLS) e o servidor guarda só o hash da senha. O menu lembra o servidor e a conta da última vez, nunca a senha.
+
+Ao entrar aparecem "Fulano entrou no mundo" e o contador de jogadores no canto. **Esc** sai e volta ao menu.
 
 No jogo, controles: **WASD** ou **setas**.
 
@@ -41,10 +48,17 @@ No jogo, controles: **WASD** ou **setas**.
 
 No editor: **Debug → Customize Run Instances**, ative *Enable Multiple Instances* e use nos argumentos de cada instância:
 
-- instância 1: `--host --name=Ana`
-- instância 2: `--join=127.0.0.1 --name=Bia`
+- instância 1 (servidor): `--server`
+- instância 2: `--join=127.0.0.1 --user=Ana --pass=segredo1`
+- instância 3: `--join=127.0.0.1 --user=Bia --pass=segredo2`
 
-Também funcionam `--port=N` e, só em build de debug, `--fake-version=0.0.0` (testa a recusa por versão diferente).
+Na primeira vez acrescente `--create` em cada cliente (cria a conta). Depois tire o `--create`: a conta já existe.
+
+Servidor: `--port=N`, `--max-players=N` e `--data=PASTA` (padrão 7777, 16 e `user://data`, onde ficam as contas). Cliente (só em build de debug, pula o menu): `--join=IP`, `--port=N`, `--user=X`, `--pass=Y`, `--create` e `--fake-version=0.0.0` (testa a recusa por versão diferente).
+
+Para zerar as contas de teste do seu PC, apague a pasta `data` em `%APPDATA%\Godot\app_userdata\Echoes of Eternia\`.
+
+**Servidor na nuvem:** passo a passo em [deploy/README.md](deploy/README.md).
 
 ## Teste de rede (Gate 0)
 
@@ -61,9 +75,13 @@ Na primeira execução o Windows pergunta sobre o firewall: permita em **redes p
 
 **Pelo .exe:** `EchoesOfEternia.exe res://scenes/debug/net_test.tscn -- --host` (ou `-- --join=192.168.0.10`).
 
-## Exportar para Windows
+## Exportar
 
-Project → Export → *Windows Desktop* → Export Project. Saída em `export/windows/` (ignorada pelo git).
+Project → Export:
+- **Cliente Windows** → `export/windows/` (o jogo para os jogadores).
+- **Servidor Linux x86_64** ou **Servidor Linux ARM64** → `export/server/` (para a VM; veja `deploy/README.md`).
+
+A pasta `export/` é ignorada pelo git.
 Executáveis são distribuídos pela **Release** do GitHub, nunca commitados.
 O `.exe` não é assinado: no aviso do Windows clique em **Mais informações → Executar assim mesmo**.
 
