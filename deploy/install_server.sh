@@ -23,6 +23,7 @@ echo ">> Criando usuario 'echoes' e a pasta $DIR"
 id echoes >/dev/null 2>&1 || useradd --system --create-home --shell /usr/sbin/nologin echoes
 mkdir -p "$DIR"
 install -m 0755 -o echoes -g echoes "$BIN" "$DIR/echoes_server"
+install -m 0755 "$HERE/stop_server.sh" "$DIR/stop_server.sh"
 
 echo ">> Configuracao em /etc/default/echoes-server"
 cat > /etc/default/echoes-server <<CFG

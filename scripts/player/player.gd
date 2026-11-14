@@ -1,7 +1,7 @@
 class_name Player
 extends CharacterBody2D
 ## Player local (E2): movimento em 8 direcoes, animacao em 4 direcoes e camera.
-## Na E6 este no passa a ter authority = peer id do dono; apenas o dono le
+## Na E9 este no passa a ter authority = peer id do dono; apenas o dono le
 ## input e move. `anim_state` e `facing` ja existem para serem sincronizados.
 
 enum AnimState { IDLE, WALK }
@@ -13,7 +13,11 @@ const DIR_NAMES := {
 	Vector2i.RIGHT: "right",
 }
 
-@export var speed := 80.0          ## pixels por segundo (tile = 16 px)
+## Velocidade maxima (px/s, tile = 16 px). O servidor usa este valor para
+## recusar movimento rapido demais (Characters).
+const SPEED := 80.0
+
+@export var speed := SPEED
 @export var acceleration := 900.0
 @export var friction := 1100.0
 
@@ -35,6 +39,17 @@ func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_top = int(bounds.position.y)
 	_camera.limit_right = int(bounds.end.x)
 	_camera.limit_bottom = int(bounds.end.y)
+	_camera.reset_smoothing()
+
+
+## Coloca o player num ponto (spawn salvo ou correcao do servidor).
+func place(pos: Vector2, dir: Vector2i) -> void:
+	global_position = pos
+	velocity = Vector2.ZERO
+	if DIR_NAMES.has(dir):
+		facing = dir
+	anim_state = AnimState.IDLE
+	_update_animation()
 	_camera.reset_smoothing()
 
 

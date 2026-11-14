@@ -12,7 +12,7 @@ config_version=5
 
 config/name="Echoes of Eternia"
 config/description="MMORPG em pixel art"
-config/version="0.1.1"
+config/version="0.1.2"
 run/main_scene="res://scenes/boot.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
@@ -20,6 +20,7 @@ config/features=PackedStringArray("4.7", "GL Compatibility")
 
 Session="*res://scripts/systems/session.gd"
 NetworkManager="*res://scripts/multiplayer/network_manager.gd"
+Characters="*res://scripts/multiplayer/character_sync.gd"
 
 [display]
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Atualiza o executavel do servidor para uma versao nova.
 # Uso (na VM):  sudo bash update_server.sh ./echoes_server.arm64
-# Antes de trocar, faz backup das contas em /var/backups/echoes/.
+# Para com seguranca (salva os personagens) e faz backup dos dados em
+# /var/backups/echoes/ antes de trocar.
 set -euo pipefail
 BIN="${1:-}"
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -17,6 +18,7 @@ if [[ -d /var/lib/echoes ]]; then
   echo ">> Backup dos dados: $BK"
 fi
 install -m 0755 -o echoes -g echoes "$BIN" /opt/echoes/echoes_server
+[[ -f "$HERE/stop_server.sh" ]] && install -m 0755 "$HERE/stop_server.sh" /opt/echoes/stop_server.sh
 # Servico novo junto com o script? Atualiza tambem.
 if [[ -f "$HERE/echoes-server.service" ]]; then
   install -m 0644 "$HERE/echoes-server.service" /etc/systemd/system/echoes-server.service
