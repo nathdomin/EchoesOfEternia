@@ -1,6 +1,8 @@
 extends Control
-## Menu principal: Entrar no mundo (nome, IP e porta do servidor dedicado).
-## Grava a escolha em Session e abre o jogo, que conecta ao servidor (E5/E6).
+## Menu principal: Entrar no mundo / Criar conta (E7). A mesma pagina serve
+## para os dois: conta, senha (e "Repetir" ao criar) e servidor:porta.
+## Grava a escolha em Session e abre o jogo, que conecta ao servidor e faz o
+## login. Se o servidor recusar, o jogo volta para esta pagina com o motivo.
 ##
 ## Visual de manuscrito iluminado: pagina de pergaminho (shader), letra
 ## capitular "E" com janela em arco mostrando a vila ao vivo (SubViewport)
@@ -21,7 +23,10 @@ const ARROW := preload("res://assets/ui/ninja/Theme/Theme Wood/arrow_right.png")
 
 @onready var _main_page: Control = %MainPage
 @onready var _join_page: Control = %JoinPage
-@onready var _join_name: LineEdit = %JoinName
+@onready var _join_account: LineEdit = %JoinAccount
+@onready var _join_pass: LineEdit = %JoinPass
+@onready var _join_confirm: LineEdit = %JoinConfirm
+@onready var _confirm_row: Control = _join_confirm.get_parent()
 @onready var _join_ip: LineEdit = %JoinIp
 @onready var _join_port: LineEdit = %JoinPort
 @onready var _join_error: Label = %JoinError
@@ -30,6 +35,8 @@ var _pan_points: Array[Vector2] = []
 var _pan_index := 0
 var _no_arrow: Texture2D
 var _leaving := false
+## true = pagina no modo "Criar conta"
+var _creating := false
 
 
 func _ready() -> void:
@@ -37,24 +44,31 @@ func _ready() -> void:
 	if Session.apply_cmdline():
 		get_tree().change_scene_to_file.call_deferred(GAME_SCENE)
 		return
-	_show_notice(Session.last_error)
-	Session.last_error = ""
-
-	%JoinButton.pressed.connect(_show_page.bind(_join_page))
+	%JoinButton.pressed.connect(_open_login.bind(false))
+	%CreateButton.pressed.connect(_open_login.bind(true))
 	%QuitButton.pressed.connect(_quit)
 	%JoinBack.pressed.connect(_show_page.bind(_main_page))
 	%JoinConnect.pressed.connect(_on_join_connect)
-	_join_ip.text_submitted.connect(func(_t: String) -> void: _on_join_connect())
+	for e: LineEdit in [_join_account, _join_pass, _join_confirm, _join_ip, _join_port]:
+		e.text_submitted.connect(func(_t: String) -> void: _on_join_connect())
 
 	%Version.text = "v" + GameVersion.VERSION
-	_join_name.text = Session.player_name
+	_join_account.text = Session.account
 	_join_port.text = str(Session.port)
 	_join_ip.text = Session.host_ip
 
 	%VillageView.texture = _viewport.get_texture()
 	_setup_menu_buttons()
 	_setup_window_scene()
-	_show_page(_main_page)
+	# Voltou do jogo com erro (senha errada, servidor caiu...): reabre a
+	# pagina de login com o motivo, ja com conta e servidor preenchidos.
+	var error := Session.last_error
+	Session.last_error = ""
+	if error.is_empty():
+		_show_page(_main_page)
+	else:
+		_open_login(Session.create_account)
+		_set_error(_join_error, error)
 	_play_intro()
 
 
@@ -93,19 +107,28 @@ func _setup_menu_buttons() -> void:
 func _show_page(page: Control) -> void:
 	for p in [_main_page, _join_page]:
 		p.visible = p == page
+	# O formulario usa a altura toda da pagina: dica e versao so no inicio
+	$Hint.visible = page == _main_page
+	%Version.visible = page == _main_page
 	_set_error(_join_error, "")
+	_join_pass.clear()
+	_join_confirm.clear()
 	if page == _main_page:
 		%JoinButton.grab_focus()
+	elif _join_account.text.is_empty():
+		_join_account.grab_focus()
 	else:
-		_join_ip.grab_focus()
+		_join_pass.grab_focus()
 	page.modulate.a = 0.0
 	create_tween().tween_property(page, "modulate:a", 1.0, 0.25)
 
 
-## Aviso no topo das opcoes (ex.: motivo de ter voltado da partida).
-func _show_notice(msg: String) -> void:
-	%Notice.text = msg
-	%Notice.visible = not msg.is_empty()
+## Mesma pagina para entrar e para criar conta.
+func _open_login(creating: bool) -> void:
+	_creating = creating
+	_confirm_row.visible = creating
+	%JoinConnect.text = "Criar e entrar" if creating else "Entrar"
+	_show_page(_join_page)
 
 
 ## A mensagem de erro so ocupa espaco quando existe.
@@ -117,13 +140,28 @@ func _set_error(label: Label, msg: String) -> void:
 # ---------- acoes ----------
 
 func _on_join_connect() -> void:
+	var account := _join_account.text.strip_edges()
+	var account_error := AccountStore.check_username(account)
+	if not account_error.is_empty():
+		_set_error(_join_error, account_error)
+		return
+	var pass_error := AccountStore.check_password(_join_pass.text) if _creating else \
+			("Digite a senha." if _join_pass.text.is_empty() else "")
+	if not pass_error.is_empty():
+		_set_error(_join_error, pass_error)
+		return
+	if _creating and _join_confirm.text != _join_pass.text:
+		_set_error(_join_error, "As senhas não são iguais.")
+		return
 	if not NetUtils.is_valid_host(_join_ip.text):
 		_set_error(_join_error, "Endereço inválido (ex.: 192.168.0.10)")
 		return
 	if not NetUtils.is_valid_port(_join_port.text):
 		_set_error(_join_error, "Porta inválida (1024 a 65535)")
 		return
-	Session.setup_join(_join_ip.text, int(_join_port.text), _join_name.text)
+	Session.setup_join(_join_ip.text, int(_join_port.text), account, _join_pass.text, _creating)
+	_join_pass.clear()
+	_join_confirm.clear()
 	_leave_to(GAME_SCENE)
 
 

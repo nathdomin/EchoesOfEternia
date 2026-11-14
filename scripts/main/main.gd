@@ -1,5 +1,5 @@
 extends Node2D
-## Cena do cliente: conecta ao servidor escolhido no menu (E5/E6), posiciona o
+## Cena do cliente: conecta ao servidor escolhido no menu e faz login (E5-E7), posiciona o
 ## player no SpawnPoint da vila e limita a camera ao mapa. Na E9 o spawn dos
 ## jogadores passa a ser feito pelo servidor (MultiplayerSpawner).
 ##
@@ -17,9 +17,16 @@ func _ready() -> void:
 	_player.set_camera_limits(_village.get_bounds())
 
 	NetworkManager.connection_ended.connect(_back_to_menu)
+	NetworkManager.connection_ready.connect(_on_logged_in)
 	var err := NetworkManager.start_from_session()
 	if err != OK:
 		_back_to_menu.call_deferred("Não foi possível conectar em %s:%d" % [Session.host_ip, Session.port])
+
+
+## Login aceito: lembra servidor e conta para a proxima vez (nunca a senha).
+func _on_logged_in() -> void:
+	Session.create_account = false
+	Session.save_prefs()
 
 
 func _unhandled_input(event: InputEvent) -> void:

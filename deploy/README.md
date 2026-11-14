@@ -45,6 +45,8 @@ sudo bash install_server.sh ./echoes_server.arm64
 
 O script cria o usuário `echoes`, instala em `/opt/echoes`, abre a porta UDP 7777 no firewall da VM e cria o serviço `echoes-server`, que **inicia com a VM e reinicia sozinho se cair**.
 
+As **contas** e a **chave do DTLS** ficam em `/var/lib/echoes` (só o usuário `echoes` lê). Na primeira vez que liga, o servidor gera a chave e o certificado em `/var/lib/echoes/tls/`.
+
 Porta e vagas: `sudo PORT=7777 MAX_PLAYERS=16 bash install_server.sh ./echoes_server.arm64`
 (ou edite `/etc/default/echoes-server` e rode `sudo systemctl restart echoes-server`).
 
@@ -60,13 +62,25 @@ No menu do cliente: **Entrar no mundo** → IP = IP público da VM, porta 7777.
 | Ver se está rodando | `systemctl status echoes-server` |
 | Reiniciar | `sudo systemctl restart echoes-server` |
 | Parar | `sudo systemctl stop echoes-server` |
-| Atualizar para uma versão nova | `sudo bash update_server.sh ./echoes_server.arm64` |
+| Atualizar para uma versão nova (faz backup antes) | `sudo bash update_server.sh ./echoes_server.arm64` |
+| Backup manual das contas | `sudo tar czf ~/echoes-dados.tgz -C /var/lib echoes` |
+| Quantas contas existem | `sudo ls /var/lib/echoes/accounts \| wc -l` |
+
+## Certificado fixo no cliente (recomendado para a entrega)
+
+A conexão já é cifrada, mas sem este passo o cliente aceita qualquer servidor que fale DTLS. Para o cliente só aceitar **o seu** servidor:
+
+1. Na VM: `sudo cat /var/lib/echoes/tls/server.crt`
+2. Copie o texto (de `-----BEGIN CERTIFICATE-----` até `-----END CERTIFICATE-----`) para `certs/server.crt` no projeto.
+3. Exporte o cliente de novo. O aviso "sem certificado fixo" deixa de aparecer no log do cliente.
+
+Só o certificado (público) vai para o projeto. A chave `server.key` **nunca** sai da VM (o `.gitignore` bloqueia `*.key`). Se a pasta `/var/lib/echoes` for apagada, a VM gera outra chave e os clientes com o certificado antigo deixam de conectar: repita os passos.
 
 ## Testar no próprio PC (sem VM)
 
 O mesmo jogo vira servidor com `--server`:
 
-- Pelo editor: **Debug → Customize Run Instances**, instância 1 com `--server`, as outras com `--join=127.0.0.1 --name=Ana`.
+- Pelo editor: **Debug → Customize Run Instances**, instância 1 com `--server`, as outras com `--join=127.0.0.1 --user=Ana --pass=segredo1 --create` (sem `--create` depois que a conta existir).
 - Pelo executável: `EchoesOfEternia.exe --headless --server` num terminal e o jogo normal em outra janela.
 
 Isso também é o **plano B da apresentação**: se a VM ou a internet falharem, um notebook roda o servidor e os outros entram pela rede local.

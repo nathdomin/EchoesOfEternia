@@ -9,7 +9,11 @@ User=echoes
 Group=echoes
 WorkingDirectory=/opt/echoes
 EnvironmentFile=-/etc/default/echoes-server
-ExecStart=/opt/echoes/echoes_server --headless --port=${ECHOES_PORT} --max-players=${ECHOES_MAX_PLAYERS}
+# Contas e chave do DTLS em /var/lib/echoes (criada pelo systemd, so o
+# usuario echoes le). Faca backup desta pasta.
+StateDirectory=echoes
+StateDirectoryMode=0700
+ExecStart=/opt/echoes/echoes_server --headless --port=${ECHOES_PORT} --max-players=${ECHOES_MAX_PLAYERS} --data=/var/lib/echoes
 Restart=always
 RestartSec=5
 # Da tempo para o servidor salvar e avisar os jogadores ao parar

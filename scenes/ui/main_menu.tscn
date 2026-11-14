@@ -188,15 +188,6 @@ expand_mode = 1
 custom_minimum_size = Vector2(0, 6)
 layout_mode = 2
 
-[node name="Notice" type="Label" parent="Text"]
-unique_name_in_owner = true
-visible = false
-custom_minimum_size = Vector2(250, 0)
-layout_mode = 2
-theme_type_variation = &"InkLabel"
-theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
-autowrap_mode = 3
-
 [node name="MainPage" type="VBoxContainer" parent="Text"]
 unique_name_in_owner = true
 layout_mode = 2
@@ -208,6 +199,14 @@ layout_mode = 2
 size_flags_horizontal = 0
 theme_type_variation = &"InkMenuButton"
 text = "Entrar no mundo"
+alignment = 0
+
+[node name="CreateButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 0
+theme_type_variation = &"InkMenuButton"
+text = "Criar conta"
 alignment = 0
 
 [node name="QuitButton" type="Button" parent="Text/MainPage" groups=["menu_buttons"]]
@@ -224,52 +223,84 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 1
 
-[node name="NameRow" type="HBoxContainer" parent="Text/JoinPage"]
+[node name="AccountRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
 
-[node name="NameLabel" type="Label" parent="Text/JoinPage/NameRow"]
-custom_minimum_size = Vector2(44, 0)
+[node name="AccountRowLabel" type="Label" parent="Text/JoinPage/AccountRow"]
+custom_minimum_size = Vector2(48, 0)
 layout_mode = 2
 theme_type_variation = &"InkLabel"
-text = "Nome"
+text = "Conta"
 
-[node name="JoinName" type="LineEdit" parent="Text/JoinPage/NameRow"]
+[node name="JoinAccount" type="LineEdit" parent="Text/JoinPage/AccountRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme_type_variation = &"InkLineEdit"
-placeholder_text = "Jogador"
+placeholder_text = "nome da conta"
 max_length = 16
 
-[node name="IpRow" type="HBoxContainer" parent="Text/JoinPage"]
+[node name="PassRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
 
-[node name="IpLabel" type="Label" parent="Text/JoinPage/IpRow"]
-custom_minimum_size = Vector2(44, 0)
+[node name="PassRowLabel" type="Label" parent="Text/JoinPage/PassRow"]
+custom_minimum_size = Vector2(48, 0)
 layout_mode = 2
 theme_type_variation = &"InkLabel"
-text = "IP"
+text = "Senha"
 
-[node name="JoinIp" type="LineEdit" parent="Text/JoinPage/IpRow"]
+[node name="JoinPass" type="LineEdit" parent="Text/JoinPage/PassRow"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(150, 0)
 layout_mode = 2
 theme_type_variation = &"InkLineEdit"
-placeholder_text = "IP ou endereço do servidor"
 max_length = 64
+secret = true
+secret_character = "*"
 
-[node name="PortRow" type="HBoxContainer" parent="Text/JoinPage"]
+[node name="ConfirmRow" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
 
-[node name="PortLabel" type="Label" parent="Text/JoinPage/PortRow"]
-custom_minimum_size = Vector2(44, 0)
+[node name="ConfirmRowLabel" type="Label" parent="Text/JoinPage/ConfirmRow"]
+custom_minimum_size = Vector2(48, 0)
 layout_mode = 2
 theme_type_variation = &"InkLabel"
-text = "Porta"
+text = "Repetir"
 
-[node name="JoinPort" type="LineEdit" parent="Text/JoinPage/PortRow"]
+[node name="JoinConfirm" type="LineEdit" parent="Text/JoinPage/ConfirmRow"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 0)
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+max_length = 64
+secret = true
+secret_character = "*"
+
+[node name="ServerRow" type="HBoxContainer" parent="Text/JoinPage"]
+layout_mode = 2
+
+[node name="ServerRowLabel" type="Label" parent="Text/JoinPage/ServerRow"]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = "Servidor"
+
+[node name="JoinIp" type="LineEdit" parent="Text/JoinPage/ServerRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(108, 0)
+layout_mode = 2
+theme_type_variation = &"InkLineEdit"
+placeholder_text = "IP ou endereço"
+max_length = 64
+
+[node name="Colon" type="Label" parent="Text/JoinPage/ServerRow"]
+layout_mode = 2
+theme_type_variation = &"InkLabel"
+text = ":"
+
+[node name="JoinPort" type="LineEdit" parent="Text/JoinPage/ServerRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 0)
 layout_mode = 2
 theme_type_variation = &"InkLineEdit"
 max_length = 5
@@ -277,9 +308,11 @@ max_length = 5
 [node name="JoinError" type="Label" parent="Text/JoinPage"]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(250, 0)
 layout_mode = 2
 theme_type_variation = &"InkLabel"
 theme_override_colors/font_color = Color(0.66, 0.11, 0.08, 1)
+autowrap_mode = 3
 
 [node name="Buttons" type="HBoxContainer" parent="Text/JoinPage"]
 layout_mode = 2
@@ -289,7 +322,7 @@ theme_override_constants/separation = 12
 unique_name_in_owner = true
 layout_mode = 2
 theme_type_variation = &"InkMenuButton"
-text = "Conectar"
+text = "Entrar"
 
 [node name="JoinBack" type="Button" parent="Text/JoinPage/Buttons" groups=["menu_buttons"]]
 unique_name_in_owner = true

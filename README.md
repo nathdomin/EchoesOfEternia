@@ -32,7 +32,9 @@ Só o dono edita as cenas `.tscn` da sua área.
 O jogo é um **MMORPG com servidor dedicado**: o servidor roda separado (na nuvem ou no seu PC) e os jogadores entram nele.
 
 1. Rode um servidor: abra o projeto e use **Debug → Customize Run Instances** (veja abaixo) ou, com o jogo exportado, `EchoesOfEternia.exe --headless --server`.
-2. **F5** abre o **menu** → **Entrar no mundo** → nome, IP do servidor (`127.0.0.1` se for no seu PC) e porta 7777.
+2. **F5** abre o **menu**. Na primeira vez use **Criar conta**: nome da conta, senha (mínimo 6 caracteres, digitada duas vezes) e servidor (`127.0.0.1` se for no seu PC) com porta 7777. Depois é só **Entrar no mundo** com a mesma conta e senha.
+
+A conexão é cifrada (DTLS) e o servidor guarda só o hash da senha. O menu lembra o servidor e a conta da última vez, nunca a senha.
 
 Ao entrar aparecem "Fulano entrou no mundo" e o contador de jogadores no canto. **Esc** sai e volta ao menu.
 
@@ -47,10 +49,14 @@ No jogo, controles: **WASD** ou **setas**.
 No editor: **Debug → Customize Run Instances**, ative *Enable Multiple Instances* e use nos argumentos de cada instância:
 
 - instância 1 (servidor): `--server`
-- instância 2: `--join=127.0.0.1 --name=Ana`
-- instância 3: `--join=127.0.0.1 --name=Bia`
+- instância 2: `--join=127.0.0.1 --user=Ana --pass=segredo1`
+- instância 3: `--join=127.0.0.1 --user=Bia --pass=segredo2`
 
-Servidor: `--port=N` e `--max-players=N` (padrão 7777 e 16). Cliente: `--join=IP`, `--port=N`, `--name=X` e, só em build de debug, `--fake-version=0.0.0` (testa a recusa por versão diferente).
+Na primeira vez acrescente `--create` em cada cliente (cria a conta). Depois tire o `--create`: a conta já existe.
+
+Servidor: `--port=N`, `--max-players=N` e `--data=PASTA` (padrão 7777, 16 e `user://data`, onde ficam as contas). Cliente (só em build de debug, pula o menu): `--join=IP`, `--port=N`, `--user=X`, `--pass=Y`, `--create` e `--fake-version=0.0.0` (testa a recusa por versão diferente).
+
+Para zerar as contas de teste do seu PC, apague a pasta `data` em `%APPDATA%\Godot\app_userdata\Echoes of Eternia\`.
 
 **Servidor na nuvem:** passo a passo em [deploy/README.md](deploy/README.md).
 

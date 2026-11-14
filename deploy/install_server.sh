@@ -55,4 +55,5 @@ sleep 2
 systemctl --no-pager --lines=15 status echoes-server || true
 echo
 echo "Pronto. Logs ao vivo:   sudo journalctl -u echoes-server -f"
+echo "Dados (contas e chave): /var/lib/echoes   Certificado: /var/lib/echoes/tls/server.crt"
 echo "Lembre de liberar a porta UDP $PORT tambem no painel do provedor (Security List / NSG)."

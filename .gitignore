@@ -11,3 +11,7 @@ export/*
 .DS_Store
 Thumbs.db
 ~$*
+
+# Chave privada do servidor (DTLS) nunca vai para o repo.
+# O certificado publico certs/server.crt pode ir.
+*.key

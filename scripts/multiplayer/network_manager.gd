@@ -1,12 +1,13 @@
 extends Node
-## Autoload "NetworkManager" (E5/E6): servidor dedicado ou cliente ENet,
-## aperto de mao (versao + nome) e lista de jogadores igual em todas as maquinas.
+## Autoload "NetworkManager" (E5-E7): servidor dedicado ou cliente ENet com
+## DTLS, login com conta e senha e lista de jogadores igual em todas as maquinas.
 ##
 ## O servidor e dedicado (E6): nao e um jogador. Ele so existe no peer 1 e
 ## nunca aparece em `players`.
 ##
-## Fluxo do cliente: conecta -> envia _register(versao, nome) -> o servidor
-## valida -> todos recebem _sync_players e _notify_join.
+## Fluxo do cliente: conecta (DTLS) -> envia _login(versao, conta, senha,
+## criar) -> o servidor valida e confere a senha -> todos recebem
+## _sync_players e _notify_join. Uma tentativa de login por conexao.
 ## O servidor e a autoridade: so ele altera `players`.
 
 signal connection_ready                 ## servidor iniciou / cliente foi aceito
@@ -17,8 +18,7 @@ signal players_changed
 signal system_message(text: String)
 
 const DEFAULT_MAX_PLAYERS := 16
-const MAX_NAME_LENGTH := 16
-const REGISTER_TIMEOUT := 5.0   ## segundos para o cliente se apresentar
+const LOGIN_TIMEOUT := 10.0  ## segundos para o cliente fazer login (inclui o DTLS)
 ## Tempo (ms) para considerar uma conexao perdida: min e max do ENet.
 const TIMEOUT_MIN_MS := 3000
 const TIMEOUT_MAX_MS := 6000
@@ -28,6 +28,14 @@ var players: Dictionary = {}
 var is_online := false
 ## Vagas do servidor (configuravel com --max-players=N).
 var max_players := DEFAULT_MAX_PLAYERS
+
+# So no servidor:
+var _accounts: AccountStore
+var _guard := LoginGuard.new()
+## peer_id -> chave da conta logada nessa conexao
+var _peer_account: Dictionary = {}
+## peers que ja tentaram login nesta conexao
+var _login_tried: Dictionary = {}
 
 var _accepted := false
 var _end_reason := ""
@@ -57,15 +65,20 @@ func start_from_session() -> Error:
 	return OK
 
 
-## Inicia o servidor dedicado (sem jogador proprio).
-func start_server(port: int, p_max_players: int) -> Error:
+## Inicia o servidor dedicado (sem jogador proprio), com DTLS.
+func start_server(port: int, p_max_players: int, accounts: AccountStore, tls: TLSOptions) -> Error:
 	_reset()
 	max_players = p_max_players
+	_accounts = accounts
 	var peer := ENetMultiplayerPeer.new()
 	# Uma vaga a mais no ENet: quem chega com o servidor cheio recebe a
 	# mensagem "servidor cheio" em vez de um erro generico de conexao.
 	var err := peer.create_server(port, max_players + 1)
 	if err != OK:
+		return err
+	err = peer.host.dtls_server_setup(tls)
+	if err != OK:
+		peer.close()
 		return err
 	multiplayer.multiplayer_peer = peer
 	is_online = true
@@ -81,10 +94,16 @@ func join(ip: String, port: int) -> Error:
 	var err := peer.create_client(ip, port)
 	if err != OK:
 		return err
+	err = peer.host.dtls_client_setup(ip, NetSecurity.client_options())
+	if err != OK:
+		peer.close()
+		return err
 	multiplayer.multiplayer_peer = peer
 	_set_timeout(peer, 1)
 	is_online = true
 	_log("Conectando em %s:%d..." % [ip, port])
+	if not NetSecurity.is_pinned():
+		print("[Rede] Conexao cifrada (DTLS) sem certificado fixo: o servidor nao e verificado.")
 	return OK
 
 
@@ -110,15 +129,19 @@ func _on_peer_connected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_set_timeout(multiplayer.multiplayer_peer as ENetMultiplayerPeer, id)
-	# Quem nao se apresentar a tempo e desconectado
-	get_tree().create_timer(REGISTER_TIMEOUT).timeout.connect(func() -> void:
+	# Quem nao fizer login a tempo e desconectado
+	get_tree().create_timer(LOGIN_TIMEOUT).timeout.connect(func() -> void:
 		if is_online and multiplayer.is_server() and not players.has(id) \
 				and id in multiplayer.get_peers():
 			multiplayer.multiplayer_peer.disconnect_peer(id))
 
 
 func _on_peer_disconnected(id: int) -> void:
-	if not multiplayer.is_server() or not players.has(id):
+	if not multiplayer.is_server():
+		return
+	_login_tried.erase(id)
+	_peer_account.erase(id)
+	if not players.has(id):
 		return
 	var n := player_name(id)
 	players.erase(id)
@@ -127,7 +150,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 
 func _on_connected_to_server() -> void:
-	_register.rpc_id(1, _version, Session.player_name)
+	_login.rpc_id(1, _version, Session.account, Session.take_password(), Session.create_account)
 
 
 func _on_connection_failed() -> void:
@@ -142,23 +165,45 @@ func _on_server_disconnected() -> void:
 
 # ---------- RPCs ----------
 
-## Cliente -> servidor: apresenta versao e nome.
+## Cliente -> servidor: versao, conta e senha (cifradas pelo DTLS).
+## `create` = criar a conta nova em vez de entrar numa existente.
 @rpc("any_peer", "call_remote", "reliable")
-func _register(version: String, wanted_name: String) -> void:
+func _login(version: String, username: String, password: String, create: bool) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
-	if players.has(id):
-		return  # ja registrado: ignora tentativa de trocar de nome
+	if _login_tried.has(id):
+		return  # uma tentativa por conexao
+	_login_tried[id] = true
 	if version != GameVersion.VERSION:
-		_rejected.rpc_id(id, "Versão diferente: o servidor usa %s e você %s. Atualize o jogo." % [GameVersion.VERSION, version])
-		_kick_later(id)
+		_reject(id, "Versão diferente: o servidor usa %s e você %s. Atualize o jogo." % [GameVersion.VERSION, version])
 		return
 	if players.size() >= max_players:
-		_rejected.rpc_id(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
-		_kick_later(id)
+		_reject(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
 		return
-	players[id] = {"name": _unique_name(_sanitize_name(wanted_name))}
+	username = username.strip_edges()
+	var ip := _peer_ip(id)
+	var key := AccountStore.key_of(username)
+	var blocked := _guard.check_create(ip) if create else _guard.check_login(ip, key)
+	if not blocked.is_empty():
+		_reject(id, blocked)
+		return
+
+	var result := _accounts.create(username, password) if create else _accounts.verify(username, password)
+	if not result.ok:
+		_guard.login_failed(ip, "" if create else key)
+		_log("Login recusado: conta '%s' de %s (%s)" % [username.left(16), ip, result.error], false)
+		_reject(id, result.error)
+		return
+	if create:
+		_guard.account_created(ip)
+		_log("Conta criada: %s" % result.key, false)
+	_guard.login_succeeded(result.key)
+	if result.key in _peer_account.values():
+		_reject(id, "Esta conta já está no mundo.")
+		return
+	_peer_account[id] = result.key
+	players[id] = {"name": result.name}
 	_broadcast(_sync_players, [players])
 	_broadcast(_notify_join, [id, players[id].name], true)
 
@@ -215,35 +260,22 @@ func _set_timeout(peer: ENetMultiplayerPeer, id: int) -> void:
 		p.set_timeout(0, TIMEOUT_MIN_MS, TIMEOUT_MAX_MS)
 
 
+## Recusa o login com o motivo e desconecta logo depois.
+func _reject(id: int, reason: String) -> void:
+	_rejected.rpc_id(id, reason)
+	_kick_later(id)
+
+
+func _peer_ip(id: int) -> String:
+	var p := (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(id)
+	return p.get_remote_address() if p else "?"
+
+
 func _kick_later(id: int) -> void:
 	# Pequena espera para a mensagem de recusa chegar antes de desconectar
 	await get_tree().create_timer(0.3).timeout
 	if is_online and id in multiplayer.get_peers():
 		multiplayer.multiplayer_peer.disconnect_peer(id)
-
-
-## O servidor nunca confia no nome vindo do cliente: remove caracteres de
-## controle, junta espacos repetidos e corta no tamanho maximo.
-func _sanitize_name(raw: String) -> String:
-	var out := ""
-	for ch in raw.left(64):
-		out += ch if ch.unicode_at(0) >= 32 and ch.unicode_at(0) != 127 else " "
-	while out.contains("  "):
-		out = out.replace("  ", " ")
-	return out.strip_edges().left(MAX_NAME_LENGTH).strip_edges()
-
-
-func _unique_name(wanted: String) -> String:
-	var base := wanted.strip_edges()
-	if base.is_empty():
-		base = "Jogador"
-	var taken: Array = players.values().map(func(p: Dictionary) -> String: return p.name)
-	var n := base
-	var k := 2
-	while n in taken:
-		n = "%s %d" % [base, k]
-		k += 1
-	return n
 
 
 func _finish(reason: String) -> void:
@@ -255,11 +287,15 @@ func _finish(reason: String) -> void:
 
 func _reset() -> void:
 	players.clear()
+	_peer_account.clear()
+	_login_tried.clear()
 	is_online = false
 	_accepted = false
 	_end_reason = ""
 
 
-func _log(text: String) -> void:
+## `show` = tambem mostrar como mensagem de sistema no jogo.
+func _log(text: String, show := true) -> void:
 	print("[%s] [Rede] %s" % [Time.get_time_string_from_system(), text])
-	system_message.emit(text)
+	if show:
+		system_message.emit(text)
