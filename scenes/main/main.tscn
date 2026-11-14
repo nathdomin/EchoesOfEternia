@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/maps/ambience.tscn" id="4_amb"]
 [ext_resource type="PackedScene" path="res://scenes/ui/net_hud.tscn" id="5_hud"]
 
-[node name="Main" type="Node2D" unique_id=1005394235]
+[node name="Game" type="Node2D" unique_id=1005394235]
 script = ExtResource("1_main")
 
 [node name="World" type="Node2D" parent="." unique_id=1881602507]

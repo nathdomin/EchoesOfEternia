@@ -156,6 +156,11 @@ func _on_peer_disconnected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_login_tried.erase(id)
+	_drop_player(id)
+
+
+## Tira o jogador do mundo: salva (account_logged_out) e avisa os outros.
+func _drop_player(id: int) -> void:
 	if _peer_account.has(id):
 		account_logged_out.emit(id, _peer_account[id])
 		_peer_account.erase(id)
@@ -209,7 +214,8 @@ func _login(version: String, username: String, password: String, create: bool) -
 
 	var result := _accounts.create(username, password) if create else _accounts.verify(username, password)
 	if not result.ok:
-		_guard.login_failed(ip, "" if create else key)
+		if not create:  # so senha errada conta como tentativa (forca bruta)
+			_guard.login_failed(ip, key)
 		_log("Login recusado: conta '%s' de %s (%s)" % [username.left(16), ip, result.error], false)
 		_reject(id, result.error)
 		return
@@ -217,9 +223,14 @@ func _login(version: String, username: String, password: String, create: bool) -
 		_guard.account_created(ip)
 		_log("Conta criada: %s" % result.key, false)
 	_guard.login_succeeded(result.key)
-	if result.key in _peer_account.values():
-		_reject(id, "Esta conta já está no mundo.")
-		return
+	# Conta ja online (outro PC, ou o jogo fechou sem avisar e o servidor
+	# ainda nao percebeu): a senha confere, entao a sessao antiga sai (e e
+	# salva) e a nova entra.
+	var old_id: Variant = _peer_account.find_key(result.key)
+	if old_id != null:
+		_log("%s entrou de novo; encerrando a sessao anterior" % result.name, false)
+		_drop_player(old_id)
+		_reject(old_id, "Sua conta entrou em outro lugar.")
 	_peer_account[id] = result.key
 	account_logged_in.emit(id, result.key, result.name)
 	players[id] = {"name": result.name}

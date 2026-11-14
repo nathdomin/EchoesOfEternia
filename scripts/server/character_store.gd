@@ -3,7 +3,7 @@ extends RefCounted
 ## Personagens salvos (E8). So existe no servidor.
 ##
 ## Um personagem por conta, em <dados>/characters/<conta>.json:
-##   { "format", "account", "name", "zone", "x", "y", "facing",
+##   { "format", "account", "name", "skin", "zone", "x", "y", "facing",
 ##     "level", "xp", "created_at", "last_seen", "play_time" }
 ## level/xp ja existem para a E16; inventario, classe etc. entram como
 ## campos novos (os que faltarem num arquivo antigo recebem o padrao).
@@ -47,6 +47,8 @@ func load_or_create(account_key: String, display_name: String, zone: String, pos
 		data[k] = int(data[k])
 	if not data.facing in FACINGS:
 		data.facing = "down"
+	if not Player.SKINS.has(data.skin):
+		data.skin = defaults.skin
 	return {"data": data, "is_new": false}
 
 
@@ -66,6 +68,7 @@ func _defaults(account_key: String, display_name: String, zone: String, pos: Vec
 		"format": FORMAT_VERSION,
 		"account": account_key,
 		"name": display_name,
+		"skin": skin_for(account_key),
 		"zone": zone,
 		"x": pos.x,
 		"y": pos.y,
@@ -76,6 +79,12 @@ func _defaults(account_key: String, display_name: String, zone: String, pos: Vec
 		"last_seen": now,
 		"play_time": 0,
 	}
+
+
+## Aparencia inicial sorteada pela conta (sempre a mesma para a mesma conta).
+static func skin_for(account_key: String) -> String:
+	var skins := Player.SKINS.keys()
+	return skins[absi(account_key.hash()) % skins.size()]
 
 
 func _path(key: String) -> String:

@@ -1,18 +1,20 @@
 extends Node
-## Autoload "Characters" (E8): personagem salvo de cada jogador.
+## Autoload "Characters" (E8/E9): personagem salvo e presenca no mundo.
 ##
 ## Servidor:
 ##  - no login carrega (ou cria) o personagem da conta e envia ao cliente a
 ##    zona, a posicao e a direcao onde ele parou;
 ##  - recebe a posicao do cliente (~10x por segundo enquanto anda) e confere
 ##    a velocidade e os limites da zona; movimento impossivel e desfeito;
-##  - salva ao sair, a cada AUTOSAVE_SEC e quando o servidor e desligado.
+##  - salva ao sair, a cada AUTOSAVE_SEC e quando o servidor e desligado;
+##  - (E9) cria um RemotePlayer por jogador no `Players` da zona. O
+##    MultiplayerSpawner/Synchronizer leva esse avatar so para quem esta na
+##    mesma zona e ja avisou que carregou o jogo (notify_ready), e nunca para
+##    o dono. Quem entra depois recebe todos os que ja estao la (late join).
 ## Cliente:
 ##  - guarda `spawn` (recebido antes do login ser aceito) para a cena do jogo;
-##  - envia a posicao com report_position().
-##
-## Na E9 a posicao passa a ir pelo MultiplayerSynchronizer; a validacao do
-## servidor continua aqui.
+##  - envia a posicao com report_position();
+##  - avisa com notify_ready() quando a cena do jogo carregou.
 
 signal position_corrected(pos: Vector2)
 
@@ -23,16 +25,18 @@ const SPEED_SLACK := 1.25
 const MAX_BUDGET := Player.SPEED * 0.5
 const TOLERANCE_PX := 4.0
 const FACING_VECTORS := {"down": Vector2i.DOWN, "up": Vector2i.UP, "left": Vector2i.LEFT, "right": Vector2i.RIGHT}
+const REMOTE_PLAYER := preload("res://scenes/characters/remote_player.tscn")
 
-## Cliente: { "zone": String, "position": Vector2, "facing": Vector2i, "is_new": bool }
+## Cliente: { "zone", "position": Vector2, "facing": Vector2i, "skin", "is_new" }
 var spawn: Dictionary = {}
 
 # ---------- so no servidor ----------
 var _store: CharacterStore
-## zona -> { "bounds": Rect2, "spawn": Vector2 }
+## zona -> { "bounds": Rect2, "spawn": Vector2, "players": Node2D }
 var _zones: Dictionary = {}
 ## peer_id -> { "data": Dictionary, "budget": float, "last_ms": int,
-##              "since_ms": int, "dirty": bool, "warned_ms": int, "corrected_ms": int }
+##              "since_ms": int, "dirty": bool, "warned_ms": int, "corrected_ms": int,
+##              "ready": bool, "avatar": RemotePlayer }
 var _online: Dictionary = {}
 var _default_zone := ""
 var _autosave: Timer
@@ -56,9 +60,10 @@ func start_server(store: CharacterStore) -> void:
 	add_child(_autosave)
 
 
-## O servidor registra cada zona carregada. A primeira e a zona inicial.
-func register_zone(zone: String, bounds: Rect2, spawn_pos: Vector2) -> void:
-	_zones[zone] = {"bounds": bounds, "spawn": spawn_pos}
+## O servidor registra cada zona carregada (cena com get_bounds(),
+## get_spawn_position() e um no "Players"). A primeira e a zona inicial.
+func register_zone(zone: String, map: Node) -> void:
+	_zones[zone] = {"bounds": map.get_bounds(), "spawn": map.get_spawn_position(), "players": map.get_node("Players")}
 	if _default_zone.is_empty():
 		_default_zone = zone
 
@@ -85,6 +90,12 @@ func report_position(pos: Vector2, facing: Vector2i) -> void:
 		_report_position.rpc_id(1, pos, facing)
 
 
+## A cena do jogo carregou: o servidor pode mandar os outros jogadores.
+func notify_ready() -> void:
+	if NetworkManager.is_logged_in():
+		_client_ready.rpc_id(1)
+
+
 # ---------- servidor: login e saida ----------
 
 func _on_account_logged_in(id: int, account_key: String, display_name: String) -> void:
@@ -99,21 +110,46 @@ func _on_account_logged_in(id: int, account_key: String, display_name: String) -
 		data.x = _zones[zone].spawn.x
 		data.y = _zones[zone].spawn.y
 	var now := Time.get_ticks_msec()
-	_online[id] = {"data": data, "budget": MAX_BUDGET, "last_ms": now, "since_ms": now, "dirty": r.is_new, "warned_ms": -10000, "corrected_ms": -10000}
+	_online[id] = {"data": data, "budget": MAX_BUDGET, "last_ms": now, "since_ms": now, "dirty": r.is_new,
+			"warned_ms": -10000, "corrected_ms": -10000, "ready": false, "avatar": _spawn_avatar(id, data)}
 	if r.is_new:
 		_store.save(data)
 	_log("%s %s em %s (%d, %d)" % [display_name, "criou o personagem" if r.is_new else "carregado",
 			data.zone, int(data.x), int(data.y)])
 	# Vai antes da lista de jogadores (mesmo canal confiavel = chega antes):
 	# quando o cliente souber que foi aceito, ja sabe onde aparecer.
-	_spawn_character.rpc_id(id, data.zone, Vector2(data.x, data.y), FACING_VECTORS[data.facing], r.is_new)
+	_spawn_character.rpc_id(id, data.zone, Vector2(data.x, data.y), FACING_VECTORS[data.facing], data.skin, r.is_new)
 
 
 func _on_account_logged_out(id: int, _account_key: String) -> void:
 	if not _online.has(id):
 		return
 	_save(id)
+	var avatar: Node = _online[id].avatar
+	if is_instance_valid(avatar):
+		avatar.queue_free()  # o spawner remove dos outros clientes
 	_online.erase(id)
+
+
+func _spawn_avatar(id: int, data: Dictionary) -> RemotePlayer:
+	var avatar := REMOTE_PLAYER.instantiate() as RemotePlayer
+	avatar.name = str(id)
+	avatar.display_name = data.name
+	avatar.skin = data.skin
+	avatar.net_position = Vector2(data.x, data.y)
+	avatar.facing = FACING_VECTORS[data.facing]
+	(avatar.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(_can_see.bind(id))
+	_zones[data.zone].players.add_child(avatar, true)
+	return avatar
+
+
+## Filtro de visibilidade: `peer` recebe o avatar de `owner_id`?
+## So se estiver na mesma zona, ja tiver carregado o jogo e nao for o dono.
+func _can_see(peer: int, owner_id: int) -> bool:
+	if peer == owner_id or not _online.has(peer) or not _online.has(owner_id):
+		return false
+	var viewer: Dictionary = _online[peer]
+	return viewer.ready and viewer.data.zone == _online[owner_id].data.zone
 
 
 func _save(id: int) -> void:
@@ -129,8 +165,18 @@ func _save(id: int) -> void:
 
 ## Servidor -> cliente: onde o personagem aparece.
 @rpc("authority", "call_remote", "reliable")
-func _spawn_character(zone: String, pos: Vector2, facing: Vector2i, is_new: bool) -> void:
-	spawn = {"zone": zone, "position": pos, "facing": facing, "is_new": is_new}
+func _spawn_character(zone: String, pos: Vector2, facing: Vector2i, skin: String, is_new: bool) -> void:
+	spawn = {"zone": zone, "position": pos, "facing": facing, "skin": skin, "is_new": is_new}
+
+
+## Cliente -> servidor: a cena do jogo (com os spawners) ja existe.
+@rpc("any_peer", "call_remote", "reliable")
+func _client_ready() -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	if _online.has(id):
+		_online[id].ready = true
 
 
 ## Cliente -> servidor: posicao atual. O servidor so aceita o que daria para
@@ -166,6 +212,10 @@ func _report_position(pos: Vector2, facing: Vector2i) -> void:
 	var f: Variant = FACING_VECTORS.find_key(facing)
 	if f != null:
 		data.facing = f
+	var avatar: RemotePlayer = c.avatar
+	avatar.position = pos
+	avatar.net_position = pos
+	avatar.facing = FACING_VECTORS[data.facing]
 	c.dirty = true
 
 

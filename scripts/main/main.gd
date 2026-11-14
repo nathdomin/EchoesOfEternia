@@ -28,6 +28,9 @@ func _ready() -> void:
 	_last_sent_pos = _player.global_position
 	_last_sent_facing = _player.facing
 	Characters.position_corrected.connect(func(pos: Vector2) -> void: _player.place(pos, _player.facing))
+	_player.setup_look(s.get("skin", "knight"), NetworkManager.player_name(multiplayer.get_unique_id()))
+	# Agora os spawners existem: o servidor pode mandar os outros jogadores
+	Characters.notify_ready()
 
 	NetworkManager.connection_ended.connect(_back_to_menu)
 	if not NetworkManager.is_logged_in():

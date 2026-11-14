@@ -24,3 +24,10 @@ tile_set = ExtResource("2_eaflo")
 
 [node name="SpawnPoint" type="Marker2D" parent="." unique_id=1364941220]
 position = Vector2(456, 296)
+
+[node name="Players" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://scenes/characters/remote_player.tscn")
+spawn_path = NodePath("../Players")

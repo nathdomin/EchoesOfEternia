@@ -1,0 +1,10 @@
+[gd_resource type="LabelSettings" format=3]
+
+[ext_resource type="FontFile" path="res://assets/ui/fonts/kenney_mini.ttf" id="1_font"]
+
+[resource]
+font = ExtResource("1_font")
+font_size = 8
+font_color = Color(1, 0.98, 0.92, 1)
+outline_size = 2
+outline_color = Color(0.1, 0.05, 0.05, 0.9)
