@@ -14,6 +14,8 @@ EnvironmentFile=-/etc/default/echoes-server
 StateDirectory=echoes
 StateDirectoryMode=0700
 ExecStart=/opt/echoes/echoes_server --headless --port=${ECHOES_PORT} --max-players=${ECHOES_MAX_PLAYERS} --data=/var/lib/echoes
+# Parada segura: salva os personagens antes de fechar (deploy/stop_server.sh)
+ExecStop=/opt/echoes/stop_server.sh
 Restart=always
 RestartSec=5
 # Da tempo para o servidor salvar e avisar os jogadores ao parar

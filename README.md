@@ -34,7 +34,7 @@ O jogo é um **MMORPG com servidor dedicado**: o servidor roda separado (na nuve
 1. Rode um servidor: abra o projeto e use **Debug → Customize Run Instances** (veja abaixo) ou, com o jogo exportado, `EchoesOfEternia.exe --headless --server`.
 2. **F5** abre o **menu**. Na primeira vez use **Criar conta**: nome da conta, senha (mínimo 6 caracteres, digitada duas vezes) e servidor (`127.0.0.1` se for no seu PC) com porta 7777. Depois é só **Entrar no mundo** com a mesma conta e senha.
 
-A conexão é cifrada (DTLS) e o servidor guarda só o hash da senha. O menu lembra o servidor e a conta da última vez, nunca a senha.
+O personagem fica salvo no servidor: ao entrar de novo você aparece onde parou. A conexão é cifrada (DTLS) e o servidor guarda só o hash da senha. O menu lembra o servidor e a conta da última vez, nunca a senha.
 
 Ao entrar aparecem "Fulano entrou no mundo" e o contador de jogadores no canto. **Esc** sai e volta ao menu.
 
@@ -56,7 +56,7 @@ Na primeira vez acrescente `--create` em cada cliente (cria a conta). Depois tir
 
 Servidor: `--port=N`, `--max-players=N` e `--data=PASTA` (padrão 7777, 16 e `user://data`, onde ficam as contas). Cliente (só em build de debug, pula o menu): `--join=IP`, `--port=N`, `--user=X`, `--pass=Y`, `--create` e `--fake-version=0.0.0` (testa a recusa por versão diferente).
 
-Para zerar as contas de teste do seu PC, apague a pasta `data` em `%APPDATA%\Godot\app_userdata\Echoes of Eternia\`.
+Para desligar o servidor salvando todos os personagens, crie um arquivo vazio `stop.request` na pasta de dados (na VM o `systemctl stop` faz isso). Para zerar as contas e personagens de teste do seu PC, apague a pasta `data` em `%APPDATA%\Godot\app_userdata\Echoes of Eternia\`.
 
 **Servidor na nuvem:** passo a passo em [deploy/README.md](deploy/README.md).
 

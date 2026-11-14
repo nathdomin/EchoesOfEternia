@@ -33,7 +33,7 @@ Os jogadores só abrem o cliente e entram com o endereço da VM.
 No PC (troque o IP e a chave):
 
 ```bash
-scp -i chave.key export/server/echoes_server.arm64 deploy/install_server.sh deploy/update_server.sh deploy/echoes-server.service ubuntu@IP_DA_VM:~
+scp -i chave.key export/server/echoes_server.arm64 deploy/install_server.sh deploy/update_server.sh deploy/stop_server.sh deploy/echoes-server.service ubuntu@IP_DA_VM:~
 ssh -i chave.key ubuntu@IP_DA_VM
 ```
 
@@ -45,7 +45,9 @@ sudo bash install_server.sh ./echoes_server.arm64
 
 O script cria o usuário `echoes`, instala em `/opt/echoes`, abre a porta UDP 7777 no firewall da VM e cria o serviço `echoes-server`, que **inicia com a VM e reinicia sozinho se cair**.
 
-As **contas** e a **chave do DTLS** ficam em `/var/lib/echoes` (só o usuário `echoes` lê). Na primeira vez que liga, o servidor gera a chave e o certificado em `/var/lib/echoes/tls/`.
+As **contas**, os **personagens** e a **chave do DTLS** ficam em `/var/lib/echoes` (só o usuário `echoes` lê).
+
+**Salvamento:** o servidor salva cada personagem quando o jogador sai, todos a cada 60 s, e todos ao parar com `systemctl stop`/`restart` (a parada segura avisa os jogadores "Seu personagem foi salvo"). Se a VM cair sem aviso, perde-se no máximo o último minuto. Na primeira vez que liga, o servidor gera a chave e o certificado em `/var/lib/echoes/tls/`.
 
 Porta e vagas: `sudo PORT=7777 MAX_PLAYERS=16 bash install_server.sh ./echoes_server.arm64`
 (ou edite `/etc/default/echoes-server` e rode `sudo systemctl restart echoes-server`).
@@ -61,7 +63,7 @@ No menu do cliente: **Entrar no mundo** → IP = IP público da VM, porta 7777.
 | Ver os logs ao vivo | `sudo journalctl -u echoes-server -f` |
 | Ver se está rodando | `systemctl status echoes-server` |
 | Reiniciar | `sudo systemctl restart echoes-server` |
-| Parar | `sudo systemctl stop echoes-server` |
+| Parar (salva todos antes) | `sudo systemctl stop echoes-server` |
 | Atualizar para uma versão nova (faz backup antes) | `sudo bash update_server.sh ./echoes_server.arm64` |
 | Backup manual das contas | `sudo tar czf ~/echoes-dados.tgz -C /var/lib echoes` |
 | Quantas contas existem | `sudo ls /var/lib/echoes/accounts \| wc -l` |

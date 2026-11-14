@@ -16,6 +16,9 @@ signal player_joined(id: int, player_name: String)
 signal player_left(id: int, player_name: String)
 signal players_changed
 signal system_message(text: String)
+## So no servidor: conta entrou/saiu (Characters carrega e salva o personagem).
+signal account_logged_in(id: int, account_key: String, display_name: String)
+signal account_logged_out(id: int, account_key: String)
 
 const DEFAULT_MAX_PLAYERS := 16
 const LOGIN_TIMEOUT := 10.0  ## segundos para o cliente fazer login (inclui o DTLS)
@@ -120,6 +123,14 @@ func is_logged_in() -> bool:
 	return is_online and _accepted and multiplayer != null and not multiplayer.is_server()
 
 
+## Servidor: avisa todos os jogadores com o motivo e encerra a rede.
+func shutdown_server(reason: String) -> void:
+	_broadcast(_rejected, [reason])
+	# tempo para o aviso chegar antes de fechar as conexoes
+	await get_tree().create_timer(0.5).timeout
+	leave()
+
+
 func is_server() -> bool:
 	return is_online and multiplayer != null and multiplayer.is_server()
 
@@ -145,7 +156,9 @@ func _on_peer_disconnected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_login_tried.erase(id)
-	_peer_account.erase(id)
+	if _peer_account.has(id):
+		account_logged_out.emit(id, _peer_account[id])
+		_peer_account.erase(id)
 	if not players.has(id):
 		return
 	var n := player_name(id)
@@ -208,6 +221,7 @@ func _login(version: String, username: String, password: String, create: bool) -
 		_reject(id, "Esta conta já está no mundo.")
 		return
 	_peer_account[id] = result.key
+	account_logged_in.emit(id, result.key, result.name)
 	players[id] = {"name": result.name}
 	_broadcast(_sync_players, [players])
 	_broadcast(_notify_join, [id, players[id].name], true)
