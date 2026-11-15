@@ -12,6 +12,7 @@ description = "Acerta todos os monstros em volta."
 icon = ExtResource("2_moqab")
 kind = 0
 power = 1.4
+threat = 2.5
 range = 0.0
 radius = 28.0
 effect = ExtResource("1_viakr")

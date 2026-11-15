@@ -14,6 +14,10 @@ enum State { IDLE, CHASE, RETURN, DEAD }
 const FOLLOW_RATE := 12.0
 const SNAP_DISTANCE := 64.0
 const SMOKE := preload("res://scenes/effects/smoke.tscn")
+## Para trocar de alvo, o outro precisa passar a ameaca atual em 10%.
+const THREAT_SWITCH := 1.1
+## Distancia minima ate o jogador para continuar na lista de ameaca.
+const THREAT_KEEP_RANGE := 140.0
 ## Chefe (E24): pisao em area a cada SLAM_EVERY s enquanto luta.
 const SLAM_EVERY := 7.0
 const SLAM_RADIUS := 46.0
@@ -36,6 +40,10 @@ var zone := ""
 var home := Vector2.ZERO
 var wander_radius := 32.0
 var _target := 0
+## Revisao MMO: dano causado por jogador (credito do abate) e ameaca
+## (quem o monstro persegue). Zeram quando ele volta para casa ou morre.
+var _damage_by: Dictionary = {}  ## peer -> int
+var _threat: Dictionary = {}     ## peer -> float
 var _next_attack_ms := 0
 var _wander_to := Vector2.ZERO
 var _wander_wait := 0.0
@@ -132,6 +140,7 @@ func _physics_process(delta: float) -> void:
 				Combat.boss_slam(self, SLAM_RADIUS, roundi(data.damage * 1.5))
 			if position.distance_to(home) > data.leash_range:
 				_target = 0
+				_forget()
 				state = State.RETURN
 		else:
 			state = State.IDLE
@@ -141,18 +150,48 @@ func _physics_process(delta: float) -> void:
 
 
 func _pick_target() -> void:
-	if _target != 0 and Combat.can_be_attacked(_target, zone) \
-			and position.distance_to(Characters.position_of(_target)) < data.aggro_range * 2.0:
+	var keep := maxf(data.aggro_range * 2.0, THREAT_KEEP_RANGE)
+	for id: int in _threat.keys():
+		if not Combat.can_be_attacked(id, zone) or position.distance_to(Characters.position_of(id)) > keep:
+			_threat.erase(id)
+	if not _threat.is_empty():
+		# Maior ameaca; so troca de alvo se passar a atual com folga
+		var best_id := 0
+		var best := -1.0
+		for id: int in _threat:
+			if _threat[id] > best:
+				best = _threat[id]
+				best_id = id
+		if _target == 0 or not _threat.has(_target) or best > float(_threat[_target]) * THREAT_SWITCH:
+			_target = best_id
 		return
 	_target = 0
-	var best := data.aggro_range
+	var near := data.aggro_range
 	for id in Characters.players_in_zone(zone):
 		if not Combat.can_be_attacked(id, zone):
 			continue
 		var d := position.distance_to(Characters.position_of(id))
-		if d < best:
-			best = d
+		if d < near:
+			near = d
 			_target = id
+	if _target != 0:
+		_threat[_target] = 1.0  # quem chegou perto primeiro
+
+
+## Servidor: ameaca extra (habilidade de guerreiro, cura de quem ele ataca).
+func add_threat(id: int, amount: float) -> void:
+	if id != 0 and state != State.DEAD and state != State.RETURN and amount > 0.0:
+		_threat[id] = float(_threat.get(id, 0.0)) + amount
+
+
+## Servidor: este jogador esta na lista de ameaca do monstro?
+func is_fighting(id: int) -> bool:
+	return _threat.has(id)
+
+
+func _forget() -> void:
+	_damage_by.clear()
+	_threat.clear()
 
 
 func _wander(delta: float) -> void:
@@ -180,11 +219,11 @@ func _face(dir: Vector2) -> void:
 		facing = Vector2i.DOWN if dir.y > 0.0 else Vector2i.UP
 
 
-func _on_damaged(_amount: int, source_id: int) -> void:
+func _on_damaged(amount: int, source_id: int) -> void:
 	hp = health.hp
-	# Quem bate vira o alvo (se ainda nao estiver voltando para casa)
 	if source_id != 0 and state != State.RETURN:
-		_target = source_id
+		_damage_by[source_id] = int(_damage_by.get(source_id, 0)) + amount
+		add_threat(source_id, float(amount))
 
 
 func _on_died(killer_id: int) -> void:
@@ -193,7 +232,9 @@ func _on_died(killer_id: int) -> void:
 	velocity = Vector2.ZERO
 	_target = 0
 	_respawn_at_ms = Time.get_ticks_msec() + int(data.respawn_time * 1000.0)
-	Combat.monster_killed(self, killer_id)
+	var damage_by := _damage_by.duplicate()
+	_forget()
+	Combat.monster_killed(self, killer_id, damage_by)
 
 
 func _respawn() -> void:
@@ -201,6 +242,7 @@ func _respawn() -> void:
 	net_position = home
 	health.reset()
 	hp = health.hp
+	_forget()
 	state = State.IDLE
 
 

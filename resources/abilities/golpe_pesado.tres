@@ -11,6 +11,7 @@ display_name = "Golpe Pesado"
 description = "Um golpe muito forte à frente."
 icon = ExtResource("2_lb0qi")
 power = 2.4
+threat = 3.0
 cooldown = 4.0
 radius = 0.0
 effect = ExtResource("1_ne4yr")

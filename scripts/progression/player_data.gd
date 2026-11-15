@@ -22,6 +22,10 @@ const NPC_TALK_RANGE := 40.0
 ## fracao do total, dividida pelo numero de membros, com bonus de grupo.
 const PARTY_XP_RANGE := 320.0
 const PARTY_BONUS := 0.25
+## Parte do dano para contar o abate na missao (fora do time vencedor).
+const CREDIT_SHARE := 0.25
+## Parte do dano para ganhar XP e saque de um chefe.
+const CREDIT_SHARE_BOSS := 0.05
 
 ## Cliente: retrato do proprio personagem.
 var me: Dictionary = {}
@@ -219,24 +223,84 @@ func _changed(id: int) -> void:
 
 # ---------- servidor: XP, saque e missoes ----------
 
-## Monstro derrotado: XP (dividido com o grupo perto), saque e missoes.
-func award_kill(killer_id: int, monster: Monster) -> void:
-	if killer_id == 0 or Characters.data_of(killer_id).is_empty():
+## Credito do abate (revisao MMO): o dano de cada jogador e somado por
+## "time" (o grupo, ou o jogador sozinho). O time que mais bateu leva XP,
+## saque e missao, e divide a XP como antes (membros perto, +25% cada).
+## Quem nao e desse time mas causou CREDIT_SHARE do dano ainda conta para a
+## missao. Chefe: todo time com CREDIT_SHARE_BOSS do dano ganha, e cada
+## jogador rola o proprio saque.
+func award_kill(killer_id: int, monster: Monster, damage_by: Dictionary = {}) -> void:
+	if damage_by.is_empty() and killer_id != 0:
+		damage_by = {killer_id: 1}
+	var total := 0
+	var teams: Dictionary = {}  ## chave -> {"damage": int, "top": peer, "top_dmg": int, "hitters": [peer]}
+	for pid: int in damage_by:
+		if Characters.data_of(pid).is_empty():
+			continue  # saiu do jogo
+		var dmg := int(damage_by[pid])
+		total += dmg
+		var key := _team_key(pid)
+		var t: Dictionary = teams.get(key, {"damage": 0, "top": pid, "top_dmg": -1, "hitters": []})
+		t.damage += dmg
+		t.hitters.append(pid)
+		if dmg > t.top_dmg:
+			t.top = pid
+			t.top_dmg = dmg
+		teams[key] = t
+	if teams.is_empty() or total <= 0:
 		return
-	var zone := Characters.zone_of(killer_id)
-	var sharers: Array[int] = []
-	for pid in Social.party_members(killer_id):
-		if Characters.zone_of(pid) == zone and not Combat.is_dead(pid) \
-				and Characters.position_of(pid).distance_to(monster.position) <= PARTY_XP_RANGE:
-			sharers.append(pid)
-	if not killer_id in sharers:
-		sharers.append(killer_id)
-	var total := monster.data.xp_reward * (1.0 + PARTY_BONUS * (sharers.size() - 1))
-	var each := maxi(1, roundi(total / sharers.size()))
-	for pid in sharers:
-		_count_kill(pid, monster.monster_id)
-		add_xp(pid, each)
-	_roll_loot(killer_id, monster.data)
+	var credited: Array = []
+	if monster.data.is_boss:
+		for key in teams:
+			if float(teams[key].damage) / total >= CREDIT_SHARE_BOSS:
+				credited.append(teams[key])
+	else:
+		var best: Dictionary = {}
+		for key in teams:
+			if best.is_empty() or teams[key].damage > best.damage:
+				best = teams[key]
+		credited.append(best)
+	var rewarded: Dictionary = {}
+	for t: Dictionary in credited:
+		var sharers := _sharers(t, monster)
+		var xp_total := monster.data.xp_reward * (1.0 + PARTY_BONUS * (sharers.size() - 1))
+		var each := maxi(1, roundi(xp_total / sharers.size()))
+		for pid in sharers:
+			rewarded[pid] = true
+			_count_kill(pid, monster.monster_id)
+			add_xp(pid, each)
+			_changed(pid)  # missao conta mesmo no nivel maximo (add_xp nao avisa)
+		if monster.data.is_boss:
+			for pid in sharers:
+				_roll_loot(pid, monster.data)
+		else:
+			_roll_loot(t.top, monster.data)
+	# Ajudou bastante mas o abate foi de outro time: conta para a missao
+	for pid: int in damage_by:
+		if not rewarded.has(pid) and not Characters.data_of(pid).is_empty() 				and float(damage_by[pid]) / total >= CREDIT_SHARE:
+			_count_kill(pid, monster.monster_id)
+			_changed(pid)
+
+
+## Grupo do jogador ("p<menor id>") ou ele sozinho ("s<id>").
+func _team_key(pid: int) -> String:
+	var members := Social.party_members(pid)
+	if members.is_empty():
+		return "s%d" % pid
+	members.sort()
+	return "p%d" % members[0]
+
+
+## Quem do time recebe: quem bateu e os membros vivos perto do monstro.
+func _sharers(team: Dictionary, monster: Monster) -> Array[int]:
+	var zone := Characters.zone_of(team.top)
+	var out: Array[int] = []
+	for pid: int in team.hitters:
+		out.append(pid)
+	for pid in Social.party_members(team.top):
+		if not pid in out and Characters.zone_of(pid) == zone and not Combat.is_dead(pid) 				and Characters.position_of(pid).distance_to(monster.position) <= PARTY_XP_RANGE:
+			out.append(pid)
+	return out
 
 
 func add_xp(id: int, amount: int) -> void:
@@ -260,10 +324,24 @@ func add_xp(id: int, amount: int) -> void:
 			avatar.health.reset()  # sobe de nivel com a vida cheia
 			avatar.sync_health()
 		Combat.push_health(id)
-		NetworkManager.broadcast_system_message("%s alcançou o nível %d!" % [data.name, data.level])
+		_announce_level(id, data)
 		Combat.play_effect_in_zone(Characters.zone_of(id), "levelup", Characters.position_of(id) + Vector2(0, -10))
 		_level_up.rpc_id(id, int(data.level))
 	_changed(id)
+
+
+## Nivel maximo: aviso para todos. Os outros: so o grupo e quem esta na zona
+## (com 16 jogadores o chat virava uma lista de "subiu de nivel").
+func _announce_level(id: int, data: Dictionary) -> void:
+	if int(data.level) >= XP.max_level():
+		NetworkManager.broadcast_system_message("%s alcançou o nível máximo (%d)!" % [data.name, data.level])
+		return
+	var text := "%s alcançou o nível %d!" % [data.name, data.level]
+	var told: Dictionary = {}
+	for pid in Characters.players_in_zone(Characters.zone_of(id)) + Social.party_members(id):
+		if not told.has(pid):
+			told[pid] = true
+			NetworkManager.send_system_message(pid, text)
 
 
 func _roll_loot(id: int, md: MonsterData) -> void:

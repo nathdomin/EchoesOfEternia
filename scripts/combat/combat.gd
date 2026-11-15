@@ -100,14 +100,15 @@ func monster_attack(monster: Monster, target_id: int, damage: int) -> void:
 	avatar.health.take_damage(damage, 0)
 
 
-func monster_killed(monster: Monster, killer_id: int) -> void:
+## `damage_by` = dano de cada jogador (o credito vai para quem mais bateu).
+func monster_killed(monster: Monster, killer_id: int, damage_by: Dictionary = {}) -> void:
 	if monster.data.is_boss:
 		var who := NetworkManager.player_name(killer_id) if killer_id != 0 else "Alguém"
 		NetworkManager.broadcast_system_message("%s derrotou %s!" % [who, monster.display_name()])
 	elif killer_id != 0 and _players.has(killer_id):
 		NetworkManager.send_system_message(killer_id, "Você derrotou %s." % monster.display_name())
 	monster_defeated.emit(killer_id, monster)
-	PlayerData.award_kill(killer_id, monster)
+	PlayerData.award_kill(killer_id, monster, damage_by)
 
 
 ## Chefe: pisao que acerta todos os jogadores no raio.
@@ -319,11 +320,21 @@ func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
 					if pid != id and Characters.zone_of(pid) == zone and not is_dead(pid) \
 							and Characters.position_of(pid).distance_to(origin) <= ab.radius:
 						healed.append(pid)
+			var total_healed := 0
 			for pid in healed:
 				var a := Characters.avatar_of(pid)
 				if a:
-					a.health.heal(roundi(a.health.max_hp * ab.power))
+					total_healed += a.health.heal(roundi(a.health.max_hp * ab.power))
+			# Curar quem esta lutando chama a atencao dos monstros (metade da cura)
+			if total_healed > 0:
+				for m in _alive_monsters(zone):
+					for pid in healed:
+						if m.is_fighting(pid):
+							m.add_threat(id, total_healed * 0.5)
+							break
 	for m in hits:
+		if ab.threat > 1.0:
+			m.add_threat(id, damage * (ab.threat - 1.0))
 		m.health.take_damage(damage, id)
 		_hit_confirmed.rpc_id(id, get_path_to(m))
 	for pid in Characters.players_in_zone(zone):

@@ -6,7 +6,9 @@ extends VBoxContainer
 
 const MAX_LINES := 7
 const LINE_TIME := 12.0
-const COLORS := {"global": Color(1, 0.96, 0.88), "grupo": Color(0.55, 0.85, 1.0), "sistema": Color(1, 0.88, 0.5)}
+const COLORS := {"global": Color(1, 0.96, 0.88), "grupo": Color(0.55, 0.85, 1.0), "zona": Color(0.7, 1.0, 0.65),
+		"de": Color(1.0, 0.6, 0.9), "para": Color(1.0, 0.6, 0.9), "sistema": Color(1, 0.88, 0.5)}
+const PREFIX := {"grupo": "[Grupo] %s: ", "zona": "[Zona] %s: ", "de": "%s sussurra: ", "para": "Para %s: ", "global": "%s: "}
 
 var is_open := false
 var _lines: VBoxContainer
@@ -23,7 +25,7 @@ func _ready() -> void:
 	_input = LineEdit.new()
 	_input.custom_minimum_size = Vector2(220, 16)
 	_input.max_length = Social.MAX_CHAT
-	_input.placeholder_text = "Mensagem (/g grupo, /convidar Nome, /ajuda)"
+	_input.placeholder_text = "Mensagem (/g grupo, /z zona, /w Nome, /quem, /ajuda)"
 	_input.visible = false
 	_input.text_submitted.connect(_on_submit)
 	add_child(_input)
@@ -35,7 +37,7 @@ func add_line(channel: String, author: String, text: String) -> void:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.custom_minimum_size.x = 230
 	l.add_theme_color_override("font_color", COLORS.get(channel, Color.WHITE))
-	l.text = text if author.is_empty() else ("[Grupo] " if channel == "grupo" else "") + "%s: %s" % [author, text]
+	l.text = text if author.is_empty() else String(PREFIX.get(channel, "%s: ")) % author + text
 	l.set_meta("born", Time.get_ticks_msec())
 	_lines.add_child(l)
 	while _lines.get_child_count() > MAX_LINES:

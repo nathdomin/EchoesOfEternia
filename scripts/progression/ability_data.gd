@@ -17,6 +17,8 @@ enum Kind {
 @export var kind: Kind = Kind.MELEE_CONE
 ## Multiplicador do dano (ou fracao da vida para HEAL).
 @export var power := 1.5
+## Ameaca gerada por ponto de dano (guerreiro > 1: segura os monstros).
+@export var threat := 1.0
 @export var cooldown := 5.0
 @export var range := 24.0
 @export var radius := 24.0
