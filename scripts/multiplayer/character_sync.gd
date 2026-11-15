@@ -50,7 +50,11 @@ var _travel_pending := false  ## cliente: esperando a resposta de uma viagem
 func _ready() -> void:
 	NetworkManager.account_logged_in.connect(_on_account_logged_in)
 	NetworkManager.account_logged_out.connect(_on_account_logged_out)
-	NetworkManager.connection_ended.connect(func(_r: String) -> void: spawn.clear())
+	NetworkManager.connection_ended.connect(func(_r: String) -> void:
+		spawn.clear()
+		_travel_pending = false)
+	# A resposta de uma viagem pendente se perde com a conexao
+	NetworkManager.connection_lost.connect(func() -> void: _travel_pending = false)
 
 
 # ---------- API do servidor ----------
@@ -238,7 +242,17 @@ func _save(id: int) -> void:
 		c.data.hp = avatar.health.hp
 	c.data.play_time = int(c.data.play_time) + (now - c.since_ms) / 1000
 	c.since_ms = now - (now - c.since_ms) % 1000
-	if _store.save(c.data) == OK:
+	var out: Dictionary = c.data
+	if Combat.is_dead(id):
+		# Morto (contagem do renascimento): grava ja renascido na praca da
+		# vila. Sair ou cair durante a contagem nao volta vivo onde morreu.
+		out = c.data.duplicate()
+		var home := home_position()
+		out.zone = _default_zone
+		out.x = home.x
+		out.y = home.y
+		out.hp = -1
+	if _store.save(out) == OK:
 		c.dirty = false
 
 
@@ -307,7 +321,11 @@ func _request_travel(exit_name: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
-	if not _online.has(id) or Combat.is_dead(id) or not exit_name.is_valid_identifier():
+	if not _online.has(id):
+		return
+	# Sempre responde: sem resposta o cliente nunca mais pediria viagem
+	if Combat.is_dead(id) or not exit_name.is_valid_identifier():
+		_travel_denied.rpc_id(id)
 		return
 	var c: Dictionary = _online[id]
 	var data: Dictionary = c.data

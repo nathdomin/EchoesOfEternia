@@ -37,6 +37,9 @@ var _amb_every := Vector2(4, 9)
 var _amb_next := 0.0
 ## Evita o mesmo som repetido no mesmo quadro (ex.: varios monstros atingidos).
 var _last_played: Dictionary = {}
+## Fade em andamento de cada player (musica/ambiente): um fade novo cancela o
+## antigo, senao o `stop` do fade velho calava a faixa que acabou de voltar.
+var _fades: Dictionary = {}
 
 
 func _ready() -> void:
@@ -132,9 +135,7 @@ func play_music(path: String) -> void:
 	var old := _music_a
 	_music_a = _music_b
 	_music_b = old
-	var t := create_tween().set_parallel()
-	t.tween_property(old, "volume_db", -60.0, MUSIC_FADE)
-	t.chain().tween_callback(old.stop)
+	_fade(old, -60.0, true)
 	if path.is_empty() or not ResourceLoader.exists(path):
 		return
 	var stream := load(path) as AudioStream
@@ -144,7 +145,19 @@ func play_music(path: String) -> void:
 	_music_a.volume_db = -40.0
 	_music_a.play()
 	var target := MUSIC_DB + float(MUSIC_GAIN.get(path.get_file().get_basename(), 0.0))
-	create_tween().tween_property(_music_a, "volume_db", target, MUSIC_FADE)
+	_fade(_music_a, target)
+
+
+## Leva o volume de `p` ate `db` (e para no fim se `stop_after`).
+func _fade(p: AudioStreamPlayer, db: float, stop_after := false) -> void:
+	var running: Tween = _fades.get(p)
+	if running and running.is_valid():
+		running.kill()
+	var t := create_tween()
+	t.tween_property(p, "volume_db", db, MUSIC_FADE)
+	if stop_after:
+		t.tween_callback(p.stop)
+	_fades[p] = t
 
 
 func stop_music() -> void:
@@ -164,7 +177,7 @@ func play_ambience(cfg: Dictionary) -> void:
 	var loop: String = cfg.get("loop", "")
 	var stream := _stream(loop) as AudioStreamWAV if loop != "" else null
 	if stream == null:
-		create_tween().tween_property(_amb, "volume_db", -60.0, MUSIC_FADE)
+		_fade(_amb, -60.0)
 		return
 	if stream.loop_mode != AudioStreamWAV.LOOP_FORWARD:
 		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
@@ -174,7 +187,7 @@ func play_ambience(cfg: Dictionary) -> void:
 		_amb.stream = stream
 		_amb.volume_db = -40.0
 		_amb.play()
-	create_tween().tween_property(_amb, "volume_db", float(cfg.get("db", 0.0)), MUSIC_FADE)
+	_fade(_amb, float(cfg.get("db", 0.0)))
 
 
 func _process(delta: float) -> void:

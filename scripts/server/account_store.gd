@@ -105,7 +105,8 @@ func create(username: String, password: String) -> Dictionary:
 func verify(username: String, password: String) -> Dictionary:
 	var wrong := {"ok": false, "error": "Conta ou senha incorretas."}
 	var account: Variant = null
-	if check_username(username).is_empty() and not password.is_empty() 			and password.length() <= PASSWORD_MAX:
+	if check_username(username).is_empty() and not password.is_empty() \
+			and password.length() <= PASSWORD_MAX:
 		account = JsonStore.load_json(_path(key_of(username)))
 	if not account is Dictionary or not account.has("hash") or not account.has("salt"):
 		# Gasta o mesmo tempo de um login real (nao da para descobrir pelo

@@ -18,9 +18,6 @@ const SMOKE := preload("res://scenes/effects/smoke.tscn")
 const THREAT_SWITCH := 1.1
 ## Distancia minima ate o jogador para continuar na lista de ameaca.
 const THREAT_KEEP_RANGE := 140.0
-## Chefe (E24): pisao em area a cada SLAM_EVERY s enquanto luta.
-const SLAM_EVERY := 7.0
-const SLAM_RADIUS := 46.0
 
 ## Sincronizados (MultiplayerSynchronizer "Sync").
 @export var monster_id := "slime"
@@ -105,6 +102,12 @@ func is_dead() -> bool:
 	return state == State.DEAD
 
 
+## Servidor: golpes acertam? Voltando para casa ele se esquiva (senao dava
+## para bater de graca num monstro que desistiu e levar o abate inteiro).
+func can_be_hit() -> bool:
+	return state != State.DEAD and state != State.RETURN
+
+
 # ---------- servidor: IA ----------
 
 func _physics_process(delta: float) -> void:
@@ -135,9 +138,9 @@ func _physics_process(delta: float) -> void:
 					_next_attack_ms = now + int(data.attack_cooldown * 1000.0)
 					attack_seq += 1
 					Combat.monster_attack(self, _target, data.damage)
-			if data.is_boss and now >= _next_slam_ms and dist < SLAM_RADIUS * 1.5:
-				_next_slam_ms = now + int(SLAM_EVERY * 1000.0)
-				Combat.boss_slam(self, SLAM_RADIUS, roundi(data.damage * 1.5))
+			if data.is_boss and now >= _next_slam_ms and dist < data.slam_radius * 1.5:
+				_next_slam_ms = now + int(data.slam_every * 1000.0)
+				Combat.boss_slam(self, data.slam_radius, roundi(data.damage * data.slam_damage_mult))
 			if position.distance_to(home) > data.leash_range:
 				_target = 0
 				_forget()

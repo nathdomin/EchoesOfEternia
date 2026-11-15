@@ -33,7 +33,7 @@ var _parties: Dictionary = {}        ## party_id -> {"leader": int, "members": A
 var _invites: Dictionary = {}        ## convidado -> {"from": int, "until": int}
 var _next_party := 1
 var _push_timer := 0.0
-var _dirty_parties: Dictionary = {}
+var _last_party_state: Dictionary = {}  ## party_id -> ultima lista enviada
 var _last_whisper: Dictionary = {}   ## peer -> quem sussurrou por ultimo (para /r)
 
 
@@ -81,7 +81,7 @@ func _process(delta: float) -> void:
 	if _push_timer < PARTY_PUSH_INTERVAL:
 		return
 	_push_timer = 0.0
-	# Vida/zona dos membros mudam o tempo todo: reenvia os grupos (pequeno)
+	# Vida/zona dos membros mudam o tempo todo: reenvia os grupos que mudaram
 	for pid in _parties.keys():
 		_push_party(pid)
 
@@ -268,6 +268,7 @@ func _leave_party(id: int, announce: bool, notify_self := true) -> void:
 			_party_of.erase(m)
 			_party_state.rpc_id(m, [])
 		_parties.erase(pid)
+		_last_party_state.erase(pid)
 		return
 	if p.leader == id:
 		p.leader = p.members[0]
@@ -284,6 +285,9 @@ func _push_party(pid: int) -> void:
 		list.append({"id": m, "name": NetworkManager.player_name(m), "leader": m == p.leader,
 				"level": avatar.level if avatar else 1, "hp": avatar.hp if avatar else 0,
 				"max_hp": avatar.max_hp if avatar else 1, "zone": Characters.zone_of(m)})
+	if list == _last_party_state.get(pid, []):
+		return  # nada mudou desde o ultimo envio
+	_last_party_state[pid] = list
 	for m: int in p.members:
 		_party_state.rpc_id(m, list)
 

@@ -158,6 +158,12 @@ func _on_reconnected() -> void:
 		return
 	_reconnect_attempt = -1
 	_hud.show_banner("")
+	# Caiu durante a contagem da morte: a sessao nova ja nasce viva (o
+	# servidor gravou o personagem renascido na vila); sai da tela de morte.
+	if _player.is_dead:
+		_respawn_left = 0.0
+		_game_hud.show_death(-1.0)
+		_player.set_dead(false)
 	var s := Characters.spawn
 	_switch_map(String(s.get("zone", "village")))
 	if s.has("position"):
@@ -300,7 +306,8 @@ func _update_boss_music() -> void:
 		return
 	var fighting := false
 	for m in _map.get_node("Monsters").get_children():
-		if m is Monster and m.data and m.data.is_boss and not m.is_dead() 				and m.position.distance_to(_player.global_position) < 200.0:
+		if m is Monster and m.data and m.data.is_boss and not m.is_dead() \
+				and m.position.distance_to(_player.global_position) < 200.0:
 			fighting = true
 	GameAudio.play_music(Zones.BOSS_MUSIC if fighting else Zones.MUSIC.get(_zone, ""))
 

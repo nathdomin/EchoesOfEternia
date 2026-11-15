@@ -23,4 +23,8 @@ extends Resource
 @export var loot_chances: PackedFloat32Array = PackedFloat32Array()
 ## Chefe (E24): mais vida, nome em destaque e anuncio para todos ao morrer.
 @export var is_boss := false
+## Chefe: pisao em area a cada `slam_every` s enquanto luta (dano = damage x mult).
+@export var slam_every := 7.0
+@export var slam_radius := 46.0
+@export var slam_damage_mult := 1.5
 @export var scale := 1.0

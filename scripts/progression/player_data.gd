@@ -290,8 +290,8 @@ func award_kill(killer_id: int, monster: Monster, damage_by: Dictionary = {}) ->
 		for pid in sharers:
 			rewarded[pid] = true
 			_count_kill(pid, monster.monster_id)
-			add_xp(pid, each)
-			_changed(pid)  # missao conta mesmo no nivel maximo (add_xp nao avisa)
+			add_xp(pid, each, false)
+			_changed(pid)  # um retrato so com XP e missao
 		if monster.data.is_boss:
 			for pid in sharers:
 				_roll_loot(pid, monster.data)
@@ -299,7 +299,8 @@ func award_kill(killer_id: int, monster: Monster, damage_by: Dictionary = {}) ->
 			_roll_loot(t.top, monster.data)
 	# Ajudou bastante mas o abate foi de outro time: conta para a missao
 	for pid: int in damage_by:
-		if not rewarded.has(pid) and not Characters.data_of(pid).is_empty() 				and float(damage_by[pid]) / total >= CREDIT_SHARE:
+		if not rewarded.has(pid) and not Characters.data_of(pid).is_empty() \
+				and float(damage_by[pid]) / total >= CREDIT_SHARE:
 			_count_kill(pid, monster.monster_id)
 			_changed(pid)
 
@@ -320,12 +321,14 @@ func _sharers(team: Dictionary, monster: Monster) -> Array[int]:
 	for pid: int in team.hitters:
 		out.append(pid)
 	for pid in Social.party_members(team.top):
-		if not pid in out and Characters.zone_of(pid) == zone and not Combat.is_dead(pid) 				and Characters.position_of(pid).distance_to(monster.position) <= PARTY_XP_RANGE:
+		if not pid in out and Characters.zone_of(pid) == zone and not Combat.is_dead(pid) \
+				and Characters.position_of(pid).distance_to(monster.position) <= PARTY_XP_RANGE:
 			out.append(pid)
 	return out
 
 
-func add_xp(id: int, amount: int) -> void:
+## `notify` = false: quem chama manda o retrato depois (evita dois envios).
+func add_xp(id: int, amount: int, notify := true) -> void:
 	var data := Characters.data_of(id)
 	if data.is_empty() or amount <= 0:
 		return
@@ -349,7 +352,8 @@ func add_xp(id: int, amount: int) -> void:
 		_announce_level(id, data)
 		Combat.play_effect_in_zone(Characters.zone_of(id), "levelup", Characters.position_of(id) + Vector2(0, -10))
 		_level_up.rpc_id(id, int(data.level))
-	_changed(id)
+	if notify:
+		_changed(id)
 
 
 ## Nivel maximo: aviso para todos. Os outros: so o grupo e quem esta na zona
@@ -386,6 +390,17 @@ func _count_kill(id: int, monster_id: String) -> void:
 			st.progress = int(st.get("progress", 0)) + 1
 			if st.progress >= q.count:
 				NetworkManager.send_system_message(id, "Missão pronta: %s. Volte para entregar." % q.title)
+
+
+## Quantos `item_id` ainda cabem no inventario.
+static func room_for(inventory: Array, it: ItemData) -> int:
+	var n := 0
+	for s in inventory:
+		if s == null:
+			n += it.max_stack
+		elif s is Dictionary and s.id == it.id:
+			n += maxi(it.max_stack - int(s.n), 0)
+	return n
 
 
 ## Coloca itens no inventario. Retorna quantos NAO couberam.
@@ -459,7 +474,8 @@ func _open_chest(chest_name: String) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	var data := Characters.data_of(id)
 	var zone := Characters.zone_of(id)
-	if data.is_empty() or Combat.is_dead(id) or not _chest_roots.has(zone) 			or chest_name.is_empty() or chest_name.validate_node_name() != chest_name:
+	if data.is_empty() or Combat.is_dead(id) or not _chest_roots.has(zone) \
+			or chest_name.is_empty() or chest_name.validate_node_name() != chest_name:
 		return
 	var chest := (_chest_roots[zone] as Node).get_node_or_null(NodePath(chest_name)) as Chest
 	if chest == null or chest.loot == null:
@@ -475,16 +491,24 @@ func _open_chest(chest_name: String) -> void:
 		NetworkManager.send_system_message(id, "O baú está vazio. Volte em %d min." % minutes)
 		return
 	var got: Array[String] = []
-	for drop: Dictionary in chest.loot.roll():
+	var lost: Array[String] = []
+	var drops := chest.loot.roll()
+	for drop: Dictionary in drops:
 		var it: ItemData = drop.item
 		var left := add_item(id, it.id, int(drop.n))
 		if left < int(drop.n):
 			got.append("%s x%d" % [it.display_name, int(drop.n) - left] if int(drop.n) - left > 1 else it.display_name)
 		if left > 0:
-			NetworkManager.send_system_message(id, "Inventário cheio: %s ficou no baú." % it.display_name)
+			lost.append(it.display_name)
+	if got.is_empty() and not drops.is_empty():
+		# Nada coube: o bau continua cheio para este jogador (nao gasta a vez)
+		NetworkManager.send_system_message(id, "Inventário cheio: libere espaço para abrir o baú.")
+		return
 	data.chests[key] = now + chest.loot.respawn_seconds
 	if not got.is_empty():
 		NetworkManager.send_system_message(id, "Baú aberto: %s." % ", ".join(got))
+	if not lost.is_empty():
+		NetworkManager.send_system_message(id, "Inventário cheio: %s ficou para trás." % ", ".join(lost))
 	Combat.play_effect_for(id, "spark", chest.position + Vector2(0, -10))
 	_changed(id)
 
@@ -637,6 +661,10 @@ func _turn_in_quest(qid: String) -> void:
 		return
 	if quest_progress(data, q) < q.count:
 		return
+	# Recompensa que nao cabe se perderia: pede espaco antes de entregar
+	if q.reward_item and room_for(data.inventory, q.reward_item) < q.reward_count:
+		NetworkManager.send_system_message(id, "Inventário cheio: libere espaço para receber a recompensa.")
+		return
 	if q.kind == QuestData.Kind.COLLECT and not remove_item(id, q.target_id, q.count):
 		return
 	data.quests[qid] = {"state": "done", "progress": q.count}
@@ -644,5 +672,5 @@ func _turn_in_quest(qid: String) -> void:
 	if q.reward_item:
 		if add_item(id, q.reward_item.id, q.reward_count) == 0:
 			NetworkManager.send_system_message(id, "Você recebeu: %s x%d" % [q.reward_item.display_name, q.reward_count])
-	add_xp(id, q.reward_xp)
+	add_xp(id, q.reward_xp, false)
 	_changed(id)
