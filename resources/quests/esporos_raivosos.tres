@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Resource" path="res://resources/items/anel.tres" id="1_anava"]
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="2_gsdqg"]
+
+[resource]
+script = ExtResource("2_gsdqg")
+id = "esporos_raivosos"
+title = "Esporos raivosos"
+giver = "anciao"
+requires = "gosma_na_horta"
+offer_text = "Cogumelos bravos apareceram no nordeste. Acalme 4 deles... do jeito que der."
+progress_text = "Os cogumelos ainda estão bravos."
+done_text = "Muito bem! Este anel era da minha avó."
+target_id = "mushroom"
+target_name = "Cogumelos"
+count = 4
+reward_xp = 100
+reward_item = ExtResource("1_anava")

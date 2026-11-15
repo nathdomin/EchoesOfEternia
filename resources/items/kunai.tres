@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Items & Weapon/Kunai.png" id="1_lhcpp"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_bw81k"]
+
+[resource]
+script = ExtResource("2_bw81k")
+id = "kunai"
+display_name = "Kunai Afiada"
+description = "Leve e rápida."
+icon = ExtResource("1_lhcpp")
+kind = 1
+max_stack = 1
+bonus_damage = 3

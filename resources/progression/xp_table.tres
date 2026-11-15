@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="XpTable" format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/xp_table.gd" id="1_35kji"]
+
+[resource]
+script = ExtResource("1_35kji")
+xp_to_next = PackedInt32Array(40, 90, 160, 250, 360, 500, 680, 900, 1200)

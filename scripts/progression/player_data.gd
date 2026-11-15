@@ -1,0 +1,495 @@
+extends Node
+## Autoload "PlayerData" (E16-E18, E21): classe, nivel/XP, atributos,
+## inventario, equipamento, saque e missoes de cada jogador.
+##
+## Tudo e decidido no servidor e fica no personagem salvo (Characters):
+##   class, level, xp, inventory (lista de {id, n} ou null), equipment
+##   {weapon, armor, trinket}, quests {id: {state, progress}}.
+## O cliente recebe um retrato completo (`me`) a cada mudanca e so pede
+## acoes por RPC (escolher classe, usar/equipar item, aceitar missao...).
+
+signal changed                      ## cliente: `me` mudou
+signal level_up(level: int)         ## cliente: subiu de nivel
+
+const XP := preload("res://resources/progression/xp_table.tres")
+const CLASS_IDS := ["guerreiro", "mago", "arqueiro"]
+const DEFAULT_CLASS := "guerreiro"
+const INVENTORY_SLOTS := 20
+const EQUIP_SLOTS := ["weapon", "armor", "trinket"]
+const STARTING_ITEMS := {"pocao": 3}
+const NPC_TALK_RANGE := 40.0
+## XP de quem estiver no grupo (mesma zona, perto): cada um ganha esta
+## fracao do total, dividida pelo numero de membros, com bonus de grupo.
+const PARTY_XP_RANGE := 320.0
+const PARTY_BONUS := 0.25
+
+## Cliente: retrato do proprio personagem.
+var me: Dictionary = {}
+
+# servidor: zona -> { npc_id: Vector2 }
+var _npcs: Dictionary = {}
+
+
+func _ready() -> void:
+	NetworkManager.account_logged_in.connect(_on_logged_in)
+	NetworkManager.connection_ended.connect(func(_r: String) -> void: me = {})
+
+
+# ---------- dados (servidor e cliente) ----------
+
+static func class_data(cid: String) -> ClassData:
+	if not cid in CLASS_IDS:
+		cid = DEFAULT_CLASS
+	return load("res://resources/classes/%s.tres" % cid)
+
+
+static func item(item_id: String) -> ItemData:
+	var path := "res://resources/items/%s.tres" % item_id
+	if not item_id.is_valid_identifier() or not ResourceLoader.exists(path):
+		return null
+	return load(path)
+
+
+static func quest(qid: String) -> QuestData:
+	var path := "res://resources/quests/%s.tres" % qid
+	if not qid.is_valid_identifier() or not ResourceLoader.exists(path):
+		return null
+	return load(path)
+
+
+## Missoes que um NPC oferece (na ordem da corrente).
+static func quests_of(npc_id: String) -> Array[QuestData]:
+	var out: Array[QuestData] = []
+	for f in DirAccess.get_files_at("res://resources/quests"):
+		var fname := f.trim_suffix(".remap")
+		if fname.ends_with(".tres"):
+			var q := quest(fname.get_basename())
+			if q and q.giver == npc_id:
+				out.append(q)
+	return _chain_order(out)
+
+
+static func _chain_order(qs: Array[QuestData]) -> Array[QuestData]:
+	var out: Array[QuestData] = []
+	var prev := ""
+	for i in qs.size():
+		for q in qs:
+			if q.requires == prev and not q in out:
+				out.append(q)
+				prev = q.id
+				break
+	for q in qs:
+		if not q in out:
+			out.append(q)
+	return out
+
+
+## Estado de uma missao para um retrato/dados: "" | "active" | "done".
+static func quest_state(quests: Dictionary, qid: String) -> String:
+	return String(quests.get(qid, {}).get("state", ""))
+
+
+## O jogador pode aceitar `q`?
+static func can_accept(data: Dictionary, q: QuestData) -> bool:
+	var quests: Dictionary = data.get("quests", {})
+	if quest_state(quests, q.id) != "":
+		return false
+	if q.requires != "" and quest_state(quests, q.requires) != "done":
+		return false
+	return int(data.get("level", 1)) >= q.min_level
+
+
+static func count_in(inventory: Array, item_id: String) -> int:
+	var n := 0
+	for s in inventory:
+		if s is Dictionary and s.id == item_id:
+			n += int(s.n)
+	return n
+
+
+## Progresso atual de uma missao ativa.
+static func quest_progress(data: Dictionary, q: QuestData) -> int:
+	if q.kind == QuestData.Kind.COLLECT:
+		return mini(count_in(data.get("inventory", []), q.target_id), q.count)
+	return mini(int(data.get("quests", {}).get(q.id, {}).get("progress", 0)), q.count)
+
+
+# ---------- servidor: login e atributos ----------
+
+func register_zone(zone: String, map: Node) -> void:
+	var npcs := {}
+	var root := map.get_node_or_null("Npcs")
+	if root:
+		for n in root.get_children():
+			if "npc_id" in n:
+				npcs[n.npc_id] = n.position
+	_npcs[zone] = npcs
+
+
+func _on_logged_in(id: int, _account: String, _name: String) -> void:
+	var data := Characters.data_of(id)
+	if data.is_empty():
+		return
+	_normalize(data)
+	refresh_stats(id, false)
+	push(id)
+
+
+## Garante os campos (personagens antigos) e corrige dados invalidos.
+func _normalize(data: Dictionary) -> void:
+	if not data.get("class", "") in CLASS_IDS:
+		data["class"] = ""
+	data.level = clampi(int(data.get("level", 1)), 1, XP.max_level())
+	data.xp = maxi(int(data.get("xp", 0)), 0)
+	var inv: Array = data.get("inventory", [])
+	if inv.is_empty() and not data.has("inventory"):
+		for item_id in STARTING_ITEMS:
+			inv.append({"id": item_id, "n": STARTING_ITEMS[item_id]})
+	inv.resize(INVENTORY_SLOTS)
+	for i in inv.size():
+		var s: Variant = inv[i]
+		if not s is Dictionary or item(String(s.get("id", ""))) == null or int(s.get("n", 0)) <= 0:
+			inv[i] = null
+		else:
+			inv[i] = {"id": String(s.id), "n": int(s.n)}
+	data.inventory = inv
+	var eq: Dictionary = data.get("equipment", {})
+	for slot in EQUIP_SLOTS:
+		var it := item(String(eq.get(slot, "")))
+		eq[slot] = it.id if it and it.equip_slot() == slot else ""
+	data.equipment = eq
+	if not data.get("quests") is Dictionary:
+		data.quests = {}
+
+
+## Atributos finais: classe + nivel + equipamento.
+func stats_of(id: int) -> Dictionary:
+	var data := Characters.data_of(id)
+	var c := class_data(String(data.get("class", "")))
+	var level := int(data.get("level", 1))
+	var st := {"max_hp": c.max_hp_at(level), "damage": c.damage_at(level),
+			"attack_cooldown": c.attack_cooldown, "reach": c.reach, "class": c}
+	for slot in EQUIP_SLOTS:
+		var it := item(String(data.get("equipment", {}).get(slot, "")))
+		if it:
+			st.max_hp += it.bonus_hp
+			st.damage += it.bonus_damage
+	return st
+
+
+## Aplica os atributos na vida oficial (RemotePlayer) e avisa o dono.
+func refresh_stats(id: int, notify := true) -> void:
+	var avatar := Characters.avatar_of(id)
+	if avatar == null:
+		return
+	var st := stats_of(id)
+	var data := Characters.data_of(id)
+	avatar.health.max_hp = st.max_hp
+	avatar.health.hp = mini(avatar.health.hp, st.max_hp)
+	avatar.level = int(data.level)
+	avatar.skin = st["class"].skin if String(data.get("class", "")) != "" else String(data.skin)
+	avatar.sync_health()
+	if notify:
+		Combat.push_health(id)
+
+
+## Retrato completo para o dono.
+func push(id: int) -> void:
+	var data := Characters.data_of(id)
+	if data.is_empty():
+		return
+	var st := stats_of(id)
+	var progress := {}
+	for qid: String in data.quests:
+		var q := quest(qid)
+		if q:
+			progress[qid] = quest_progress(data, q)
+	_self_state.rpc_id(id, {
+		"class": data["class"], "level": data.level, "xp": data.xp, "xp_next": XP.needed(data.level),
+		"max_level": XP.max_level(), "inventory": data.inventory, "equipment": data.equipment,
+		"quests": data.quests, "quest_progress": progress, "max_hp": st.max_hp, "damage": st.damage,
+		"name": data.name, "skin": data.skin,
+	})
+
+
+func _changed(id: int) -> void:
+	Characters.mark_dirty(id)
+	push(id)
+
+
+# ---------- servidor: XP, saque e missoes ----------
+
+## Monstro derrotado: XP (dividido com o grupo perto), saque e missoes.
+func award_kill(killer_id: int, monster: Monster) -> void:
+	if killer_id == 0 or Characters.data_of(killer_id).is_empty():
+		return
+	var zone := Characters.zone_of(killer_id)
+	var sharers: Array[int] = []
+	for pid in Social.party_members(killer_id):
+		if Characters.zone_of(pid) == zone and not Combat.is_dead(pid) \
+				and Characters.position_of(pid).distance_to(monster.position) <= PARTY_XP_RANGE:
+			sharers.append(pid)
+	if not killer_id in sharers:
+		sharers.append(killer_id)
+	var total := monster.data.xp_reward * (1.0 + PARTY_BONUS * (sharers.size() - 1))
+	var each := maxi(1, roundi(total / sharers.size()))
+	for pid in sharers:
+		_count_kill(pid, monster.monster_id)
+		add_xp(pid, each)
+	_roll_loot(killer_id, monster.data)
+
+
+func add_xp(id: int, amount: int) -> void:
+	var data := Characters.data_of(id)
+	if data.is_empty() or amount <= 0:
+		return
+	if data.level >= XP.max_level():
+		return
+	data.xp += amount
+	var leveled := false
+	while data.level < XP.max_level() and data.xp >= XP.needed(data.level):
+		data.xp -= XP.needed(data.level)
+		data.level += 1
+		leveled = true
+	if data.level >= XP.max_level():
+		data.xp = 0
+	if leveled:
+		refresh_stats(id, false)
+		var avatar := Characters.avatar_of(id)
+		if avatar:
+			avatar.health.reset()  # sobe de nivel com a vida cheia
+			avatar.sync_health()
+		Combat.push_health(id)
+		NetworkManager.broadcast_system_message("%s alcançou o nível %d!" % [data.name, data.level])
+		Combat.play_effect_in_zone(Characters.zone_of(id), "levelup", Characters.position_of(id) + Vector2(0, -10))
+		_level_up.rpc_id(id, int(data.level))
+	_changed(id)
+
+
+func _roll_loot(id: int, md: MonsterData) -> void:
+	for i in md.loot_items.size():
+		if i < md.loot_chances.size() and randf() < md.loot_chances[i]:
+			var it: ItemData = md.loot_items[i]
+			if add_item(id, it.id, 1) == 0:
+				NetworkManager.send_system_message(id, "Você recebeu: %s" % it.display_name)
+			else:
+				NetworkManager.send_system_message(id, "Inventário cheio: %s ficou para trás." % it.display_name)
+
+
+func _count_kill(id: int, monster_id: String) -> void:
+	var data := Characters.data_of(id)
+	for qid: String in data.quests:
+		var st: Dictionary = data.quests[qid]
+		var q := quest(qid)
+		if q and st.state == "active" and q.kind == QuestData.Kind.KILL and q.target_id == monster_id \
+				and int(st.get("progress", 0)) < q.count:
+			st.progress = int(st.get("progress", 0)) + 1
+			if st.progress >= q.count:
+				NetworkManager.send_system_message(id, "Missão pronta: %s. Volte para entregar." % q.title)
+
+
+## Coloca itens no inventario. Retorna quantos NAO couberam.
+func add_item(id: int, item_id: String, n: int) -> int:
+	var it := item(item_id)
+	var data := Characters.data_of(id)
+	if it == null or data.is_empty():
+		return n
+	var inv: Array = data.inventory
+	for i in inv.size():  # completa pilhas
+		if n <= 0:
+			break
+		var s: Variant = inv[i]
+		if s is Dictionary and s.id == item_id and s.n < it.max_stack:
+			var put := mini(n, it.max_stack - int(s.n))
+			s.n += put
+			n -= put
+	for i in inv.size():  # espacos vazios
+		if n <= 0:
+			break
+		if inv[i] == null:
+			var put := mini(n, it.max_stack)
+			inv[i] = {"id": item_id, "n": put}
+			n -= put
+	_changed(id)
+	return n
+
+
+func remove_item(id: int, item_id: String, n: int) -> bool:
+	var data := Characters.data_of(id)
+	if count_in(data.inventory, item_id) < n:
+		return false
+	var inv: Array = data.inventory
+	for i in inv.size():
+		var s: Variant = inv[i]
+		if n > 0 and s is Dictionary and s.id == item_id:
+			var take := mini(n, int(s.n))
+			s.n -= take
+			n -= take
+			if s.n <= 0:
+				inv[i] = null
+	_changed(id)
+	return true
+
+
+func _near_npc(id: int, npc_id: String) -> bool:
+	var zone := Characters.zone_of(id)
+	var npcs: Dictionary = _npcs.get(zone, {})
+	return npcs.has(npc_id) and Characters.position_of(id).distance_to(npcs[npc_id]) <= NPC_TALK_RANGE
+
+
+# ---------- API do cliente ----------
+
+func choose_class(cid: String) -> void:
+	_choose_class.rpc_id(1, cid)
+
+
+func use_slot(slot: int) -> void:
+	_use_slot.rpc_id(1, slot)
+
+
+func unequip(slot: String) -> void:
+	_unequip.rpc_id(1, slot)
+
+
+func discard(slot: int) -> void:
+	_discard.rpc_id(1, slot)
+
+
+func use_potion() -> void:
+	var inv: Array = me.get("inventory", [])
+	for i in inv.size():
+		var s: Variant = inv[i]
+		if s is Dictionary:
+			var it := item(s.id)
+			if it and it.kind == ItemData.Kind.CONSUMABLE:
+				use_slot(i)
+				return
+
+
+func accept_quest(qid: String) -> void:
+	_accept_quest.rpc_id(1, qid)
+
+
+func turn_in_quest(qid: String) -> void:
+	_turn_in_quest.rpc_id(1, qid)
+
+
+# ---------- RPCs ----------
+
+@rpc("authority", "call_remote", "reliable")
+func _self_state(state: Dictionary) -> void:
+	me = state
+	changed.emit()
+
+
+@rpc("authority", "call_remote", "reliable")
+func _level_up(level: int) -> void:
+	level_up.emit(level)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _choose_class(cid: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	if data.is_empty() or data["class"] != "" or not cid in CLASS_IDS:
+		return
+	data["class"] = cid
+	data.skin = class_data(cid).skin
+	refresh_stats(id)
+	var avatar := Characters.avatar_of(id)
+	if avatar:
+		avatar.health.reset()
+		avatar.sync_health()
+	Combat.push_health(id)
+	NetworkManager.send_system_message(id, "Você agora é %s." % class_data(cid).display_name)
+	_changed(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _use_slot(slot: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	if data.is_empty() or slot < 0 or slot >= INVENTORY_SLOTS or Combat.is_dead(id):
+		return
+	var s: Variant = data.inventory[slot]
+	if not s is Dictionary:
+		return
+	var it := item(s.id)
+	if it == null:
+		return
+	if it.kind == ItemData.Kind.CONSUMABLE:
+		var avatar := Characters.avatar_of(id)
+		if avatar == null or avatar.health.hp >= avatar.health.max_hp:
+			return
+		avatar.health.heal(it.heal)
+		s.n -= 1
+		if s.n <= 0:
+			data.inventory[slot] = null
+		Combat.play_effect_in_zone(Characters.zone_of(id), "spark", Characters.position_of(id) + Vector2(0, -8))
+		_changed(id)
+	elif it.equip_slot() != "":
+		# troca com o que estava equipado
+		var eslot := it.equip_slot()
+		var old := String(data.equipment[eslot])
+		data.equipment[eslot] = it.id
+		data.inventory[slot] = {"id": old, "n": 1} if old != "" else null
+		refresh_stats(id)
+		_changed(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _unequip(eslot: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	if data.is_empty() or not eslot in EQUIP_SLOTS or String(data.equipment[eslot]) == "":
+		return
+	var free: int = data.inventory.find(null)
+	if free == -1:
+		NetworkManager.send_system_message(id, "Inventário cheio.")
+		return
+	data.inventory[free] = {"id": data.equipment[eslot], "n": 1}
+	data.equipment[eslot] = ""
+	refresh_stats(id)
+	_changed(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _discard(slot: int) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	if data.is_empty() or slot < 0 or slot >= INVENTORY_SLOTS or data.inventory[slot] == null:
+		return
+	data.inventory[slot] = null
+	_changed(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _accept_quest(qid: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	var q := quest(qid)
+	if data.is_empty() or q == null or not can_accept(data, q) or not _near_npc(id, q.giver):
+		return
+	data.quests[qid] = {"state": "active", "progress": 0}
+	NetworkManager.send_system_message(id, "Nova missão: %s" % q.title)
+	_changed(id)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _turn_in_quest(qid: String) -> void:
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	var q := quest(qid)
+	if data.is_empty() or q == null or quest_state(data.quests, qid) != "active" or not _near_npc(id, q.giver):
+		return
+	if quest_progress(data, q) < q.count:
+		return
+	if q.kind == QuestData.Kind.COLLECT and not remove_item(id, q.target_id, q.count):
+		return
+	data.quests[qid] = {"state": "done", "progress": q.count}
+	NetworkManager.send_system_message(id, "Missão concluída: %s" % q.title)
+	if q.reward_item:
+		if add_item(id, q.reward_item.id, q.reward_count) == 0:
+			NetworkManager.send_system_message(id, "Você recebeu: %s x%d" % [q.reward_item.display_name, q.reward_count])
+	add_xp(id, q.reward_xp)
+	_changed(id)

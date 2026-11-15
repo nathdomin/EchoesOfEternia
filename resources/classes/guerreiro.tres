@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ClassData" format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="1_at1co"]
+[ext_resource type="Resource" path="res://resources/abilities/giro.tres" id="2_mjkw8"]
+[ext_resource type="Resource" path="res://resources/abilities/golpe_pesado.tres" id="3_hpyip"]
+[ext_resource type="Resource" path="res://resources/abilities/folego.tres" id="4_savmu"]
+[ext_resource type="Script" path="res://scripts/progression/class_data.gd" id="5_jc81e"]
+
+[resource]
+script = ExtResource("5_jc81e")
+description = "Muita vida e golpes pesados de perto."
+base_hp = 130
+hp_per_level = 20
+abilities = Array[ExtResource("1_at1co")]([ExtResource("2_mjkw8"), ExtResource("3_hpyip"), ExtResource("4_savmu")])

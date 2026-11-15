@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ClassData" format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="1_ohltf"]
+[ext_resource type="Resource" path="res://resources/abilities/bola_de_fogo.tres" id="2_ugedg"]
+[ext_resource type="Resource" path="res://resources/abilities/explosao.tres" id="3_hyaf1"]
+[ext_resource type="Resource" path="res://resources/abilities/cura.tres" id="4_auwtl"]
+[ext_resource type="Script" path="res://scripts/progression/class_data.gd" id="5_dkrdw"]
+
+[resource]
+script = ExtResource("5_dkrdw")
+id = "mago"
+display_name = "Mago"
+description = "Pouca vida, magias de longe e cura o grupo."
+skin = "sorcerer"
+base_hp = 90
+base_damage = 10
+hp_per_level = 12
+abilities = Array[ExtResource("1_ohltf")]([ExtResource("2_ugedg"), ExtResource("3_hyaf1"), ExtResource("4_auwtl")])

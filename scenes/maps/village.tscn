@@ -6,6 +6,8 @@
 [ext_resource type="Resource" path="res://resources/monsters/slime.tres" id="4_slime"]
 [ext_resource type="Resource" path="res://resources/monsters/mushroom.tres" id="5_mushroom"]
 [ext_resource type="Resource" path="res://resources/monsters/skull.tres" id="6_skull"]
+[ext_resource type="PackedScene" path="res://scenes/npc/npc.tscn" id="7_npc"]
+[ext_resource type="Script" path="res://scripts/maps/zone_exit.gd" id="8_exit"]
 
 [node name="Village" type="Node2D" unique_id=1914662227]
 y_sort_enabled = true
@@ -65,3 +67,25 @@ script = ExtResource("3_spawnpt")
 monster = ExtResource("6_skull")
 count = 2
 radius = 28.0
+
+[node name="Npcs" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="Anciao" parent="Npcs" instance=ExtResource("7_npc")]
+position = Vector2(424, 266)
+greeting = "Bons ventos, viajante. A vila anda cheia de problemas..."
+
+[node name="Exits" type="Node2D" parent="."]
+
+[node name="ToForest" type="Area2D" parent="Exits"]
+position = Vector2(888, 296)
+monitorable = false
+script = ExtResource("8_exit")
+target_zone = "forest"
+target_entrance = "FromVillage"
+size = Vector2(16, 56)
+
+[node name="Entrances" type="Node2D" parent="."]
+
+[node name="FromForest" type="Marker2D" parent="Entrances"]
+position = Vector2(856, 296)

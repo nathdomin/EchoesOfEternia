@@ -14,6 +14,9 @@ enum State { IDLE, CHASE, RETURN, DEAD }
 const FOLLOW_RATE := 12.0
 const SNAP_DISTANCE := 64.0
 const SMOKE := preload("res://scenes/effects/smoke.tscn")
+## Chefe (E24): pisao em area a cada SLAM_EVERY s enquanto luta.
+const SLAM_EVERY := 7.0
+const SLAM_RADIUS := 46.0
 
 ## Sincronizados (MultiplayerSynchronizer "Sync").
 @export var monster_id := "slime"
@@ -37,6 +40,7 @@ var _next_attack_ms := 0
 var _wander_to := Vector2.ZERO
 var _wander_wait := 0.0
 var _respawn_at_ms := 0
+var _next_slam_ms := 0
 
 @onready var health: HealthComponent = $Health
 @onready var hitbox: HitboxComponent = $Hitbox
@@ -59,6 +63,15 @@ func _ready() -> void:
 		return
 	_sprite.sprite_frames = data.frames
 	_sprite.play("idle_down")
+	# Sprite e barra de vida conforme o tamanho do quadro (chefe e maior)
+	var tex := data.frames.get_frame_texture("idle_down", 0)
+	var h := tex.get_height() if tex else 16
+	_sprite.position = Vector2(0, -h / 2.0 + (4 if h > 16 else 0))
+	_bar.position = Vector2(-9, -h - 3)
+	if data.is_boss:
+		_bar.scale = Vector2(2, 1)
+		_bar.position.x = -18
+		$Shadow.scale = Vector2(3, 2)
 	hitbox.radius = data.hitbox_radius
 	if multiplayer.is_server():
 		health.max_hp = data.max_hp
@@ -114,6 +127,9 @@ func _physics_process(delta: float) -> void:
 					_next_attack_ms = now + int(data.attack_cooldown * 1000.0)
 					attack_seq += 1
 					Combat.monster_attack(self, _target, data.damage)
+			if data.is_boss and now >= _next_slam_ms and dist < SLAM_RADIUS * 1.5:
+				_next_slam_ms = now + int(SLAM_EVERY * 1000.0)
+				Combat.boss_slam(self, SLAM_RADIUS, roundi(data.damage * 1.5))
 			if position.distance_to(home) > data.leash_range:
 				_target = 0
 				state = State.RETURN
@@ -220,9 +236,10 @@ func _set_state(value: State) -> void:
 	if not is_node_ready() or multiplayer.is_server():
 		return
 	if value == State.DEAD and not was_dead:
+		# No mapa da zona, nao no container de rede (Monsters so tem monstros)
 		var fx := SMOKE.instantiate()
 		fx.position = position + Vector2(0, -6)
-		get_parent().add_child(fx)
+		get_parent().get_parent().add_child(fx)
 	elif was_dead and value != State.DEAD:
 		position = net_position
 	_refresh_visuals()

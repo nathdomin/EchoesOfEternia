@@ -1,0 +1,67 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Magic/Boost/SpriteSheet.png" id="1_4v0tg"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gdq2h"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(0, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ka75u"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(53, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j2kx3"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(106, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_u3poh"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(159, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_12fr4"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(212, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2s3gc"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(265, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1sq8f"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(318, 0, 53, 35)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_2u4oe"]
+atlas = ExtResource("1_4v0tg")
+region = Rect2(371, 0, 53, 35)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gdq2h")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ka75u")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j2kx3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_u3poh")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_12fr4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2s3gc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1sq8f")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_2u4oe")
+}],
+"loop": 0,
+"name": &"levelup",
+"speed": 12.0
+}]

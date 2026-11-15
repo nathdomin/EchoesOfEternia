@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/spin.tscn" id="1_viakr"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Spell/Cut.png" id="2_moqab"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="3_38cfl"]
+
+[resource]
+script = ExtResource("3_38cfl")
+id = "giro"
+display_name = "Giro de Espada"
+description = "Acerta todos os monstros em volta."
+icon = ExtResource("2_moqab")
+kind = 0
+power = 1.4
+range = 0.0
+radius = 28.0
+effect = ExtResource("1_viakr")

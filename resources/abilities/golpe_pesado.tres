@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/explosion.tscn" id="1_ne4yr"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Spell/AttackUpgrade.png" id="2_lb0qi"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="3_6lu8w"]
+
+[resource]
+script = ExtResource("3_6lu8w")
+id = "golpe_pesado"
+display_name = "Golpe Pesado"
+description = "Um golpe muito forte à frente."
+icon = ExtResource("2_lb0qi")
+power = 2.4
+cooldown = 4.0
+radius = 0.0
+effect = ExtResource("1_ne4yr")

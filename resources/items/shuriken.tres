@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Items & Weapon/Shuriken.png" id="1_eef1y"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_770gd"]
+
+[resource]
+script = ExtResource("2_770gd")
+id = "shuriken"
+display_name = "Shuriken Pesada"
+description = "Corta como vento."
+icon = ExtResource("1_eef1y")
+kind = 1
+max_stack = 1
+bonus_damage = 6

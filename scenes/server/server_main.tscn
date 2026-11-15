@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/server/server_main.gd" id="1_srv"]
 [ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
+[ext_resource type="PackedScene" path="res://scenes/maps/forest.tscn" id="3_forest"]
+[ext_resource type="PackedScene" path="res://scenes/maps/dungeon.tscn" id="4_dungeon"]
 
 [node name="Game" type="Node"]
 script = ExtResource("1_srv")
@@ -9,3 +11,9 @@ script = ExtResource("1_srv")
 [node name="World" type="Node2D" parent="."]
 
 [node name="Village" parent="World" instance=ExtResource("2_village")]
+
+[node name="Forest" parent="World" instance=ExtResource("3_forest")]
+position = Vector2(20000, 0)
+
+[node name="Dungeon" parent="World" instance=ExtResource("4_dungeon")]
+position = Vector2(40000, 0)

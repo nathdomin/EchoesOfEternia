@@ -1,0 +1,55 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/npc/npc.gd" id="1_npc"]
+[ext_resource type="SpriteFrames" path="res://resources/characters/old_man_frames.tres" id="2_frames"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Shadow.png" id="3_shadow"]
+[ext_resource type="LabelSettings" path="res://resources/ui/name_label.tres" id="4_name"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/OldMan/Faceset.png" id="5_face"]
+
+[sub_resource type="CircleShape2D" id="Shape_body"]
+radius = 5.0
+
+[sub_resource type="LabelSettings" id="Mark_settings"]
+font_size = 16
+font_color = Color(1, 0.85, 0.2, 1)
+outline_size = 3
+outline_color = Color(0.2, 0.1, 0.02, 1)
+
+[node name="Npc" type="Node2D"]
+script = ExtResource("1_npc")
+frames = ExtResource("2_frames")
+faceset = ExtResource("5_face")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.6)
+position = Vector2(0, -1)
+texture = ExtResource("3_shadow")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("2_frames")
+animation = &"idle_down"
+
+[node name="NameLabel" type="Label" parent="."]
+offset_left = -40.0
+offset_top = -28.0
+offset_right = 40.0
+offset_bottom = -18.0
+label_settings = ExtResource("4_name")
+horizontal_alignment = 1
+
+[node name="Marker" type="Label" parent="."]
+visible = false
+offset_left = -10.0
+offset_top = -46.0
+offset_right = 10.0
+offset_bottom = -28.0
+label_settings = SubResource("Mark_settings")
+horizontal_alignment = 1
+text = "!"
+
+[node name="Body" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body"]
+position = Vector2(0, -3)
+shape = SubResource("Shape_body")

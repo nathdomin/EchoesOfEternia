@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/explosion.tscn" id="1_08ii2"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Spell/Explosion.png" id="2_ebuf2"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="3_fb2ua"]
+
+[resource]
+script = ExtResource("3_fb2ua")
+id = "explosao"
+display_name = "Explosão Arcana"
+description = "Explode uma área no alvo."
+icon = ExtResource("2_ebuf2")
+kind = 3
+cooldown = 7.0
+range = 110.0
+radius = 28.0
+effect = ExtResource("1_08ii2")
