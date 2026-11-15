@@ -114,7 +114,7 @@ func join(ip: String, port: int) -> Error:
 	var err := peer.create_client(ip, port)
 	if err != OK:
 		return err
-	err = peer.host.dtls_client_setup(ip, NetSecurity.client_options())
+	err = peer.host.dtls_client_setup(ip, NetSecurity.client_options(ip))
 	if err != OK:
 		peer.close()
 		return err
@@ -127,7 +127,7 @@ func join(ip: String, port: int) -> Error:
 		if multiplayer.multiplayer_peer == peer and \
 				peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTING:
 			_on_connection_failed())
-	if not NetSecurity.is_pinned():
+	if not NetSecurity.is_pinned(ip):
 		print("[Rede] Conexao cifrada (DTLS) sem certificado fixo: o servidor nao e verificado.")
 	return OK
 

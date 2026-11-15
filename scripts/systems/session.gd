@@ -15,9 +15,10 @@ extends Node
 enum Mode { NONE, JOIN }
 
 const PREFS_PATH := "user://client.cfg"
-## Servidor oficial: o menu ja abre com ele (troque pelo IP da VM ao exportar
-## o cliente da entrega). Quem ja jogou fica com o que digitou por ultimo.
-const DEFAULT_HOST := "127.0.0.1"
+## Servidor oficial (VM Oracle, Sao Paulo): o menu ja abre com ele e so com
+## ele o certificado de certs/server.crt e exigido. Quem ja jogou fica com o
+## que digitou por ultimo.
+const DEFAULT_HOST := "152.67.51.151"
 
 var mode: Mode = Mode.NONE
 var host_ip := DEFAULT_HOST

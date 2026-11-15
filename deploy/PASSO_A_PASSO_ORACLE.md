@@ -1,6 +1,6 @@
 # Servidor na Oracle: passo a passo
 
-Faça tudo no PC de onde você vai administrar o servidor. Ele precisa ter esta pasta do pacote (`EchoesOfEternia-servidor.zip`, descompactada). Leva de 20 a 30 minutos. Não precisa instalar nada além do que já vem no Windows 10/11.
+Faça tudo no PC de onde você vai administrar o servidor. Ele precisa ter esta pasta do pacote (`EchoesOfEternia-servidor.zip`, descompactada). Leva de 20 a 30 minutos. Precisa do **Cliente OpenSSH** do Windows. Para conferir, rode `ssh -V` no PowerShell. Se não existir, instale em Configurações → Aplicativos → Recursos opcionais → Adicionar → **Cliente OpenSSH** e abra o PowerShell de novo.
 
 ## 1. Conta (uma vez)
 1. Acesse **cloud.oracle.com** e clique em **Sign up**. Escolha **Home Region: Brazil East (São Paulo)**.
@@ -60,6 +60,8 @@ powershell -ExecutionPolicy Bypass -File .\enviar_para_vm.ps1 -Ip 123.45.67.89 -
 
 | Sintoma | O que fazer |
 |---|---|
+| `The term 'ssh' is not recognized` | Instale o Cliente OpenSSH (veja o início) e abra o PowerShell de novo. |
+| `does not have a '.ps1' extension` | O caminho tem espaço: ponha entre aspas (`-File "C:\...\enviar_para_vm.ps1"`). |
 | `Permission denied (publickey)` | O caminho da chave está errado, ou a imagem não é Ubuntu (o usuário é `ubuntu`; no Oracle Linux é `opc`: use `-Usuario opc`). |
 | O jogo diz "Não foi possível conectar" | Confira a regra UDP 7777 do passo 3 e se o serviço está rodando (abaixo). |
 | Ver os logs | `ssh -i CHAVE ubuntu@IP "sudo journalctl -u echoes-server -n 50 --no-pager"` |
