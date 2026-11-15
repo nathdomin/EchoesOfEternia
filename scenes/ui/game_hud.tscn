@@ -1,0 +1,111 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="Bar_bg"]
+bg_color = Color(0.12, 0.06, 0.06, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.05, 0.02, 0.02, 1)
+
+[sub_resource type="StyleBoxFlat" id="Bar_hp"]
+bg_color = Color(0.82, 0.18, 0.16, 1)
+
+[node name="GameHud" type="CanvasLayer"]
+layer = 7
+script = ExtResource("1_hud")
+
+[node name="PlayerFrame" type="PanelContainer" parent="."]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 134.0
+offset_bottom = 48.0
+mouse_filter = 2
+theme_type_variation = &"DarkPanel"
+
+[node name="Row" type="HBoxContainer" parent="PlayerFrame"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="PlayerFace" type="TextureRect" parent="PlayerFrame/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(38, 38)
+layout_mode = 2
+stretch_mode = 2
+
+[node name="Info" type="VBoxContainer" parent="PlayerFrame/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="PlayerName" type="Label" parent="PlayerFrame/Row/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.85, 0.4, 1)
+text = "Nome"
+
+[node name="PlayerHp" type="ProgressBar" parent="PlayerFrame/Row/Info"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(78, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("Bar_bg")
+theme_override_styles/fill = SubResource("Bar_hp")
+value = 100.0
+show_percentage = false
+
+[node name="PlayerHpText" type="Label" parent="PlayerFrame/Row/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "100/100"
+
+[node name="TargetFrame" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -64.0
+offset_top = 4.0
+offset_right = 64.0
+offset_bottom = 48.0
+grow_horizontal = 2
+mouse_filter = 2
+theme_type_variation = &"DarkPanel"
+
+[node name="Row" type="HBoxContainer" parent="TargetFrame"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="TargetFace" type="TextureRect" parent="TargetFrame/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(38, 38)
+layout_mode = 2
+stretch_mode = 2
+
+[node name="Info" type="VBoxContainer" parent="TargetFrame/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="TargetName" type="Label" parent="TargetFrame/Row/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Alvo"
+
+[node name="TargetHp" type="ProgressBar" parent="TargetFrame/Row/Info"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(76, 6)
+layout_mode = 2
+theme_override_styles/background = SubResource("Bar_bg")
+theme_override_styles/fill = SubResource("Bar_hp")
+value = 100.0
+show_percentage = false
+
+[node name="TargetHpText" type="Label" parent="TargetFrame/Row/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "30/30"

@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="MonsterData" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/mushroom_frames.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Mushroom/Faceset.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+id = "mushroom"
+display_name = "Cogumelo Bravo"
+frames = ExtResource("2")
+faceset = ExtResource("3")
+max_hp = 45
+damage = 8
+speed = 34.0
+wander_speed = 14.0
+aggro_range = 60.0
+attack_range = 14.0
+attack_cooldown = 1.2
+leash_range = 140.0
+hitbox_radius = 6.0
+xp_reward = 18
+respawn_time = 15.0

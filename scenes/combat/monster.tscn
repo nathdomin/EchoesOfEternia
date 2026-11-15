@@ -1,0 +1,76 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/monster.gd" id="1_monster"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Shadow.png" id="2_shadow"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/slime_frames.tres" id="3_frames"]
+[ext_resource type="Script" path="res://scripts/combat/health_component.gd" id="4_health"]
+[ext_resource type="Script" path="res://scripts/combat/hitbox_component.gd" id="5_hitbox"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Receptacle/LifeBarMiniUnder.png" id="6_under"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Receptacle/LifeBarMiniProgress.png" id="7_progress"]
+
+[sub_resource type="CircleShape2D" id="Shape_feet"]
+radius = 4.0
+
+[sub_resource type="SceneReplicationConfig" id="Repl_monster"]
+properties/0/path = NodePath(".:monster_id")
+properties/0/spawn = true
+properties/0/replication_mode = 0
+properties/1/path = NodePath(".:net_position")
+properties/1/spawn = true
+properties/1/replication_mode = 2
+properties/2/path = NodePath(".:facing")
+properties/2/spawn = true
+properties/2/replication_mode = 2
+properties/3/path = NodePath(".:max_hp")
+properties/3/spawn = true
+properties/3/replication_mode = 2
+properties/4/path = NodePath(".:hp")
+properties/4/spawn = true
+properties/4/replication_mode = 2
+properties/5/path = NodePath(".:state")
+properties/5/spawn = true
+properties/5/replication_mode = 2
+properties/6/path = NodePath(".:attack_seq")
+properties/6/spawn = true
+properties/6/replication_mode = 2
+
+[node name="Monster" type="CharacterBody2D"]
+collision_layer = 0
+motion_mode = 1
+script = ExtResource("1_monster")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.6)
+position = Vector2(0, -1)
+texture = ExtResource("2_shadow")
+
+[node name="Sprite" type="AnimatedSprite2D" parent="."]
+position = Vector2(0, -8)
+sprite_frames = ExtResource("3_frames")
+animation = &"idle_down"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -3)
+shape = SubResource("Shape_feet")
+
+[node name="HealthBar" type="TextureProgressBar" parent="."]
+visible = false
+offset_left = -9.0
+offset_top = -21.0
+offset_right = 9.0
+offset_bottom = -17.0
+mouse_filter = 2
+value = 100.0
+texture_under = ExtResource("6_under")
+texture_progress = ExtResource("7_progress")
+
+[node name="Health" type="Node" parent="."]
+script = ExtResource("4_health")
+
+[node name="Hitbox" type="Node2D" parent="."]
+position = Vector2(0, -6)
+script = ExtResource("5_hitbox")
+
+[node name="Sync" type="MultiplayerSynchronizer" parent="."]
+delta_interval = 0.05
+replication_config = SubResource("Repl_monster")

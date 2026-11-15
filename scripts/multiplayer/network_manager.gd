@@ -152,6 +152,12 @@ func shutdown_server(reason: String) -> void:
 	leave()
 
 
+## Servidor: mensagem de sistema so para um jogador.
+func send_system_message(id: int, text: String) -> void:
+	if players.has(id):
+		_system_message.rpc_id(id, text)
+
+
 func is_server() -> bool:
 	return is_online and multiplayer != null and multiplayer.is_server()
 
@@ -293,6 +299,11 @@ func _resume(token: String) -> Dictionary:
 @rpc("authority", "call_remote", "reliable")
 func _session_token(token: String) -> void:
 	Session.resume_token = token
+
+
+@rpc("authority", "call_remote", "reliable")
+func _system_message(text: String) -> void:
+	_log(text)
 
 
 ## Servidor -> cliente: conexao recusada, com o motivo.
