@@ -74,6 +74,7 @@ func reset() -> void:
 ## Lembra servidor e conta para a proxima vez (nunca a senha).
 func save_prefs() -> void:
 	var cfg := ConfigFile.new()
+	cfg.load(PREFS_PATH)  # mantem as outras secoes (volume do audio)
 	cfg.set_value("login", "host", host_ip)
 	cfg.set_value("login", "port", port)
 	cfg.set_value("login", "account", account)

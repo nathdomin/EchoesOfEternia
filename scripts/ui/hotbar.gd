@@ -4,7 +4,10 @@ extends HBoxContainer
 ## 4 = pocao (com a quantidade). Escurece o slot durante a recarga.
 ## A recarga aqui e so visual; quem manda e o servidor.
 
+signal slot_clicked(index: int)
+
 const SLOT := 24.0
+const KEY_FONT := preload("res://resources/ui/name_label.tres")
 const POTION_COOLDOWN := 1.0
 const POTION_ICON := preload("res://assets/ui/ninja/Skill Icon/Job & Action/Potion.png")
 
@@ -26,12 +29,17 @@ func _ready() -> void:
 		shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		shade.size = Vector2(SLOT, 0)
 		s.add_child(shade)
+		# Numero da tecla pequeno no canto (nao cobre mais o icone)
 		var key := Label.new()
 		key.text = str(i + 1)
-		key.add_theme_font_size_override("font_size", 11)
-		key.position = Vector2(1, -3)
+		key.label_settings = KEY_FONT
+		key.position = Vector2(2, SLOT - 11)
 		key.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		s.add_child(key)
+		s.gui_input.connect(func(e: InputEvent) -> void:
+			if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+				slot_clicked.emit(i)
+				s.accept_event())
 		add_child(s)
 		_slots.append(s)
 		_shades.append(shade)

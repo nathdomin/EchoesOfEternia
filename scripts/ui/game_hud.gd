@@ -21,6 +21,10 @@ var inventory: InventoryWindow
 var dialogue: DialogueBox
 var class_chooser: ClassChooser
 var pause_menu: PauseMenu
+var debug_panel: DebugPanel
+var controls: ControlsWindow
+var _tutorial_pending := false
+var _level_badge: Label
 var _xp_bar: ProgressBar
 var _display_name := ""
 
@@ -37,18 +41,52 @@ func _ready() -> void:
 	tracker.custom_minimum_size.x = 160
 	add_child(tracker)
 	hotbar = Hotbar.new()
-	hotbar.position = Vector2(240 - (4 * Hotbar.SLOT + 9) / 2.0, 270 - Hotbar.SLOT - 4)
+	hotbar.position = Vector2(240 - (4 * Hotbar.SLOT + 9) / 2.0, 270 - Hotbar.SLOT - 5)
+	# Moldura de madeira atras da barra
+	var frame := UiKit.wood_frame(Vector2(4 * Hotbar.SLOT + 9 + 8, Hotbar.SLOT + 8))
+	frame.position = hotbar.position - Vector2(4, 4)
+	add_child(frame)
 	add_child(hotbar)
+	var help := Label.new()
+	help.text = "F1 Ajuda"
+	help.position = Vector2(480 - 46, 270 - 16)
+	help.modulate = Color(1, 1, 1, 0.75)
+	help.add_theme_constant_override("outline_size", 3)
+	help.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.03))
+	help.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(help)
+	# Brasao de nivel sobre o canto do retrato
+	_level_badge = Label.new()
+	_level_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_level_badge.add_theme_color_override("font_color", UiKit.GOLD)
+	var badge := StyleBoxFlat.new()
+	badge.bg_color = Color(0.45, 0.08, 0.06)
+	badge.set_border_width_all(1)
+	badge.border_color = UiKit.GOLD
+	badge.set_corner_radius_all(3)
+	badge.content_margin_left = 2
+	badge.content_margin_right = 2
+	badge.content_margin_top = -2
+	badge.content_margin_bottom = -1
+	_level_badge.add_theme_stylebox_override("normal", badge)
+	_level_badge.position = Vector2(2, 30)
+	_level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_player_face.add_child(_level_badge)
 	chat = ChatBox.new()
 	chat.bottom_left = Vector2(4, 240)  # acima da barra de habilidades
 	add_child(chat)
 	dialogue = DialogueBox.new()
 	add_child(dialogue)
 	inventory = InventoryWindow.new()
-	inventory.position = Vector2(92, 50)
+	inventory.position = (Vector2(480, 270) - InventoryWindow.SIZE) / 2.0 - Vector2(0, 8)
 	add_child(inventory)
 	class_chooser = ClassChooser.new()
 	add_child(class_chooser)
+	debug_panel = DebugPanel.new()
+	add_child(debug_panel)
+	controls = ControlsWindow.new()
+	add_child(controls)
+	_tutorial_pending = ControlsWindow.first_time()
 	pause_menu = PauseMenu.new()
 	add_child(pause_menu)
 	PlayerData.changed.connect(_on_me_changed)
@@ -57,7 +95,8 @@ func _ready() -> void:
 
 ## Alguma janela que pega o teclado esta aberta? (o personagem nao anda)
 func blocks_input() -> bool:
-	return chat.is_open or dialogue.visible or class_chooser.visible or pause_menu.visible
+	return chat.is_open or dialogue.visible or class_chooser.visible or pause_menu.visible or controls.visible
+
 
 
 func _on_me_changed() -> void:
@@ -65,7 +104,9 @@ func _on_me_changed() -> void:
 	if me.is_empty():
 		return
 	if not _display_name.is_empty():
-		_player_name.text = "%s  Nv %d" % [_display_name, me.level]
+		_player_name.text = _display_name
+	_level_badge.text = str(me.level)
+	_level_badge.reset_size()
 	_xp_bar.max_value = maxi(int(me.xp_next), 1)
 	_xp_bar.value = int(me.xp) if int(me.xp_next) > 0 else _xp_bar.max_value
 	_xp_bar.tooltip_text = "XP %d/%d" % [me.xp, me.xp_next] if int(me.xp_next) > 0 else "Nível máximo"
@@ -102,6 +143,10 @@ func set_target(node: Node2D) -> void:
 
 
 func _process(_delta: float) -> void:
+	# Primeiro jogo neste PC: abre a ajuda depois da escolha de classe
+	if _tutorial_pending and not class_chooser.visible and String(PlayerData.me.get("class", "")) != "":
+		_tutorial_pending = false
+		controls.open(1)
 	if target == null:
 		return
 	if not is_instance_valid(target):

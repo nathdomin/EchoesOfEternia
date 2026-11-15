@@ -1,7 +1,7 @@
 class_name NetHud
 extends CanvasLayer
-## HUD de rede (E5): status (online e jogadores conectados) no canto
-## superior e mensagens de sistema estilo MMO no canto inferior, que somem
+## HUD de rede (E5): no canto superior direito o nome da zona (revisao
+## visual; o numero de jogadores fica no painel F3), e mensagens de sistema estilo MMO no canto inferior, que somem
 ## sozinhas depois de alguns segundos.
 
 const MESSAGE_TIME := 6.0
@@ -11,6 +11,7 @@ const MAX_MESSAGES := 6
 @onready var _log: VBoxContainer = %Log
 @onready var _banner: Control = %Banner
 @onready var _banner_text: Label = %BannerText
+var _zone_name := ""
 
 
 func _ready() -> void:
@@ -40,8 +41,16 @@ func show_banner(text: String) -> void:
 	_update_status()
 
 
+## Nome da zona atual (main.gd chama ao trocar de mapa).
+func set_zone(display_name: String) -> void:
+	_zone_name = display_name
+	_update_status()
+
+
 func _update_status() -> void:
 	if not NetworkManager.is_online:
 		_status.text = "Offline"
+		_status.modulate = Color(1, 0.6, 0.5)
 		return
-	_status.text = "Online  -  %d/%d jogadores" % [NetworkManager.players.size(), NetworkManager.max_players]
+	_status.modulate = Color.WHITE
+	_status.text = _zone_name if not _zone_name.is_empty() else "Online"

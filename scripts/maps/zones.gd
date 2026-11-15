@@ -10,6 +10,21 @@ const SCENES := {
 	"dungeon": "res://scenes/maps/dungeon.tscn",
 }
 const NAMES := {"village": "Vila de Eternia", "forest": "Floresta Sombria", "dungeon": "Caverna do Rei Slime"}
+## Musica de cada zona (cliente).
+const MUSIC := {
+	"village": "res://audio/music/36 - Village.ogg",
+	"forest": "res://audio/music/37 - Dark Forest.ogg",
+	"dungeon": "res://audio/music/21 - Dungeon.ogg",
+}
+## Musica de luta contra chefe.
+const BOSS_MUSIC := "res://audio/music/17 - Fight.ogg"
+## Clima de cada zona (cliente): cor geral, folhas, vaga-lumes, vinheta e
+## luz em volta do jogador (caverna escura).
+const LOOK := {
+	"village": {"tint": Color(1.0, 0.96, 0.9), "leaves": true, "fireflies": 40, "vignette": 0.35, "light": false},
+	"forest": {"tint": Color(0.8, 0.9, 0.82), "leaves": true, "fireflies": 70, "vignette": 0.5, "light": false},
+	"dungeon": {"tint": Color(0.3, 0.28, 0.4), "leaves": false, "fireflies": 0, "vignette": 0.6, "light": true},
+}
 ## Afastamento de cada zona no servidor.
 const SERVER_SPACING := 20000.0
 
@@ -17,6 +32,10 @@ const SERVER_SPACING := 20000.0
 ## Nome do no da zona dentro de World (igual no servidor e no cliente).
 static func node_name(zone: String) -> String:
 	return zone.to_pascal_case()
+
+
+static func look(zone: String) -> Dictionary:
+	return LOOK.get(zone, LOOK.village)
 
 
 static func display_name(zone: String) -> String:

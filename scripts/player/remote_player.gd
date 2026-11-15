@@ -19,7 +19,8 @@ const WALK_THRESHOLD := 0.75 ## px de distancia para considerar andando
 @export var display_name := ""
 @export var skin := "knight":
 	set = _set_skin
-@export var level := 1
+@export var level := 1:
+	set = _set_level
 @export var net_position := Vector2.ZERO
 @export var facing := Vector2i.DOWN
 ## Combate (E11-E14): vida, morto e contador de golpes (cada +1 = um golpe).
@@ -43,7 +44,7 @@ var _attack_until_ms := 0
 
 func _ready() -> void:
 	_sprite.sprite_frames = Player.frames_for(skin)
-	_name_label.text = display_name
+	_refresh_name()
 	position = net_position
 	if multiplayer.is_server():
 		set_process(false)  # no servidor quem move e o Characters
@@ -80,11 +81,12 @@ func _update_animation(walking: bool) -> void:
 
 
 func _set_hp(value: int) -> void:
-	var took_damage := value < hp
+	var lost := hp - value
 	hp = value
-	if took_damage and is_node_ready() and not multiplayer.is_server():
+	if lost > 0 and is_node_ready() and not multiplayer.is_server() and not dead:
 		_sprite.modulate = Color(3, 3, 3)
 		create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.18)
+		FloatingText.spawn(get_parent().get_parent(), position, str(lost), FloatingText.HURT)
 
 
 func _set_dead(value: bool) -> void:
@@ -100,9 +102,21 @@ func _set_attack_seq(value: int) -> void:
 		return
 	_attack_until_ms = Time.get_ticks_msec() + 250
 	Player.spawn_slash(get_parent().get_parent(), position, facing)  # no mapa, nao em Players
+	GameAudio.play_at("swing", position)
 
 
 func _set_skin(value: String) -> void:
 	skin = value
 	if is_node_ready():
 		_sprite.sprite_frames = Player.frames_for(skin)
+
+
+func _set_level(value: int) -> void:
+	level = value
+	if is_node_ready():
+		_refresh_name()
+
+
+## Nome com o nivel ao lado, como nos MMOs ("Lia Nv5").
+func _refresh_name() -> void:
+	_name_label.text = "%s Nv%d" % [display_name, level] if display_name != "" else ""

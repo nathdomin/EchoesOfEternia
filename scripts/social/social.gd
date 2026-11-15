@@ -5,6 +5,9 @@ extends Node
 ## controle, ate MAX_CHAT), limita a frequencia e repassa:
 ##   texto normal  -> todos (canal "global")
 ##   /g texto      -> so o grupo (canal "grupo")
+##   /z texto      -> so quem esta na mesma zona (canal "zona")
+##   /w Nome texto -> sussurro para um jogador (canais "de"/"para"); /r responde
+##   /quem         -> lista de quem esta online (nome, nivel, zona)
 ##   /convidar Nome, /aceitar, /recusar, /sair, /ajuda -> comandos de grupo
 ## Grupo: ate MAX_PARTY jogadores, existe enquanto estao online. O servidor
 ## manda a cada membro a lista do grupo (nome, nivel, vida, zona) quando muda.
@@ -31,11 +34,13 @@ var _invites: Dictionary = {}        ## convidado -> {"from": int, "until": int}
 var _next_party := 1
 var _push_timer := 0.0
 var _dirty_parties: Dictionary = {}
+var _last_whisper: Dictionary = {}   ## peer -> quem sussurrou por ultimo (para /r)
 
 
 func _ready() -> void:
 	NetworkManager.account_logged_out.connect(func(id: int, _k: String) -> void:
 		_chat_times.erase(id)
+		_last_whisper.erase(id)
 		_invites.erase(id)
 		_leave_party(id, false, false))  # desconectou: nao manda nada para ele
 	NetworkManager.connection_ended.connect(func(_r: String) -> void:
@@ -131,6 +136,26 @@ func _command(id: int, text: String) -> void:
 			elif not arg.is_empty():
 				for m in party_members(id):
 					_chat_line.rpc_id(m, "grupo", NetworkManager.player_name(id), arg)
+		"/z", "/zona":
+			if not arg.is_empty():
+				var author := NetworkManager.player_name(id)
+				for pid in Characters.players_in_zone(Characters.zone_of(id)):
+					_chat_line.rpc_id(pid, "zona", author, arg)
+		"/w", "/s", "/sussurrar":
+			var wp := arg.split(" ", false, 1)
+			if wp.size() < 2:
+				NetworkManager.send_system_message(id, "Use: /w Nome mensagem")
+			else:
+				_whisper(id, _find_player(wp[0]), wp[0], wp[1])
+		"/r", "/responder":
+			if arg.is_empty():
+				pass
+			elif not _last_whisper.has(id) or not NetworkManager.players.has(_last_whisper[id]):
+				NetworkManager.send_system_message(id, "Ninguém para responder.")
+			else:
+				_whisper(id, _last_whisper[id], "", arg)
+		"/quem", "/who":
+			_who(id)
 		"/convidar", "/invite":
 			_invite(id, arg)
 		"/aceitar":
@@ -142,7 +167,29 @@ func _command(id: int, text: String) -> void:
 		"/sair":
 			_leave_party(id, true)
 		_:
-			NetworkManager.send_system_message(id, "Comandos: /g texto (grupo), /convidar Nome, /aceitar, /recusar, /sair")
+			NetworkManager.send_system_message(id, "Comandos: /g grupo, /z zona, /w Nome (sussurro), /r responder, /quem, /convidar Nome, /aceitar, /recusar, /sair")
+
+
+func _whisper(id: int, target: int, typed_name: String, text: String) -> void:
+	if target == 0:
+		NetworkManager.send_system_message(id, "Jogador \"%s\" não está online." % typed_name.left(16))
+		return
+	if target == id:
+		return
+	_last_whisper[target] = id
+	_chat_line.rpc_id(target, "de", NetworkManager.player_name(id), text)
+	_chat_line.rpc_id(id, "para", NetworkManager.player_name(target), text)
+
+
+func _who(id: int) -> void:
+	var names: Array[String] = []
+	for pid: int in NetworkManager.players:
+		var data := Characters.data_of(pid)
+		if data.is_empty():
+			continue
+		names.append("%s (Nv %d, %s)" % [NetworkManager.player_name(pid), int(data.level), Zones.display_name(String(data.zone))])
+	names.sort()
+	NetworkManager.send_system_message(id, "Online (%d): %s" % [names.size(), ", ".join(names)])
 
 
 func _find_player(p_name: String) -> int:

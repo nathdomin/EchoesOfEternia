@@ -354,6 +354,7 @@ horizontal_alignment = 2
 
 [node name="Music" type="AudioStreamPlayer" parent="."]
 stream = ExtResource("6_music")
+bus = &"Music"
 volume_db = -30.0
 
 [node name="FadeLayer" type="CanvasLayer" parent="."]

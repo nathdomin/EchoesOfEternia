@@ -46,6 +46,7 @@ var _error_color: Color
 func _ready() -> void:
 	# --join=IP --user --pass na linha de comando: faz login direto (testes)
 	var auto_login := Session.apply_cmdline()
+	GameAudio.stop_music()  # a musica do jogo para; o menu tem a dele
 	NetworkManager.connection_ready.connect(_on_login_ok)
 	NetworkManager.connection_ended.connect(_on_login_failed)
 	_error_color = _join_error.get_theme_color("font_color")

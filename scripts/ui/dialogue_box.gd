@@ -44,6 +44,8 @@ func _ready() -> void:
 
 func open(npc: Npc) -> void:
 	_npc = npc
+	if not visible:
+		GameAudio.play("open")
 	visible = true
 	_face.texture = npc.faceset
 	_name.text = npc.display_name

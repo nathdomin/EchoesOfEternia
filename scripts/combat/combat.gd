@@ -19,6 +19,8 @@ signal own_respawned(pos: Vector2)
 signal monster_defeated(killer_id: int, monster: Monster)
 ## Cliente: o proprio ataque acertou este monstro (para o quadro do alvo).
 signal own_hit(monster_path: NodePath)
+## Cliente: um chefe deu o pisao em `pos` (tremor de tela se perto).
+signal boss_slam_seen(pos: Vector2)
 
 const BASE_STATS := preload("res://resources/combat/player_base.tres")
 const MONSTER_SCENE := preload("res://scenes/combat/monster.tscn")
@@ -98,14 +100,15 @@ func monster_attack(monster: Monster, target_id: int, damage: int) -> void:
 	avatar.health.take_damage(damage, 0)
 
 
-func monster_killed(monster: Monster, killer_id: int) -> void:
+## `damage_by` = dano de cada jogador (o credito vai para quem mais bateu).
+func monster_killed(monster: Monster, killer_id: int, damage_by: Dictionary = {}) -> void:
 	if monster.data.is_boss:
 		var who := NetworkManager.player_name(killer_id) if killer_id != 0 else "Alguém"
 		NetworkManager.broadcast_system_message("%s derrotou %s!" % [who, monster.display_name()])
 	elif killer_id != 0 and _players.has(killer_id):
 		NetworkManager.send_system_message(killer_id, "Você derrotou %s." % monster.display_name())
 	monster_defeated.emit(killer_id, monster)
-	PlayerData.award_kill(killer_id, monster)
+	PlayerData.award_kill(killer_id, monster, damage_by)
 
 
 ## Chefe: pisao que acerta todos os jogadores no raio.
@@ -317,11 +320,21 @@ func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
 					if pid != id and Characters.zone_of(pid) == zone and not is_dead(pid) \
 							and Characters.position_of(pid).distance_to(origin) <= ab.radius:
 						healed.append(pid)
+			var total_healed := 0
 			for pid in healed:
 				var a := Characters.avatar_of(pid)
 				if a:
-					a.health.heal(roundi(a.health.max_hp * ab.power))
+					total_healed += a.health.heal(roundi(a.health.max_hp * ab.power))
+			# Curar quem esta lutando chama a atencao dos monstros (metade da cura)
+			if total_healed > 0:
+				for m in _alive_monsters(zone):
+					for pid in healed:
+						if m.is_fighting(pid):
+							m.add_threat(id, total_healed * 0.5)
+							break
 	for m in hits:
+		if ab.threat > 1.0:
+			m.add_threat(id, damage * (ab.threat - 1.0))
 		m.health.take_damage(damage, id)
 		_hit_confirmed.rpc_id(id, get_path_to(m))
 	for pid in Characters.players_in_zone(zone):
@@ -359,6 +372,15 @@ func _ability_fx(ability_id: String, from: Vector2, to: Vector2) -> void:
 	var world := _fx_parent()
 	if world == null:
 		return
+	match ab.kind:
+		AbilityData.Kind.RANGED:
+			GameAudio.play_at("throw" if ab.projectile and ab.id != "bola_de_fogo" else "magic", from)
+		AbilityData.Kind.AREA_TARGET:
+			GameAudio.play_at("magic", from)
+		AbilityData.Kind.HEAL:
+			GameAudio.play_at("heal", from)
+		_:
+			GameAudio.play_at("swing", from)
 	var delay := 0.0
 	if ab.projectile:
 		var p := Sprite2D.new()
@@ -378,6 +400,8 @@ func _ability_fx(ability_id: String, from: Vector2, to: Vector2) -> void:
 			var fx := ab.effect.instantiate() as Node2D
 			fx.position = to
 			world.add_child(fx)
+			if ab.kind == AbilityData.Kind.AREA_TARGET:
+				GameAudio.play_at("explosion", to)
 
 
 @rpc("authority", "call_remote", "reliable")
@@ -389,6 +413,14 @@ func _effect(effect_id: String, pos: Vector2) -> void:
 	var fx := (load(path) as PackedScene).instantiate() as Node2D
 	fx.position = pos
 	world.add_child(fx)
+	match effect_id:
+		"levelup":
+			GameAudio.play_at("levelup", pos, 0.0)
+		"explosion":
+			GameAudio.play_at("slam", pos)
+			boss_slam_seen.emit(pos)
+		"spark":
+			GameAudio.play_at("potion", pos)
 
 
 ## Onde os efeitos aparecem no cliente (o mundo da cena do jogo).
