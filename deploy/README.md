@@ -90,7 +90,7 @@ A conexão já é cifrada, mas sem este passo o cliente aceita qualquer servidor
 
 1. Na VM: `sudo cat /var/lib/echoes/tls/server.crt`
 2. Copie o texto (de `-----BEGIN CERTIFICATE-----` até `-----END CERTIFICATE-----`) para `certs/server.crt` no projeto.
-3. Exporte o cliente de novo. O aviso "sem certificado fixo" deixa de aparecer no log do cliente.
+3. Coloque o IP da VM em `Session.DEFAULT_HOST` (`scripts/systems/session.gd`) e exporte o cliente de novo. O certificado só é exigido para esse endereço (servidor local e plano B continuam entrando), e o aviso "sem certificado fixo" deixa de aparecer.
 
 Só o certificado (público) vai para o projeto. A chave `server.key` **nunca** sai da VM (o `.gitignore` bloqueia `*.key`). Se a pasta `/var/lib/echoes` for apagada, a VM gera outra chave e os clientes com o certificado antigo deixam de conectar: repita os passos.
 

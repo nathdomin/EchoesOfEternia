@@ -6,11 +6,11 @@ extends RefCounted
 ## (autoassinado) em <dados>/tls/. Os mesmos arquivos sao usados depois.
 ##
 ## Cliente: tudo o que passa pela rede (inclusive a senha) e cifrado.
-## - Se o cliente tiver o certificado do servidor em `res://certs/server.crt`,
-##   ele so conecta num servidor com aquela chave (protege contra alguem se
-##   passar pelo servidor).
-## - Sem esse arquivo, a conexao continua cifrada, mas o cliente aceita
-##   qualquer certificado.
+## - Para o servidor oficial (`Session.DEFAULT_HOST`), se existir o certificado
+##   dele em `res://certs/server.crt`, o cliente so conecta num servidor com
+##   aquela chave (protege contra alguem se passar pelo servidor).
+## - Outros enderecos (servidor no proprio PC, rede local, plano B) e cliente
+##   sem o arquivo: a conexao continua cifrada, mas aceita qualquer certificado.
 
 const SERVER_CN := "echoes-server"
 const PINNED_CERT := "res://certs/server.crt"
@@ -41,13 +41,13 @@ static func server_cert_path(data_dir: String) -> String:
 	return ProjectSettings.globalize_path(data_dir.path_join("tls").path_join("server.crt"))
 
 
-static func client_options() -> TLSOptions:
-	if ResourceLoader.exists(PINNED_CERT):
+static func client_options(host: String) -> TLSOptions:
+	if is_pinned(host):
 		var cert := load(PINNED_CERT) as X509Certificate
 		if cert:
 			return TLSOptions.client(cert, SERVER_CN)
 	return TLSOptions.client_unsafe()
 
 
-static func is_pinned() -> bool:
-	return ResourceLoader.exists(PINNED_CERT)
+static func is_pinned(host: String) -> bool:
+	return host == Session.DEFAULT_HOST and ResourceLoader.exists(PINNED_CERT)
