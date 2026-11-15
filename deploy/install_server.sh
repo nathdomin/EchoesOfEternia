@@ -39,11 +39,13 @@ else
   if ! iptables -C INPUT -p udp --dport "$PORT" -j ACCEPT 2>/dev/null; then
     iptables -I INPUT 1 -p udp --dport "$PORT" -j ACCEPT
   fi
+  if ! command -v netfilter-persistent >/dev/null 2>&1; then
+    echo "   Instalando iptables-persistent (a regra continua depois de reiniciar a VM)"
+    DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent >/dev/null \
+      || echo "   (aviso) nao deu para instalar: a regra some ao reiniciar a VM."
+  fi
   if command -v netfilter-persistent >/dev/null 2>&1; then
     netfilter-persistent save
-  else
-    echo "   (aviso) netfilter-persistent nao encontrado: a regra some ao reiniciar a VM."
-    echo "   Instale com: sudo apt install -y iptables-persistent"
   fi
 fi
 

@@ -30,7 +30,9 @@ Os jogadores só abrem o cliente e entram com o endereço da VM.
 
 ## 3. Instalar na VM
 
-No PC (troque o IP e a chave):
+**Pelo Windows (mais fácil):** monte o pacote com `tools/empacotar.ps1` (gera `export/EchoesOfEternia-servidor.zip`), leve-o ao PC que tem a chave e siga `PASSO_A_PASSO_ORACLE.md`. O `enviar_para_vm.ps1` detecta ARM64/x86_64, envia e instala com um comando.
+
+**Na mão** (troque o IP e a chave):
 
 ```bash
 scp -i chave.key export/server/echoes_server.arm64 deploy/install_server.sh deploy/update_server.sh deploy/stop_server.sh deploy/echoes-server.service ubuntu@IP_DA_VM:~
