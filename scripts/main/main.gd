@@ -104,7 +104,7 @@ func _process(delta: float) -> void:
 		_update_boss_music()
 	if _respawn_left > 0.0:
 		_respawn_left -= delta
-		_hud.show_banner("Você morreu. Renascendo em %d s..." % ceili(maxf(_respawn_left, 0.0)))
+		_game_hud.show_death(maxf(_respawn_left, 0.0))
 
 
 func _physics_process(delta: float) -> void:
@@ -275,14 +275,22 @@ func _on_died(respawn_seconds: float) -> void:
 	_player.set_dead(true)
 	GameAudio.play("death", 0.0)
 	_respawn_left = respawn_seconds
+	_hud.show_banner("")
+	_game_hud.set_target(null)
+	_game_hud.show_death(respawn_seconds)
 
 
 func _on_respawned(pos: Vector2) -> void:
 	_respawn_left = 0.0
-	_hud.show_banner("")
+	_game_hud.show_death(-1.0)
 	_player.set_dead(false)
 	_player.place(pos, Vector2i.DOWN)
 	_last_sent_pos = pos
+	_hud.show_banner("Você renasceu na %s." % Zones.display_name(_zone))
+	_game_hud.chat.add_line("sistema", "", "Você renasceu na praça da %s com a vida cheia." % Zones.display_name(_zone))
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		if _respawn_left <= 0.0 and _reconnect_attempt < 0:
+			_hud.show_banner(""))
 
 
 ## Chefe vivo perto (lutando ou a vista): musica de luta; senao a da zona.

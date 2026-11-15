@@ -197,11 +197,16 @@ func _on_player_died(id: int) -> void:
 func _respawn(id: int) -> void:
 	var p: Dictionary = _players[id]
 	p.dead = false
-	var avatar := Characters.avatar_of(id)
-	if avatar == null:
+	if Characters.avatar_of(id) == null:
 		return
-	var pos := Characters.respawn_position(id)
-	Characters.teleport(id, pos)
+	# Renasce sempre na praca da vila (o comeco do jogo); de outra zona, a
+	# troca de mapa vem antes do aviso de renascimento.
+	var pos := Characters.home_position()
+	if String(Characters.data_of(id).get("zone", "")) != Characters.home_zone():
+		Characters.move_to_zone(id, Characters.home_zone(), pos)
+	else:
+		Characters.teleport(id, pos)
+	var avatar := Characters.avatar_of(id)
 	avatar.health.reset()
 	avatar.dead = false
 	avatar.sync_health()

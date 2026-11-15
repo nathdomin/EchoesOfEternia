@@ -68,7 +68,11 @@ func start_server(store: CharacterStore) -> void:
 ## O servidor registra cada zona carregada (cena com get_bounds(),
 ## get_spawn_position() e um no "Players"). A primeira e a zona inicial.
 func register_zone(zone: String, map: Node) -> void:
-	_zones[zone] = {"bounds": map.get_bounds(), "spawn": map.get_spawn_position(),
+	# Ponto inicial em coordenadas LOCAIS da zona: no servidor as zonas ficam
+	# afastadas (x = 0, 20000, 40000) e a posicao global apontava para fora
+	# do mapa (renascer na floresta/caverna jogava o personagem no vazio).
+	var spawn_point := map.get_node("SpawnPoint") as Node2D
+	_zones[zone] = {"bounds": map.get_bounds(), "spawn": spawn_point.position,
 			"players": map.get_node("Players"), "map": map}
 	if _default_zone.is_empty():
 		_default_zone = zone
@@ -132,11 +136,6 @@ func avatar_of(id: int) -> RemotePlayer:
 ## Vida salva no personagem (-1 = cheia).
 func saved_hp(id: int) -> int:
 	return int(_online[id].data.get("hp", -1)) if _online.has(id) else -1
-
-
-func respawn_position(id: int) -> Vector2:
-	var zone: String = _online[id].data.zone if _online.has(id) else _default_zone
-	return _zones[zone].spawn
 
 
 ## Servidor move o jogador (renascimento). O cliente e avisado pelo Combat.
@@ -323,8 +322,27 @@ func _request_travel(exit_name: String) -> void:
 	var target: Dictionary = _zones[exit.target_zone]
 	var entrance := (target.map as Node).get_node_or_null("Entrances/" + exit.target_entrance) as Node2D
 	var pos: Vector2 = entrance.position if entrance else target.spawn
+	move_to_zone(id, exit.target_zone, pos)
+
+
+## Zona inicial (onde se renasce) e o ponto de partida dela (local).
+func home_zone() -> String:
+	return _default_zone
+
+
+func home_position() -> Vector2:
+	return _zones[_default_zone].spawn
+
+
+## Servidor: leva o jogador para `zone` em `pos` (viagem ou renascimento):
+## recria o avatar na zona nova e avisa o cliente para trocar o mapa.
+func move_to_zone(id: int, zone: String, pos: Vector2) -> void:
+	if not _online.has(id) or not _zones.has(zone):
+		return
+	var c: Dictionary = _online[id]
+	var data: Dictionary = c.data
 	var old: RemotePlayer = c.avatar
-	data.zone = exit.target_zone
+	data.zone = zone
 	data.x = pos.x
 	data.y = pos.y
 	c.ready = false
