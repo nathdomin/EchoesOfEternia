@@ -10,7 +10,7 @@ var _timer := 0.0
 func _ready() -> void:
 	theme_type_variation = &"DarkPanel"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	position = Vector2(4, 96)
+	position = Vector2(162, 56)
 	visible = false
 	_label = Label.new()
 	_label.add_theme_font_size_override("font_size", 11)

@@ -36,7 +36,7 @@ func _ready() -> void:
 	_xp_bar.tooltip_text = "Experiência"
 	_player_text.get_parent().add_child(_xp_bar)
 	var party := PartyFrames.new()
-	party.position = Vector2(4, 52)
+	party.position = Vector2(4, 58)
 	add_child(party)
 	var tracker := QuestTracker.new()
 	tracker.position = Vector2(480 - 164, 22)
@@ -71,7 +71,7 @@ func _ready() -> void:
 	badge.content_margin_top = -2
 	badge.content_margin_bottom = -1
 	_level_badge.add_theme_stylebox_override("normal", badge)
-	_level_badge.position = Vector2(2, 30)
+	_level_badge.position = Vector2(1, 22)
 	_level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_player_face.add_child(_level_badge)
 	chat = ChatBox.new()

@@ -165,6 +165,22 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	anim_state = AnimState.WALK if velocity.length() > 5.0 else AnimState.IDLE
 	_update_animation()
+	_footsteps(delta)
+
+
+## Passos (Gate 5): um a cada STEP_EVERY s andando, sorteados entre 5.
+const STEP_EVERY := 0.32
+var _step_left := 0.0
+
+
+func _footsteps(delta: float) -> void:
+	if anim_state != AnimState.WALK:
+		_step_left = 0.08  # o primeiro passo sai logo ao comecar a andar
+		return
+	_step_left -= delta
+	if _step_left <= 0.0:
+		_step_left = STEP_EVERY
+		GameAudio.play("step%d" % (randi() % 5), 0.08)
 
 
 ## Converte a direcao do input na direcao cardinal dominante.

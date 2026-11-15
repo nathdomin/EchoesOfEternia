@@ -214,6 +214,8 @@ func open(tab := 0) -> void:
 
 
 func close() -> void:
+	if visible:
+		GameAudio.play("close")
 	visible = false
 	_mark_seen()
 

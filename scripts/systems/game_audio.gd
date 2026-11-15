@@ -17,6 +17,9 @@ const MUSIC_DB := -14.0
 ## Distancia (px) a partir da qual um som do mundo nao e mais ouvido.
 const HEAR_DISTANCE := 300.0
 const POOL_SIZE := 12
+## Gate 5: ajuste de volume por faixa (dB), medido para todas soarem iguais
+## (alvo -20 dB RMS). Chave = nome do arquivo sem extensao.
+const MUSIC_GAIN := {"17 - Fight": 3.9, "21 - Dungeon": -1.0, "36 - Village": 1.2, "37 - Dark Forest": -4.5}
 
 var music_volume := 0.7
 var sfx_volume := 0.8
@@ -28,6 +31,10 @@ var _next := 0
 var _music_a: AudioStreamPlayer
 var _music_b: AudioStreamPlayer
 var _music_path := ""
+var _amb: AudioStreamPlayer
+var _amb_oneshots: Array = []
+var _amb_every := Vector2(4, 9)
+var _amb_next := 0.0
 ## Evita o mesmo som repetido no mesmo quadro (ex.: varios monstros atingidos).
 var _last_played: Dictionary = {}
 
@@ -49,6 +56,10 @@ func _ready() -> void:
 		_pool.append(p)
 	_music_a = _new_music_player()
 	_music_b = _new_music_player()
+	_amb = AudioStreamPlayer.new()
+	_amb.bus = &"Sfx"
+	_amb.volume_db = -60.0
+	add_child(_amb)
 	_load_prefs()
 	_apply_volumes()
 	get_tree().node_added.connect(_on_node_added)
@@ -132,11 +143,47 @@ func play_music(path: String) -> void:
 	_music_a.stream = stream
 	_music_a.volume_db = -40.0
 	_music_a.play()
-	create_tween().tween_property(_music_a, "volume_db", MUSIC_DB, MUSIC_FADE)
+	var target := MUSIC_DB + float(MUSIC_GAIN.get(path.get_file().get_basename(), 0.0))
+	create_tween().tween_property(_music_a, "volume_db", target, MUSIC_FADE)
 
 
 func stop_music() -> void:
 	play_music("")
+	play_ambience({})
+
+
+# ---------- ambiente (Gate 5) ----------
+
+## Som de fundo da zona (Zones.AMBIENCE). {} = silencio.
+func play_ambience(cfg: Dictionary) -> void:
+	if not _enabled:
+		return
+	_amb_oneshots = cfg.get("oneshots", [])
+	_amb_every = cfg.get("every", Vector2(4, 9))
+	_amb_next = randf_range(_amb_every.x, _amb_every.y)
+	var loop: String = cfg.get("loop", "")
+	var stream := _stream(loop) as AudioStreamWAV if loop != "" else null
+	if stream == null:
+		create_tween().tween_property(_amb, "volume_db", -60.0, MUSIC_FADE)
+		return
+	if stream.loop_mode != AudioStreamWAV.LOOP_FORWARD:
+		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		stream.loop_begin = 0
+		stream.loop_end = int(stream.get_length() * stream.mix_rate)
+	if _amb.stream != stream:
+		_amb.stream = stream
+		_amb.volume_db = -40.0
+		_amb.play()
+	create_tween().tween_property(_amb, "volume_db", float(cfg.get("db", 0.0)), MUSIC_FADE)
+
+
+func _process(delta: float) -> void:
+	if not _enabled or _amb_oneshots.is_empty():
+		return
+	_amb_next -= delta
+	if _amb_next <= 0.0:
+		_amb_next = randf_range(_amb_every.x, _amb_every.y)
+		play(_amb_oneshots[randi() % _amb_oneshots.size()], 0.1, randf_range(0.45, 1.0))
 
 
 # ---------- volumes ----------

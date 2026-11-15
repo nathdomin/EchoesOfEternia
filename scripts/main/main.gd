@@ -215,6 +215,7 @@ func _apply_zone_look(zone: String) -> void:
 	_zone = zone
 	_hud.set_zone(Zones.display_name(zone))
 	GameAudio.play_music(Zones.MUSIC.get(zone, ""))
+	GameAudio.play_ambience(Zones.AMBIENCE.get(zone, {}))
 	var look := Zones.look(zone)
 	var amb := $Ambience
 	amb.position = Vector2.ZERO
@@ -519,7 +520,7 @@ func _talk_to_nearest_npc() -> void:
 					var left := ceili(PlayerData.chest_seconds_left(c.zone(), c.name) / 60.0)
 					_game_hud.chat.add_line("sistema", "", "Este baú já foi aberto. Volta a encher em %d min." % left)
 				else:
-					GameAudio.play("open")
+					GameAudio.play("chest")
 					PlayerData.open_chest(c.name)
 				return
 	var npcs := _map.get_node_or_null("Npcs")

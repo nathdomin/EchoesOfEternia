@@ -69,7 +69,9 @@ func open(npc: Npc) -> void:
 		if st == "" and PlayerData.can_accept(me, q):
 			text = "%s\nRecompensa: %d XP%s" % [q.offer_text, q.reward_xp,
 					", " + q.reward_item.display_name if q.reward_item else ""]
-			action = func() -> void: PlayerData.accept_quest(q.id)
+			action = func() -> void:
+				GameAudio.play("confirm")
+				PlayerData.accept_quest(q.id)
 			action_label = "Aceitar"
 			break
 	_text.text = text
@@ -84,6 +86,8 @@ func open(npc: Npc) -> void:
 
 
 func close() -> void:
+	if visible:
+		GameAudio.play("close")
 	visible = false
 	_npc = null
 	closed.emit()

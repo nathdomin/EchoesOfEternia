@@ -16,6 +16,13 @@ const MUSIC := {
 	"forest": "res://audio/music/37 - Dark Forest.ogg",
 	"dungeon": "res://audio/music/21 - Dungeon.ogg",
 }
+## Som de fundo de cada zona (cliente, Gate 5): um som continuo (`loop`, em
+## audio/sfx) e sons soltos sorteados a cada `every` segundos (min, max).
+const AMBIENCE := {
+	"village": {"loop": "amb_wind", "db": -8.0, "oneshots": ["bird0", "bird1", "bird2"], "every": Vector2(6, 14)},
+	"forest": {"loop": "amb_wind", "db": -2.0, "oneshots": ["bird0", "bird1", "bird2"], "every": Vector2(3, 8)},
+	"dungeon": {"loop": "amb_cave", "db": 0.0, "oneshots": ["drip"], "every": Vector2(1.5, 4.5)},
+}
 ## Musica de luta contra chefe.
 const BOSS_MUSIC := "res://audio/music/17 - Fight.ogg"
 ## Clima de cada zona (cliente): cor geral, folhas, vaga-lumes, vinheta e
