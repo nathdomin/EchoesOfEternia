@@ -23,4 +23,6 @@ O pacote completo (89 MB) não está no repositório: só copiamos o que é usad
 - **UI** (`assets/ui/ninja/`): Dialog, Emote, Font, Receptacle (barras/corações), Skill Icon, Theme Wood.
 - **Músicas** (`audio/music/`): Village, Dark Forest, Dungeon, Fight.
 
+**Baú** (`assets/environments/custom/chest.png`): desenhado para este projeto (`tools/gen_chest.py`), no estilo do Ninja Adventure.
+
 **Efeitos sonoros** (`audio/sfx/`): feitos para este projeto por síntese (`tools/gen_sfx.py`), sem material de terceiros.

@@ -1,0 +1,32 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/world/chest.gd" id="1_chest"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Shadow.png" id="2_shadow"]
+[ext_resource type="LabelSettings" path="res://resources/ui/name_label.tres" id="3_name"]
+
+[sub_resource type="RectangleShape2D" id="Shape_chest"]
+size = Vector2(14, 6)
+
+[node name="Chest" type="StaticBody2D"]
+script = ExtResource("1_chest")
+
+[node name="Shadow" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.6)
+position = Vector2(0, -1)
+texture = ExtResource("2_shadow")
+
+[node name="Sprite" type="Sprite2D" parent="."]
+position = Vector2(0, -8)
+
+[node name="Shape" type="CollisionShape2D" parent="."]
+position = Vector2(0, -3)
+shape = SubResource("Shape_chest")
+
+[node name="Hint" type="Label" parent="."]
+offset_left = -20.0
+offset_top = -30.0
+offset_right = 20.0
+offset_bottom = -20.0
+text = "E abrir"
+label_settings = ExtResource("3_name")
+horizontal_alignment = 1

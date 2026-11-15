@@ -502,6 +502,18 @@ func _use_slot(i: int) -> void:
 
 
 func _talk_to_nearest_npc() -> void:
+	# Bau perto (e ainda cheio para mim) vem primeiro
+	var chests := _map.get_node_or_null("Chests")
+	if chests:
+		for c in chests.get_children():
+			if c is Chest and c.global_position.distance_to(_player.global_position) <= Chest.OPEN_RANGE:
+				if c.is_open_for_me():
+					var left := ceili(PlayerData.chest_seconds_left(c.zone(), c.name) / 60.0)
+					_game_hud.chat.add_line("sistema", "", "Este baú já foi aberto. Volta a encher em %d min." % left)
+				else:
+					GameAudio.play("open")
+					PlayerData.open_chest(c.name)
+				return
 	var npcs := _map.get_node_or_null("Npcs")
 	if npcs == null:
 		return

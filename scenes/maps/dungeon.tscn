@@ -9,6 +9,8 @@
 [ext_resource type="Script" path="res://scripts/maps/zone_exit.gd" id="7_y24ui"]
 [ext_resource type="PackedScene" path="res://scenes/maps/torch.tscn" id="8_avx1f"]
 [ext_resource type="Script" path="res://scripts/maps/torch.gd" id="9_t6pnr"]
+[ext_resource type="PackedScene" path="res://scenes/world/chest.tscn" id="chest_scene"]
+[ext_resource type="Resource" path="res://resources/loot/bau_caverna.tres" id="chest_loot"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_avx1f"]
 size = Vector2(16, 64)
@@ -136,3 +138,18 @@ script = ExtResource("9_t6pnr")
 [node name="@Node2D@9" type="Node2D" parent="Torches" unique_id=1221520786 instance=ExtResource("8_avx1f")]
 position = Vector2(632, 58)
 script = ExtResource("9_t6pnr")
+
+[node name="Chests" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="BauDaEntrada" parent="Chests" instance=ExtResource("chest_scene")]
+position = Vector2(40, 216)
+loot = ExtResource("chest_loot")
+
+[node name="BauDoSalao" parent="Chests" instance=ExtResource("chest_scene")]
+position = Vector2(392, 120)
+loot = ExtResource("chest_loot")
+
+[node name="BauDoRei" parent="Chests" instance=ExtResource("chest_scene")]
+position = Vector2(632, 360)
+loot = ExtResource("chest_loot")

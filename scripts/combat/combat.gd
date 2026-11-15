@@ -134,6 +134,12 @@ func play_effect_in_zone(zone: String, effect_id: String, pos: Vector2) -> void:
 		_effect.rpc_id(pid, effect_id, pos)
 
 
+## Servidor: efeito visual so para um jogador (ex.: brilho do bau dele).
+func play_effect_for(id: int, effect_id: String, pos: Vector2) -> void:
+	if _players.has(id):
+		_effect.rpc_id(id, effect_id, pos)
+
+
 # ---------- API do cliente ----------
 
 ## O cliente atacou na direcao `dir` (o servidor decide se acertou).

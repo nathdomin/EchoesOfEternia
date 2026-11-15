@@ -80,6 +80,7 @@ func _defaults(account_key: String, display_name: String, zone: String, pos: Vec
 		"created_at": now,
 		"last_seen": now,
 		"play_time": 0,
+		"chests": {},  # bau -> hora (unix) em que enche de novo
 	}
 
 

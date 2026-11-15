@@ -32,6 +32,10 @@ var me: Dictionary = {}
 
 # servidor: zona -> { npc_id: Vector2 }
 var _npcs: Dictionary = {}
+# servidor: zona -> no "Chests" da zona (baus)
+var _chest_roots: Dictionary = {}
+# cliente: quando chegou o ultimo retrato (para a contagem dos baus)
+var _me_at_ms := 0
 
 
 func _ready() -> void:
@@ -128,6 +132,9 @@ func register_zone(zone: String, map: Node) -> void:
 			if "npc_id" in n:
 				npcs[n.npc_id] = n.position
 	_npcs[zone] = npcs
+	var chests := map.get_node_or_null("Chests")
+	if chests:
+		_chest_roots[zone] = chests
 
 
 func _on_logged_in(id: int, _account: String, _name: String) -> void:
@@ -212,8 +219,23 @@ func push(id: int) -> void:
 		"class": data["class"], "level": data.level, "xp": data.xp, "xp_next": XP.needed(data.level),
 		"max_level": XP.max_level(), "inventory": data.inventory, "equipment": data.equipment,
 		"quests": data.quests, "quest_progress": progress, "max_hp": st.max_hp, "damage": st.damage,
-		"name": data.name, "skin": data.skin,
+		"name": data.name, "skin": data.skin, "chests": _chest_timers(data),
 	})
+
+
+## Baus ainda vazios para o jogador: { "zona/Bau": segundos que faltam }.
+## Tira os que ja voltaram a encher.
+func _chest_timers(data: Dictionary) -> Dictionary:
+	var now := int(Time.get_unix_time_from_system())
+	var out := {}
+	var saved: Dictionary = data.get("chests", {})
+	for key: String in saved.keys():
+		var left := int(saved[key]) - now
+		if left > 0:
+			out[key] = left
+		else:
+			saved.erase(key)
+	return out
 
 
 func _changed(id: int) -> void:
@@ -415,6 +437,58 @@ func _near_npc(id: int, npc_id: String) -> bool:
 	return npcs.has(npc_id) and Characters.position_of(id).distance_to(npcs[npc_id]) <= NPC_TALK_RANGE
 
 
+# ---------- baus (revisao do cenario) ----------
+
+## Cliente: segundos ate o bau encher de novo para mim (0 = cheio).
+func chest_seconds_left(zone: String, chest_name: String) -> float:
+	var timers: Dictionary = me.get("chests", {})
+	var key := Chest.key_of(zone, chest_name)
+	if not timers.has(key):
+		return 0.0
+	return maxf(float(timers[key]) - (Time.get_ticks_msec() - _me_at_ms) / 1000.0, 0.0)
+
+
+func open_chest(chest_name: String) -> void:
+	_open_chest.rpc_id(1, chest_name)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _open_chest(chest_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	var zone := Characters.zone_of(id)
+	if data.is_empty() or Combat.is_dead(id) or not _chest_roots.has(zone) 			or chest_name.is_empty() or chest_name.validate_node_name() != chest_name:
+		return
+	var chest := (_chest_roots[zone] as Node).get_node_or_null(NodePath(chest_name)) as Chest
+	if chest == null or chest.loot == null:
+		return
+	if Characters.position_of(id).distance_to(chest.position) > Chest.OPEN_RANGE + 10.0:
+		return  # longe demais (o cliente confere antes; aqui e a regra)
+	var key := Chest.key_of(zone, chest_name)
+	var now := int(Time.get_unix_time_from_system())
+	if not data.get("chests") is Dictionary:
+		data.chests = {}
+	if int(data.chests.get(key, 0)) > now:
+		var minutes := ceili((int(data.chests[key]) - now) / 60.0)
+		NetworkManager.send_system_message(id, "O baú está vazio. Volte em %d min." % minutes)
+		return
+	var got: Array[String] = []
+	for drop: Dictionary in chest.loot.roll():
+		var it: ItemData = drop.item
+		var left := add_item(id, it.id, int(drop.n))
+		if left < int(drop.n):
+			got.append("%s x%d" % [it.display_name, int(drop.n) - left] if int(drop.n) - left > 1 else it.display_name)
+		if left > 0:
+			NetworkManager.send_system_message(id, "Inventário cheio: %s ficou no baú." % it.display_name)
+	data.chests[key] = now + chest.loot.respawn_seconds
+	if not got.is_empty():
+		NetworkManager.send_system_message(id, "Baú aberto: %s." % ", ".join(got))
+	Combat.play_effect_for(id, "spark", chest.position + Vector2(0, -10))
+	_changed(id)
+
+
 # ---------- API do cliente ----------
 
 func choose_class(cid: String) -> void:
@@ -457,6 +531,7 @@ func turn_in_quest(qid: String) -> void:
 @rpc("authority", "call_remote", "reliable")
 func _self_state(state: Dictionary) -> void:
 	me = state
+	_me_at_ms = Time.get_ticks_msec()
 	changed.emit()
 
 

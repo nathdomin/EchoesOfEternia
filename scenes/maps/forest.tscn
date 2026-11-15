@@ -11,6 +11,8 @@
 [ext_resource type="Script" path="res://scripts/npc/npc.gd" id="9_ypp4b"]
 [ext_resource type="SpriteFrames" path="res://resources/characters/noble_frames.tres" id="10_avfq0"]
 [ext_resource type="Texture2D" path="res://assets/characters/ninja/Noble/Faceset.png" id="11_ddf04"]
+[ext_resource type="PackedScene" path="res://scenes/world/chest.tscn" id="chest_scene"]
+[ext_resource type="Resource" path="res://resources/loot/bau_floresta.tres" id="chest_loot"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_g1utb"]
 size = Vector2(16, 56)
@@ -119,3 +121,18 @@ display_name = "Guarda Florestal"
 frames = ExtResource("10_avfq0")
 faceset = ExtResource("11_ddf04")
 greeting = "Cuidado na mata. Morcegos e coisa pior rondam por aqui."
+
+[node name="Chests" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="BauDaTrilha" parent="Chests" instance=ExtResource("chest_scene")]
+position = Vector2(200, 146)
+loot = ExtResource("chest_loot")
+
+[node name="BauDoCruzamento" parent="Chests" instance=ExtResource("chest_scene")]
+position = Vector2(752, 330)
+loot = ExtResource("chest_loot")
+
+[node name="BauDoSul" parent="Chests" instance=ExtResource("chest_scene")]
+position = Vector2(720, 492)
+loot = ExtResource("chest_loot")
