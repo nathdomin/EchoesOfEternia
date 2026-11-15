@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Items & Weapon/Ring.png" id="1_alc1o"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_mxvnk"]
+
+[resource]
+script = ExtResource("2_mxvnk")
+id = "anel"
+display_name = "Anel do Brejo"
+description = "Brilha com a lua."
+icon = ExtResource("1_alc1o")
+kind = 3
+max_stack = 1
+bonus_damage = 2
+bonus_hp = 10

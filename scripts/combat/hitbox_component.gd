@@ -7,8 +7,10 @@ extends Node2D
 @export var radius := 6.0
 
 
+## Centro em coordenadas locais da zona (o dono fica direto no container
+## da zona: Monsters/Players). No servidor as zonas ficam afastadas.
 func center() -> Vector2:
-	return global_position
+	return get_parent().position + position
 
 
 ## O golpe que sai de `origin` na direcao `dir` (normalizada), com alcance

@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Skull/SpriteSheet.png" id="1_ushnm"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_c5ea6"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e0tkv"]
+atlas = ExtResource("1_ushnm")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("2_c5ea6")
+id = "osso"
+display_name = "Osso Velho"
+description = "Ainda está frio."
+icon = SubResource("AtlasTexture_e0tkv")

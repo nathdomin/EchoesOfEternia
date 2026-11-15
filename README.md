@@ -38,7 +38,22 @@ O personagem fica salvo no servidor: ao entrar de novo você aparece onde parou.
 
 Ao entrar aparecem "Fulano entrou no mundo" e o contador de jogadores no canto. **Esc** sai e volta ao menu.
 
-No jogo, controles: **WASD** ou **setas** andam, **Espaço** ou **J** atacam, **clique** ou **Tab** escolhem o alvo, **Esc** limpa o alvo (e, sem alvo, volta ao menu). Os monstros ficam nas bordas da vila: slimes no sudoeste, cogumelos no nordeste e caveiras perto do lago.
+No jogo:
+
+| Tecla | Ação |
+|---|---|
+| WASD / setas | andar |
+| Espaço / J | ataque básico |
+| 1, 2, 3 | habilidades da classe |
+| 4 | poção |
+| Clique / Tab | escolher alvo |
+| E | conversar com NPC |
+| I | inventário (clique usa/equipa) |
+| Enter | chat (`/g` grupo, `/convidar Nome`, `/aceitar`, `/sair`) |
+| G | convidar o jogador selecionado para o grupo |
+| Esc | fecha janela → limpa alvo → pausa (sair para o menu) |
+
+No primeiro login você escolhe a classe (Guerreiro, Mago ou Arqueiro). O Ancião, ao lado do ponto inicial, dá as primeiras missões. A estrada leste da vila leva à **Floresta Sombria** (Guarda Florestal, morcegos, slimes venenosos) e de lá à **Caverna do Rei Slime**, o chefe.
 
 **Mapa da vila:** `scenes/maps/village.tscn`. Para editar, abra a cena e pinte com o painel TileMap: `Ground` (chão, terra, água), `GroundDetail` (flores pequenas) ou `Objects` (árvores, casas, barracas — com colisão). Mantenha as saídas norte e leste livres: elas levam às futuras áreas.
 

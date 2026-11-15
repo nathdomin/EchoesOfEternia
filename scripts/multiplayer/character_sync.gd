@@ -17,6 +17,10 @@ extends Node
 ##  - avisa com notify_ready() quando a cena do jogo carregou.
 
 signal position_corrected(pos: Vector2)
+## Cliente: o servidor levou o personagem para outra zona (E23).
+signal zone_changed(zone: String, pos: Vector2)
+## Servidor: o avatar do jogador foi recriado (troca de zona).
+signal avatar_replaced(id: int)
 
 const AUTOSAVE_SEC := 60.0
 ## Folga sobre a velocidade do Player (lag, quadros irregulares).
@@ -40,6 +44,7 @@ var _zones: Dictionary = {}
 var _online: Dictionary = {}
 var _default_zone := ""
 var _autosave: Timer
+var _travel_pending := false  ## cliente: esperando a resposta de uma viagem
 
 
 func _ready() -> void:
@@ -63,7 +68,8 @@ func start_server(store: CharacterStore) -> void:
 ## O servidor registra cada zona carregada (cena com get_bounds(),
 ## get_spawn_position() e um no "Players"). A primeira e a zona inicial.
 func register_zone(zone: String, map: Node) -> void:
-	_zones[zone] = {"bounds": map.get_bounds(), "spawn": map.get_spawn_position(), "players": map.get_node("Players")}
+	_zones[zone] = {"bounds": map.get_bounds(), "spawn": map.get_spawn_position(),
+			"players": map.get_node("Players"), "map": map}
 	if _default_zone.is_empty():
 		_default_zone = zone
 
@@ -97,6 +103,17 @@ func players_in_zone(zone: String) -> Array[int]:
 		if _online[id].ready and _online[id].data.zone == zone:
 			out.append(id)
 	return out
+
+
+## Dados salvos do personagem (o mesmo dicionario que vai para o disco).
+## Outros sistemas (PlayerData) alteram e chamam mark_dirty().
+func data_of(id: int) -> Dictionary:
+	return _online[id].data if _online.has(id) else {}
+
+
+func mark_dirty(id: int) -> void:
+	if _online.has(id):
+		_online[id].dirty = true
 
 
 ## Ultima posicao validada do jogador.
@@ -143,6 +160,13 @@ func teleport(id: int, pos: Vector2) -> void:
 func report_position(pos: Vector2, facing: Vector2i) -> void:
 	if NetworkManager.is_logged_in():
 		_report_position.rpc_id(1, pos, facing)
+
+
+## O player encostou numa passagem (ZoneExit) da zona atual.
+func request_travel(exit_name: String) -> void:
+	if NetworkManager.is_logged_in() and not _travel_pending:
+		_travel_pending = true
+		_request_travel.rpc_id(1, exit_name)
 
 
 ## A cena do jogo carregou: o servidor pode mandar os outros jogadores.
@@ -277,6 +301,60 @@ func _report_position(pos: Vector2, facing: Vector2i) -> void:
 	avatar.net_position = pos
 	avatar.facing = FACING_VECTORS[data.facing]
 	c.dirty = true
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _request_travel(exit_name: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	if not _online.has(id) or Combat.is_dead(id) or not exit_name.is_valid_identifier():
+		return
+	var c: Dictionary = _online[id]
+	var data: Dictionary = c.data
+	var exit := (_zones[data.zone].map as Node).get_node_or_null("Exits/" + exit_name) as ZoneExit
+	if exit == null or not _zones.has(exit.target_zone):
+		_travel_denied.rpc_id(id)
+		return
+	# O servidor confere se o jogador esta mesmo na passagem (com folga)
+	if not exit.rect().grow(24.0).has_point(Vector2(data.x, data.y)):
+		_travel_denied.rpc_id(id)
+		return
+	var target: Dictionary = _zones[exit.target_zone]
+	var entrance := (target.map as Node).get_node_or_null("Entrances/" + exit.target_entrance) as Node2D
+	var pos: Vector2 = entrance.position if entrance else target.spawn
+	var old: RemotePlayer = c.avatar
+	data.zone = exit.target_zone
+	data.x = pos.x
+	data.y = pos.y
+	c.ready = false
+	c.budget = MAX_BUDGET
+	c.last_ms = Time.get_ticks_msec()
+	c.dirty = true
+	# Avatar novo na zona nova (o spawner tira da zona antiga e poe na nova)
+	var avatar := _spawn_avatar(id, data)
+	if is_instance_valid(old):
+		avatar.health.max_hp = old.health.max_hp
+		avatar.health.hp = old.health.hp
+		avatar.level = old.level
+		old.queue_free()
+	c.avatar = avatar
+	avatar_replaced.emit(id)
+	_log("%s foi para %s" % [data.name, data.zone])
+	_zone_changed.rpc_id(id, data.zone, pos)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _zone_changed(zone: String, pos: Vector2) -> void:
+	_travel_pending = false
+	spawn.zone = zone
+	spawn.position = pos
+	zone_changed.emit(zone, pos)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _travel_denied() -> void:
+	_travel_pending = false
 
 
 ## Servidor -> cliente: volta para a ultima posicao valida.

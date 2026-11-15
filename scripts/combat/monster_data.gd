@@ -17,3 +17,10 @@ extends Resource
 @export var hitbox_radius := 6.0
 @export var xp_reward := 10          ## usado na E16
 @export var respawn_time := 12.0
+## Saque (E18): itens que podem cair para quem derrotou, com a chance de cada
+## um (0 a 1, mesma posicao nos dois arrays). Vao direto para o inventario.
+@export var loot_items: Array[ItemData] = []
+@export var loot_chances: PackedFloat32Array = PackedFloat32Array()
+## Chefe (E24): mais vida, nome em destaque e anuncio para todos ao morrer.
+@export var is_boss := false
+@export var scale := 1.0

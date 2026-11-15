@@ -1,10 +1,11 @@
-[gd_resource type="TileSet" format=3 uid="uid://c5w11nhsvirgo"]
+[gd_resource type="TileSet" format=3]
 
-[ext_resource type="Texture2D" uid="uid://cvkefhhji21kh" path="res://assets/environments/ninja/tilesets/TilesetFloor.png" id="1_sgxsu"]
-[ext_resource type="Texture2D" uid="uid://bnbq4kr2pynr0" path="res://assets/environments/ninja/tilesets/TilesetNature.png" id="2_2nnm5"]
-[ext_resource type="Texture2D" uid="uid://bqxkjomulcu3k" path="res://assets/environments/ninja/tilesets/TilesetHouse.png" id="3_mhip8"]
-[ext_resource type="Texture2D" uid="uid://dinnfs2wr7cyb" path="res://assets/environments/ninja/tilesets/TilesetWater.png" id="4_iyow5"]
-[ext_resource type="Texture2D" uid="uid://delda0teombeq" path="res://assets/environments/ninja/tilesets/TilesetFloorDetail.png" id="5_6t04o"]
+[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetFloor.png" id="1_sgxsu"]
+[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetNature.png" id="2_2nnm5"]
+[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetHouse.png" id="3_mhip8"]
+[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetWater.png" id="4_iyow5"]
+[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetFloorDetail.png" id="5_6t04o"]
+[ext_resource type="Texture2D" path="res://assets/environments/ninja/tilesets/TilesetRelief.png" id="6_2nnm5"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_4fslg"]
 texture = ExtResource("1_sgxsu")
@@ -1324,6 +1325,17 @@ texture = ExtResource("5_6t04o")
 14:4/0 = 0
 15:4/0 = 0
 
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_mhip8"]
+texture = ExtResource("6_2nnm5")
+5:1/0 = 0
+5:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+5:2/0 = 0
+5:2/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+4:1/0 = 0
+4:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+6:1/0 = 0
+6:1/0/physics_layer_0/polygon_0/points = PackedVector2Array(-8, -8, 8, -8, 8, 8, -8, 8)
+
 [resource]
 physics_layer_0/collision_layer = 1
 sources/0 = SubResource("TileSetAtlasSource_4fslg")
@@ -1331,3 +1343,4 @@ sources/1 = SubResource("TileSetAtlasSource_f8nj6")
 sources/2 = SubResource("TileSetAtlasSource_uxx3j")
 sources/3 = SubResource("TileSetAtlasSource_6i6xl")
 sources/4 = SubResource("TileSetAtlasSource_lajs4")
+sources/5 = SubResource("TileSetAtlasSource_mhip8")

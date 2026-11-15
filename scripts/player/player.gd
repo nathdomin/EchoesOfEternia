@@ -43,6 +43,8 @@ var anim_state: AnimState = AnimState.IDLE
 var facing := Vector2i.DOWN        ## direcao cardinal para onde o player olha
 var skin := "knight"
 var is_dead := false
+## Chat/dialogo abertos: o teclado nao move o personagem.
+var input_locked := false
 var _attack_left := 0.0
 var _next_attack_ms := 0
 
@@ -106,6 +108,16 @@ func try_attack(cooldown: float) -> bool:
 	return true
 
 
+## Pose de lancar habilidade (sem o efeito de golpe; o servidor manda o efeito).
+func play_cast() -> void:
+	if is_dead:
+		return
+	_attack_left = ATTACK_TIME
+	anim_state = AnimState.ATTACK
+	velocity = Vector2.ZERO
+	_update_animation()
+
+
 ## Efeito de golpe a frente de quem bate (usado tambem pelos RemotePlayer).
 static func spawn_slash(parent: Node, pos: Vector2, dir: Vector2i) -> void:
 	var fx := SLASH.instantiate() as Node2D
@@ -129,7 +141,9 @@ func _physics_process(delta: float) -> void:
 		if _attack_left <= 0.0:
 			anim_state = AnimState.IDLE
 		return
-	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	var input := Vector2.ZERO
+	if not input_locked:
+		input = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 	if input != Vector2.ZERO:
 		velocity = velocity.move_toward(input * speed, acceleration * delta)

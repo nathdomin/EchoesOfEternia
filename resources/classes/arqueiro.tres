@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="ClassData" format=3]
+
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="1_crmqs"]
+[ext_resource type="Resource" path="res://resources/abilities/flecha.tres" id="2_pxawb"]
+[ext_resource type="Resource" path="res://resources/abilities/chuva.tres" id="3_irfee"]
+[ext_resource type="Resource" path="res://resources/abilities/tiro_certeiro.tres" id="4_eyb6w"]
+[ext_resource type="Script" path="res://scripts/progression/class_data.gd" id="5_qcpw5"]
+
+[resource]
+script = ExtResource("5_qcpw5")
+id = "arqueiro"
+display_name = "Arqueiro"
+description = "Ataques rápidos de longe."
+skin = "hunter"
+base_hp = 105
+base_damage = 11
+hp_per_level = 15
+abilities = Array[ExtResource("1_crmqs")]([ExtResource("2_pxawb"), ExtResource("3_irfee"), ExtResource("4_eyb6w")])

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="MonsterData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/BlueBat/Faceset.png" id="1_xstpy"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/bat_frames.tres" id="2_dxll4"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="3_j0wqh"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="4_e3tsb"]
+[ext_resource type="Resource" path="res://resources/items/anel.tres" id="5_rnwyv"]
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="6_8r3ky"]
+
+[resource]
+script = ExtResource("6_8r3ky")
+id = "bat"
+display_name = "Morcego Azul"
+frames = ExtResource("2_dxll4")
+faceset = ExtResource("1_xstpy")
+max_hp = 40
+damage = 7
+speed = 44.0
+aggro_range = 64.0
+attack_cooldown = 1.1
+xp_reward = 20
+respawn_time = 14.0
+loot_items = Array[ExtResource("3_j0wqh")]([ExtResource("4_e3tsb"), ExtResource("5_rnwyv")])
+loot_chances = PackedFloat32Array(0.2, 0.04)

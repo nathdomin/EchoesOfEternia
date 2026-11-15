@@ -1,0 +1,60 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Slash/SpriteSheetCircular.png" id="1_738lo"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_x4om5"]
+atlas = ExtResource("1_738lo")
+region = Rect2(0, 0, 54, 55)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5fgut"]
+atlas = ExtResource("1_738lo")
+region = Rect2(54, 0, 54, 55)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bt771"]
+atlas = ExtResource("1_738lo")
+region = Rect2(108, 0, 54, 55)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_axsxx"]
+atlas = ExtResource("1_738lo")
+region = Rect2(162, 0, 54, 55)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nn5is"]
+atlas = ExtResource("1_738lo")
+region = Rect2(216, 0, 54, 55)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0ba3g"]
+atlas = ExtResource("1_738lo")
+region = Rect2(270, 0, 54, 55)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lqei3"]
+atlas = ExtResource("1_738lo")
+region = Rect2(324, 0, 54, 55)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_x4om5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5fgut")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bt771")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_axsxx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nn5is")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_0ba3g")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lqei3")
+}],
+"loop": 0,
+"name": &"spin",
+"speed": 20.0
+}]

@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/explosion.tscn" id="1_e3lht"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Spell/Fireball.png" id="2_08ib3"]
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Projectile/Fireball.png" id="3_ngy7h"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="4_rasms"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sq6nm"]
+atlas = ExtResource("3_ngy7h")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("4_rasms")
+id = "bola_de_fogo"
+display_name = "Bola de Fogo"
+description = "Atinge o alvo de longe."
+icon = ExtResource("2_08ib3")
+kind = 2
+power = 1.8
+cooldown = 1.8
+range = 110.0
+radius = 0.0
+effect = ExtResource("1_e3lht")
+projectile = SubResource("AtlasTexture_sq6nm")

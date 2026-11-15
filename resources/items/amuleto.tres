@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Items & Weapon/Amulet.png" id="1_w5bjb"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_3822e"]
+
+[resource]
+script = ExtResource("2_3822e")
+id = "amuleto"
+display_name = "Amuleto Antigo"
+description = "Feito de osso e ouro."
+icon = ExtResource("1_w5bjb")
+kind = 3
+max_stack = 1
+bonus_damage = 4
+bonus_hp = 20

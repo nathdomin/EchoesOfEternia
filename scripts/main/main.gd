@@ -8,7 +8,9 @@ extends Node2D
 ## Tab escolhe o alvo (quadro no topo); Esc limpa o alvo. Ao morrer, conta
 ## o tempo ate renascer no ponto inicial da zona.
 ##
-## Esc (sem alvo) sai do mundo e volta ao menu.
+## Gate 3 (E16-E22): 1-3 habilidades, 4 pocao, I inventario, E conversar
+## com NPC, Enter chat, G convida o jogador selecionado. Esc fecha a janela
+## aberta, depois limpa o alvo, depois abre a pausa (de onde se sai do jogo).
 ##
 ## Queda de conexao (E10): o jogo fica na tela com "Reconectando..." e tenta
 ## voltar com o token de sessao (sem pedir a senha), esperando cada vez mais
@@ -22,6 +24,7 @@ const REPORT_INTERVAL := 0.1  ## segundos entre avisos de posicao ao servidor
 const BASE_STATS := preload("res://resources/combat/player_base.tres")
 const TARGET_PICK_RADIUS := 12.0  ## px em volta do clique
 const TARGET_TAB_RANGE := 160.0
+const NPC_RANGE := 30.0
 ## Espera antes de cada tentativa de reconexao (segundos).
 const RECONNECT_DELAYS := [1.0, 2.0, 3.0, 4.0, 5.0]
 
@@ -32,19 +35,21 @@ var _report_timer := 0.0
 var _reconnect_attempt := -1
 var _respawn_left := 0.0
 
-@onready var _village: Village = $World/Village
+## Mapa da zona atual (Village, Forest ou Dungeon; todas usam o script Village).
+@onready var _map: Village = $World/Village
 @onready var _player: Player = $World/Player
 @onready var _hud: NetHud = $NetHud
 @onready var _game_hud: GameHud = $GameHud
 
 
 func _ready() -> void:
-	_player.set_camera_limits(_village.get_bounds())
 	var s := Characters.spawn
-	if s.get("zone", "") == "village":
+	_switch_map(String(s.get("zone", "village")))
+	if s.has("position"):
 		_player.place(s.position, s.facing)
 	else:
-		_player.place(_village.get_spawn_position(), Vector2i.DOWN)
+		_player.place(_map.get_spawn_position(), Vector2i.DOWN)
+	Characters.zone_changed.connect(_on_zone_changed)
 	_last_sent_pos = _player.global_position
 	_last_sent_facing = _player.facing
 	Characters.position_corrected.connect(func(pos: Vector2) -> void: _player.place(pos, _player.facing))
@@ -55,6 +60,15 @@ func _ready() -> void:
 	Combat.own_died.connect(_on_died)
 	Combat.own_respawned.connect(_on_respawned)
 	Combat.own_hit.connect(_on_own_hit)
+	$NetHud/Log.visible = false  # o chat mostra as mensagens de sistema
+	_game_hud.pause_menu.leave_requested.connect(func() -> void:
+		NetworkManager.leave()
+		_back_to_menu(""))
+	PlayerData.level_up.connect(func(level: int) -> void:
+		_hud.show_banner("Nível %d!" % level)
+		get_tree().create_timer(2.0).timeout.connect(func() -> void:
+			if _respawn_left <= 0.0 and _reconnect_attempt < 0:
+				_hud.show_banner("")))
 	# Agora os spawners existem: o servidor pode mandar os outros jogadores
 	Characters.notify_ready()
 
@@ -73,6 +87,7 @@ func _process(delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	_player.input_locked = _game_hud.blocks_input()
 	_report_timer += delta
 	if _report_timer < REPORT_INTERVAL:
 		return
@@ -123,7 +138,8 @@ func _on_reconnected() -> void:
 	_reconnect_attempt = -1
 	_hud.show_banner("")
 	var s := Characters.spawn
-	if s.get("zone", "") == "village":
+	_switch_map(String(s.get("zone", "village")))
+	if s.has("position"):
 		_player.place(s.position, s.facing)
 	_last_sent_pos = _player.global_position
 	_last_sent_facing = _player.facing
@@ -134,10 +150,54 @@ func _on_reconnected() -> void:
 ## Os outros jogadores e os monstros voltam pelo spawner depois de reconectar.
 func _clear_remote_players() -> void:
 	_game_hud.set_target(null)
-	for container in [_village.get_node("Players"), _village.get_node("Monsters")]:
+	for container in [_map.get_node("Players"), _map.get_node("Monsters")]:
 		for c in container.get_children():
 			container.remove_child(c)
 			c.queue_free()
+
+
+# ---------- zonas (E23) ----------
+
+## Troca o mapa carregado para `zone` (o no tem o mesmo nome que no servidor).
+func _switch_map(zone: String) -> void:
+	var node_name := Zones.node_name(zone)
+	if _map and _map.name == node_name:
+		_player.set_camera_limits(_map.get_bounds())
+		return
+	var path: String = Zones.SCENES.get(zone, Zones.SCENES.village)
+	var new_map := (load(path) as PackedScene).instantiate() as Village
+	new_map.name = node_name
+	if _map:
+		# O mapa antigo fica escondido e sem colisao por 1 s: as remocoes do
+		# spawner da zona antiga ainda podem chegar e precisam achar os nos
+		# (pelo caminho, entao o nome do no nao pode mudar).
+		var old := _map
+		old.visible = false
+		for layer in old.find_children("*", "TileMapLayer", true, false):
+			(layer as TileMapLayer).collision_enabled = false
+		get_tree().create_timer(1.0).timeout.connect(func() -> void:
+			if is_instance_valid(old):
+				old.queue_free())
+	# Voltou rapido para uma zona cujo mapa antigo ainda nao saiu: tira agora
+	var stale := $World.get_node_or_null(node_name)
+	if stale:
+		stale.free()
+	_map = new_map
+	$World.add_child(new_map)
+	_player.set_camera_limits(_map.get_bounds())
+
+
+func _on_zone_changed(zone: String, pos: Vector2) -> void:
+	_game_hud.set_target(null)
+	_game_hud.dialogue.close()
+	_switch_map(zone)
+	_player.place(pos, _player.facing)
+	_last_sent_pos = pos
+	Characters.notify_ready()
+	_hud.show_banner(Zones.display_name(zone))
+	get_tree().create_timer(2.0).timeout.connect(func() -> void:
+		if _respawn_left <= 0.0 and _reconnect_attempt < 0:
+			_hud.show_banner(""))
 
 
 # ---------- combate ----------
@@ -164,11 +224,12 @@ func _on_own_hit(monster_path: NodePath) -> void:
 
 func _targets() -> Array[Node2D]:
 	var out: Array[Node2D] = []
-	for m: Monster in _village.get_node("Monsters").get_children():
-		if not m.is_dead():
+	for m in _map.get_node("Monsters").get_children():
+		if m is Monster and not m.is_dead():
 			out.append(m)
-	for p: RemotePlayer in _village.get_node("Players").get_children():
-		out.append(p)
+	for p in _map.get_node("Players").get_children():
+		if p is RemotePlayer:
+			out.append(p)
 	return out
 
 
@@ -198,7 +259,49 @@ func _cycle_target() -> void:
 	_game_hud.set_target(near[(i + 1) % near.size()])
 
 
+## Teclas que valem mesmo com o chat ou uma janela aberta.
+func _input(event: InputEvent) -> void:
+	if not event is InputEventKey or not event.pressed or event.echo:
+		return
+	if _game_hud.chat.is_open:
+		if event.is_action("ui_cancel"):
+			_game_hud.chat.close()
+			get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("ui_cancel"):
+		if _game_hud.pause_menu.visible:
+			_game_hud.pause_menu.close()
+		elif _game_hud.dialogue.visible:
+			_game_hud.dialogue.close()
+		elif _game_hud.inventory.visible:
+			_game_hud.inventory.toggle()
+		elif _game_hud.target != null:
+			_game_hud.set_target(null)
+		elif not _game_hud.class_chooser.visible:
+			_game_hud.pause_menu.open()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("chat") and not _game_hud.blocks_input():
+		_game_hud.chat.open.call_deferred()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if _game_hud.blocks_input():
+		return
+	for i in 4:
+		if event.is_action_pressed("ability_%d" % (i + 1)):
+			_use_slot(i)
+			get_viewport().set_input_as_handled()
+			return
+	if event.is_action_pressed("inventory"):
+		_game_hud.inventory.toggle()
+		return
+	if event.is_action_pressed("interact"):
+		_talk_to_nearest_npc()
+		return
+	if event.is_action_pressed("party_invite") and _game_hud.target is RemotePlayer:
+		Social.invite(_game_hud.target.display_name)
+		return
 	if event.is_action_pressed("attack") and _reconnect_attempt < 0:
 		if _player.try_attack(BASE_STATS.attack_cooldown):
 			Combat.request_attack(_player.facing)
@@ -211,13 +314,37 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_select_at(get_global_mouse_position())
 		return
-	if event.is_action_pressed("ui_cancel") and _game_hud.target != null:
-		_game_hud.set_target(null)
-		get_viewport().set_input_as_handled()
+
+
+## Barra: 0-2 habilidades da classe, 3 pocao.
+func _use_slot(i: int) -> void:
+	if _reconnect_attempt >= 0 or _player.is_dead:
 		return
-	if event.is_action_pressed("ui_cancel"):
-		NetworkManager.leave()
-		_back_to_menu("")
+	if i == 3:
+		if _game_hud.hotbar.try_use(3):
+			PlayerData.use_potion()
+		return
+	var ab := _game_hud.hotbar.ability(i)
+	if ab == null or not _game_hud.hotbar.try_use(i):
+		return
+	# Habilidade de alvo: vira o personagem para o alvo
+	var target := _game_hud.target as Monster
+	if target and ab.kind in [AbilityData.Kind.RANGED, AbilityData.Kind.AREA_TARGET]:
+		var d := target.global_position - _player.global_position
+		_player.facing = (Vector2i.RIGHT if d.x > 0 else Vector2i.LEFT) if absf(d.x) >= absf(d.y) \
+				else (Vector2i.DOWN if d.y > 0 else Vector2i.UP)
+	_player.play_cast()
+	Combat.request_ability(i, _player.facing, target)
+
+
+func _talk_to_nearest_npc() -> void:
+	var npcs := _map.get_node_or_null("Npcs")
+	if npcs == null:
+		return
+	for n in npcs.get_children():
+		if n is Npc and n.global_position.distance_to(_player.global_position) <= NPC_RANGE:
+			_game_hud.dialogue.open(n)
+			return
 
 
 func _back_to_menu(reason: String) -> void:

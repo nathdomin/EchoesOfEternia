@@ -1,0 +1,10 @@
+[gd_scene format=3]
+
+[ext_resource type="SpriteFrames" path="res://resources/effects/spark_frames.tres" id="1_7ffoo"]
+[ext_resource type="Script" path="res://scripts/effects/one_shot_effect.gd" id="2_3kk6r"]
+
+[node name="Spark" type="AnimatedSprite2D" unique_id=1101976992]
+z_index = 2
+sprite_frames = ExtResource("1_7ffoo")
+animation = &"spark"
+script = ExtResource("2_3kk6r")

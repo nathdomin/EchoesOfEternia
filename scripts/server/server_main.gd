@@ -42,6 +42,7 @@ func _ready() -> void:
 		if zone.has_method("get_bounds"):
 			Characters.register_zone(zone.name.to_snake_case(), zone)
 			Combat.register_zone(zone.name.to_snake_case(), zone)
+			PlayerData.register_zone(zone.name.to_snake_case(), zone)
 	var tls := NetSecurity.server_options(data_dir)
 	_print_banner(port, max_players, data_dir, accounts.count())
 

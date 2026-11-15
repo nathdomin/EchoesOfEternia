@@ -17,7 +17,9 @@ const WALK_THRESHOLD := 0.75 ## px de distancia para considerar andando
 
 ## Sincronizados (os dois primeiros so no spawn).
 @export var display_name := ""
-@export var skin := "knight"
+@export var skin := "knight":
+	set = _set_skin
+@export var level := 1
 @export var net_position := Vector2.ZERO
 @export var facing := Vector2i.DOWN
 ## Combate (E11-E14): vida, morto e contador de golpes (cada +1 = um golpe).
@@ -97,4 +99,10 @@ func _set_attack_seq(value: int) -> void:
 	if not changed or not is_node_ready() or multiplayer.is_server():
 		return
 	_attack_until_ms = Time.get_ticks_msec() + 250
-	Player.spawn_slash(get_parent(), position, facing)
+	Player.spawn_slash(get_parent().get_parent(), position, facing)  # no mapa, nao em Players
+
+
+func _set_skin(value: String) -> void:
+	skin = value
+	if is_node_ready():
+		_sprite.sprite_frames = Player.frames_for(skin)

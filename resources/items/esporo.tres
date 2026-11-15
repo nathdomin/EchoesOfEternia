@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Mushroom/mushroom.png" id="1_2qy3n"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_m2cty"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nungd"]
+atlas = ExtResource("1_2qy3n")
+region = Rect2(0, 0, 16, 16)
+
+[resource]
+script = ExtResource("2_m2cty")
+id = "esporo"
+display_name = "Esporo"
+description = "Cheira a floresta úmida."
+icon = SubResource("AtlasTexture_nungd")

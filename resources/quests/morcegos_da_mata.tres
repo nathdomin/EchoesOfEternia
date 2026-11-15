@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="1_i2gju"]
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="2_hekpw"]
+
+[resource]
+script = ExtResource("2_hekpw")
+id = "morcegos_da_mata"
+title = "Morcegos da mata"
+giver = "guarda"
+min_level = 2
+offer_text = "Os morcegos azuis estão atacando quem passa pela trilha. Derrube 6 deles."
+progress_text = "Ainda tem morcego na trilha."
+done_text = "A trilha está segura de novo. Obrigado!"
+target_id = "bat"
+target_name = "Morcegos"
+count = 6
+reward_xp = 180
+reward_item = ExtResource("1_i2gju")
+reward_count = 3

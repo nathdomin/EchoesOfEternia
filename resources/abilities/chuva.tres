@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/spark.tscn" id="1_d5hjd"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Meteo/Rain.png" id="2_08k5a"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="3_nfy0f"]
+
+[resource]
+script = ExtResource("3_nfy0f")
+id = "chuva"
+display_name = "Chuva de Flechas"
+description = "Flechas caem numa área no alvo."
+icon = ExtResource("2_08k5a")
+kind = 3
+power = 1.1
+cooldown = 8.0
+range = 120.0
+radius = 32.0
+effect = ExtResource("1_d5hjd")

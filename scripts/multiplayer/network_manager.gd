@@ -152,6 +152,11 @@ func shutdown_server(reason: String) -> void:
 	leave()
 
 
+## Servidor: mensagem de sistema para todos os jogadores.
+func broadcast_system_message(text: String) -> void:
+	_broadcast(_system_message, [text], true)
+
+
 ## Servidor: mensagem de sistema so para um jogador.
 func send_system_message(id: int, text: String) -> void:
 	if players.has(id):

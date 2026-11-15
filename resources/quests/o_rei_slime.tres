@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="1_4h05p"]
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="2_fugnf"]
+
+[resource]
+script = ExtResource("2_fugnf")
+id = "o_rei_slime"
+title = "O Rei Slime"
+giver = "guarda"
+requires = "morcegos_da_mata"
+min_level = 3
+offer_text = "No fundo da caverna a leste vive o Rei Slime. Junte um grupo e acabe com ele."
+progress_text = "O Rei Slime ainda reina na caverna."
+done_text = "Você derrotou o Rei Slime! A floresta respira aliviada."
+target_id = "giant_slime"
+target_name = "Rei Slime"
+count = 1
+reward_xp = 500
+reward_item = ExtResource("1_4h05p")

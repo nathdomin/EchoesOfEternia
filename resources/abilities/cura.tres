@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/spark.tscn" id="1_gy2fc"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Spell/Heal.png" id="2_moirr"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="3_c88gb"]
+
+[resource]
+script = ExtResource("3_c88gb")
+id = "cura"
+display_name = "Cura"
+description = "Cura 25% da vida de quem está perto (grupo)."
+icon = ExtResource("2_moirr")
+kind = 4
+power = 0.25
+cooldown = 12.0
+range = 0.0
+radius = 64.0
+effect = ExtResource("1_gy2fc")
