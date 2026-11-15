@@ -1,0 +1,36 @@
+ECHOES OF ETERNIA - como jogar
+==============================
+
+1. Abra EchoesOfEternia.exe.
+   Se o Windows mostrar "O Windows protegeu o computador", clique em
+   "Mais informacoes" e depois em "Executar assim mesmo" (o jogo nao e
+   assinado digitalmente). Se o firewall perguntar, clique em Permitir.
+2. No menu, clique em "Criar conta": escolha um nome e uma senha.
+   O servidor ja vem preenchido. Nas proximas vezes, use "Entrar no mundo".
+3. Na primeira entrada voce escolhe a classe (Guerreiro, Mago ou Arqueiro).
+   A escolha e definitiva.
+
+CONTROLES (F1 mostra tudo dentro do jogo)
+  WASD ou setas  andar
+  Espaco ou J    atacar
+  1 2 3          habilidades da classe      4  pocao
+  Tab            escolher o proximo alvo (ou clique no monstro)
+  E              falar com NPC / abrir bau
+  I              inventario (clique usa/equipa, botao direito 2x descarta)
+  Enter          chat     /  comando do chat
+  G              convidar o jogador selecionado para o grupo
+  F3             painel tecnico (FPS, ping)
+  Esc            pausa (volume, ajuda, sair)
+
+CHAT
+  /g texto       grupo            /z texto     zona
+  /w Nome texto  cochicho         /r texto     responde o ultimo cochicho
+  /quem          quem esta online
+  /convidar Nome   /aceitar   /recusar   /sair   (grupo, ate 4)
+
+DICAS
+  - Fale com o Anciao na praca da vila (o "!" sobre a cabeca).
+  - Em grupo a XP e dividida com bonus, e a Cura do Mago cura o grupo todo.
+  - A floresta fica a leste da vila; a caverna do Rei Slime, no extremo leste da floresta.
+  - Ao morrer, voce renasce na praca da vila em 5 segundos.
+  - Seu personagem e salvo no servidor: entre de qualquer PC com a mesma conta.

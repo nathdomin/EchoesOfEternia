@@ -15,9 +15,12 @@ extends Node
 enum Mode { NONE, JOIN }
 
 const PREFS_PATH := "user://client.cfg"
+## Servidor oficial: o menu ja abre com ele (troque pelo IP da VM ao exportar
+## o cliente da entrega). Quem ja jogou fica com o que digitou por ultimo.
+const DEFAULT_HOST := "127.0.0.1"
 
 var mode: Mode = Mode.NONE
-var host_ip := "127.0.0.1"
+var host_ip := DEFAULT_HOST
 var port := NetUtils.DEFAULT_PORT
 var account := ""
 ## Senha so fica na memoria ate ser enviada ao servidor (nunca e gravada).
