@@ -2,6 +2,10 @@
 
 [ext_resource type="Script" path="res://scripts/maps/village.gd" id="1_gxy3m"]
 [ext_resource type="TileSet" path="res://assets/environments/ninja/ninja_tileset.tres" id="2_eaflo"]
+[ext_resource type="Script" path="res://scripts/combat/monster_spawn_point.gd" id="3_spawnpt"]
+[ext_resource type="Resource" path="res://resources/monsters/slime.tres" id="4_slime"]
+[ext_resource type="Resource" path="res://resources/monsters/mushroom.tres" id="5_mushroom"]
+[ext_resource type="Resource" path="res://resources/monsters/skull.tres" id="6_skull"]
 
 [node name="Village" type="Node2D" unique_id=1914662227]
 y_sort_enabled = true
@@ -31,3 +35,33 @@ y_sort_enabled = true
 [node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
 _spawnable_scenes = PackedStringArray("res://scenes/characters/remote_player.tscn")
 spawn_path = NodePath("../Players")
+
+[node name="Monsters" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="MonsterSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://scenes/combat/monster.tscn")
+spawn_path = NodePath("../Monsters")
+
+[node name="MonsterSpawns" type="Node2D" parent="."]
+
+[node name="Slimes" type="Marker2D" parent="MonsterSpawns"]
+position = Vector2(170, 462)
+script = ExtResource("3_spawnpt")
+monster = ExtResource("4_slime")
+count = 3
+radius = 36.0
+
+[node name="Mushrooms" type="Marker2D" parent="MonsterSpawns"]
+position = Vector2(770, 96)
+script = ExtResource("3_spawnpt")
+monster = ExtResource("5_mushroom")
+count = 2
+radius = 32.0
+
+[node name="Skulls" type="Marker2D" parent="MonsterSpawns"]
+position = Vector2(570, 500)
+script = ExtResource("3_spawnpt")
+monster = ExtResource("6_skull")
+count = 2
+radius = 28.0

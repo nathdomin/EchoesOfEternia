@@ -3,6 +3,7 @@
 [ext_resource type="Script" uid="uid://be8hnk8kpdgrv" path="res://scripts/main/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/maps/village.tscn" id="2_village"]
 [ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="3_player"]
+[ext_resource type="PackedScene" path="res://scenes/ui/game_hud.tscn" id="6_gamehud"]
 [ext_resource type="PackedScene" path="res://scenes/maps/ambience.tscn" id="4_amb"]
 [ext_resource type="PackedScene" path="res://scenes/ui/net_hud.tscn" id="5_hud"]
 
@@ -21,3 +22,5 @@ position = Vector2(446, 174)
 position = Vector2(9, 58)
 
 [node name="NetHud" parent="." unique_id=2003567790 instance=ExtResource("5_hud")]
+
+[node name="GameHud" parent="." instance=ExtResource("6_gamehud")]

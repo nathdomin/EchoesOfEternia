@@ -38,7 +38,7 @@ O personagem fica salvo no servidor: ao entrar de novo você aparece onde parou.
 
 Ao entrar aparecem "Fulano entrou no mundo" e o contador de jogadores no canto. **Esc** sai e volta ao menu.
 
-No jogo, controles: **WASD** ou **setas**.
+No jogo, controles: **WASD** ou **setas** andam, **Espaço** ou **J** atacam, **clique** ou **Tab** escolhem o alvo, **Esc** limpa o alvo (e, sem alvo, volta ao menu). Os monstros ficam nas bordas da vila: slimes no sudoeste, cogumelos no nordeste e caveiras perto do lago.
 
 **Mapa da vila:** `scenes/maps/village.tscn`. Para editar, abra a cena e pinte com o painel TileMap: `Ground` (chão, terra, água), `GroundDetail` (flores pequenas) ou `Objects` (árvores, casas, barracas — com colisão). Mantenha as saídas norte e leste livres: elas levam às futuras áreas.
 

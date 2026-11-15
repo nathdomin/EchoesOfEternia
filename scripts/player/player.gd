@@ -4,7 +4,7 @@ extends CharacterBody2D
 ## Na E9 este no passa a ter authority = peer id do dono; apenas o dono le
 ## input e move. `anim_state` e `facing` ja existem para serem sincronizados.
 
-enum AnimState { IDLE, WALK }
+enum AnimState { IDLE, WALK, ATTACK, DEAD }
 
 const DIR_NAMES := {
 	Vector2i.DOWN: "down",
@@ -25,6 +25,15 @@ const SKINS := {
 	"noble": preload("res://resources/characters/noble_frames.tres"),
 }
 const OWN_NAME_COLOR := Color(1.0, 0.85, 0.4)
+## Retrato de cada aparencia (quadro do jogador na HUD).
+const FACESETS := {
+	"knight": preload("res://assets/characters/ninja/Knight/Faceset.png"),
+	"hunter": preload("res://assets/characters/ninja/Hunter/Faceset.png"),
+	"sorcerer": preload("res://assets/characters/ninja/SorcererBlack/Faceset.png"),
+	"noble": preload("res://assets/characters/ninja/Noble/Faceset.png"),
+}
+const SLASH := preload("res://scenes/effects/slash.tscn")
+const ATTACK_TIME := 0.22  ## segundos parado na pose de ataque
 
 @export var speed := SPEED
 @export var acceleration := 900.0
@@ -32,6 +41,10 @@ const OWN_NAME_COLOR := Color(1.0, 0.85, 0.4)
 
 var anim_state: AnimState = AnimState.IDLE
 var facing := Vector2i.DOWN        ## direcao cardinal para onde o player olha
+var skin := "knight"
+var is_dead := false
+var _attack_left := 0.0
+var _next_attack_ms := 0
 
 @onready var _sprite: AnimatedSprite2D = $Sprite
 @onready var _camera: Camera2D = $Camera2D
@@ -57,7 +70,8 @@ static func frames_for(skin: String) -> SpriteFrames:
 
 
 ## Aparencia e nome sobre a cabeca (o proprio nome em dourado).
-func setup_look(skin: String, display_name: String) -> void:
+func setup_look(p_skin: String, display_name: String) -> void:
+	skin = p_skin if SKINS.has(p_skin) else "knight"
 	_sprite.sprite_frames = frames_for(skin)
 	_name_label.text = display_name
 	var ls := _name_label.label_settings.duplicate() as LabelSettings
@@ -72,12 +86,49 @@ func place(pos: Vector2, dir: Vector2i) -> void:
 	velocity = Vector2.ZERO
 	if DIR_NAMES.has(dir):
 		facing = dir
-	anim_state = AnimState.IDLE
+	anim_state = AnimState.DEAD if is_dead else AnimState.IDLE
 	_update_animation()
 	_camera.reset_smoothing()
 
 
+## Golpe (E12): pose de ataque + efeito. Retorna false se ainda em recarga
+## ou morto. Quem decide se acertou e o servidor (Combat.request_attack).
+func try_attack(cooldown: float) -> bool:
+	var now := Time.get_ticks_msec()
+	if is_dead or now < _next_attack_ms:
+		return false
+	_next_attack_ms = now + int(cooldown * 1000.0)
+	_attack_left = ATTACK_TIME
+	anim_state = AnimState.ATTACK
+	velocity = Vector2.ZERO
+	_update_animation()
+	spawn_slash(get_parent(), global_position, facing)
+	return true
+
+
+## Efeito de golpe a frente de quem bate (usado tambem pelos RemotePlayer).
+static func spawn_slash(parent: Node, pos: Vector2, dir: Vector2i) -> void:
+	var fx := SLASH.instantiate() as Node2D
+	fx.position = pos + Vector2(0, -7) + Vector2(dir) * 10.0
+	fx.rotation = Vector2(dir).angle()
+	parent.add_child(fx)
+
+
+func set_dead(value: bool) -> void:
+	is_dead = value
+	velocity = Vector2.ZERO
+	anim_state = AnimState.DEAD if value else AnimState.IDLE
+	_update_animation()
+
+
 func _physics_process(delta: float) -> void:
+	if is_dead:
+		return
+	if _attack_left > 0.0:
+		_attack_left -= delta
+		if _attack_left <= 0.0:
+			anim_state = AnimState.IDLE
+		return
 	var input := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 
 	if input != Vector2.ZERO:
@@ -100,7 +151,15 @@ func _cardinal(dir: Vector2) -> Vector2i:
 
 
 func _update_animation() -> void:
-	var prefix := "walk_" if anim_state == AnimState.WALK else "idle_"
+	if anim_state == AnimState.DEAD:
+		_sprite.play("dead")
+		return
+	var prefix := "idle_"
+	match anim_state:
+		AnimState.WALK:
+			prefix = "walk_"
+		AnimState.ATTACK:
+			prefix = "attack_"
 	var anim: String = prefix + DIR_NAMES[facing]
 	if _sprite.animation != anim:
 		_sprite.play(anim)

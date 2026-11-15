@@ -83,6 +83,61 @@ func online_count() -> int:
 	return _online.size()
 
 
+## Zona do jogador, ou "" se offline ou ainda carregando o jogo.
+func zone_of(id: int) -> String:
+	if not _online.has(id) or not _online[id].ready:
+		return ""
+	return _online[id].data.zone
+
+
+## Jogadores com o jogo carregado na zona.
+func players_in_zone(zone: String) -> Array[int]:
+	var out: Array[int] = []
+	for id: int in _online:
+		if _online[id].ready and _online[id].data.zone == zone:
+			out.append(id)
+	return out
+
+
+## Ultima posicao validada do jogador.
+func position_of(id: int) -> Vector2:
+	if not _online.has(id):
+		return Vector2.INF
+	return Vector2(_online[id].data.x, _online[id].data.y)
+
+
+func avatar_of(id: int) -> RemotePlayer:
+	if not _online.has(id) or not is_instance_valid(_online[id].avatar):
+		return null
+	return _online[id].avatar
+
+
+## Vida salva no personagem (-1 = cheia).
+func saved_hp(id: int) -> int:
+	return int(_online[id].data.get("hp", -1)) if _online.has(id) else -1
+
+
+func respawn_position(id: int) -> Vector2:
+	var zone: String = _online[id].data.zone if _online.has(id) else _default_zone
+	return _zones[zone].spawn
+
+
+## Servidor move o jogador (renascimento). O cliente e avisado pelo Combat.
+func teleport(id: int, pos: Vector2) -> void:
+	if not _online.has(id):
+		return
+	var c: Dictionary = _online[id]
+	c.data.x = pos.x
+	c.data.y = pos.y
+	c.budget = MAX_BUDGET
+	c.last_ms = Time.get_ticks_msec()
+	c.dirty = true
+	var avatar := avatar_of(id)
+	if avatar:
+		avatar.position = pos
+		avatar.net_position = pos
+
+
 # ---------- API do cliente ----------
 
 func report_position(pos: Vector2, facing: Vector2i) -> void:
@@ -155,6 +210,9 @@ func _can_see(peer: int, owner_id: int) -> bool:
 func _save(id: int) -> void:
 	var c: Dictionary = _online[id]
 	var now := Time.get_ticks_msec()
+	var avatar := avatar_of(id)
+	if avatar:
+		c.data.hp = avatar.health.hp
 	c.data.play_time = int(c.data.play_time) + (now - c.since_ms) / 1000
 	c.since_ms = now - (now - c.since_ms) % 1000
 	if _store.save(c.data) == OK:
@@ -188,6 +246,8 @@ func _report_position(pos: Vector2, facing: Vector2i) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	if not _online.has(id):
 		return
+	if Combat.is_dead(id):
+		return  # morto nao anda; o renascimento reposiciona
 	var c: Dictionary = _online[id]
 	var data: Dictionary = c.data
 	var now := Time.get_ticks_msec()

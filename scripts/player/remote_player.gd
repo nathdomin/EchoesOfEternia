@@ -20,9 +20,23 @@ const WALK_THRESHOLD := 0.75 ## px de distancia para considerar andando
 @export var skin := "knight"
 @export var net_position := Vector2.ZERO
 @export var facing := Vector2i.DOWN
+## Combate (E11-E14): vida, morto e contador de golpes (cada +1 = um golpe).
+@export var max_hp := 100
+@export var hp := 100:
+	set = _set_hp
+@export var dead := false:
+	set = _set_dead
+@export var attack_seq := 0:
+	set = _set_attack_seq
+
+const SLASH := preload("res://scenes/effects/slash.tscn")
 
 @onready var _sprite: AnimatedSprite2D = $Sprite
 @onready var _name_label: Label = $NameLabel
+## So o servidor usa (a vida oficial do jogador).
+@onready var health: HealthComponent = $Health
+@onready var hitbox: HitboxComponent = $Hitbox
+var _attack_until_ms := 0
 
 
 func _ready() -> void:
@@ -34,7 +48,15 @@ func _ready() -> void:
 	_update_animation(false)
 
 
+## Servidor: copia a vida do HealthComponent para as propriedades sincronizadas.
+func sync_health() -> void:
+	max_hp = health.max_hp
+	hp = health.hp
+
+
 func _process(delta: float) -> void:
+	if dead:
+		return
 	var dist := position.distance_to(net_position)
 	if dist > SNAP_DISTANCE:
 		position = net_position
@@ -44,6 +66,35 @@ func _process(delta: float) -> void:
 
 
 func _update_animation(walking: bool) -> void:
-	var anim: String = ("walk_" if walking else "idle_") + Player.DIR_NAMES.get(facing, "down")
+	if dead:
+		_sprite.play("dead")
+		return
+	var kind := "walk_" if walking else "idle_"
+	if Time.get_ticks_msec() < _attack_until_ms:
+		kind = "attack_"
+	var anim: String = kind + Player.DIR_NAMES.get(facing, "down")
 	if _sprite.animation != anim:
 		_sprite.play(anim)
+
+
+func _set_hp(value: int) -> void:
+	var took_damage := value < hp
+	hp = value
+	if took_damage and is_node_ready() and not multiplayer.is_server():
+		_sprite.modulate = Color(3, 3, 3)
+		create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.18)
+
+
+func _set_dead(value: bool) -> void:
+	dead = value
+	if is_node_ready() and not multiplayer.is_server():
+		_update_animation(false)
+
+
+func _set_attack_seq(value: int) -> void:
+	var changed := value != attack_seq
+	attack_seq = value
+	if not changed or not is_node_ready() or multiplayer.is_server():
+		return
+	_attack_until_ms = Time.get_ticks_msec() + 250
+	Player.spawn_slash(get_parent(), position, facing)

@@ -4,7 +4,8 @@ extends RefCounted
 ##
 ## Um personagem por conta, em <dados>/characters/<conta>.json:
 ##   { "format", "account", "name", "skin", "zone", "x", "y", "facing",
-##     "level", "xp", "created_at", "last_seen", "play_time" }
+##     "level", "xp", "hp", "created_at", "last_seen", "play_time" }
+## hp = -1 significa vida cheia.
 ## level/xp ja existem para a E16; inventario, classe etc. entram como
 ## campos novos (os que faltarem num arquivo antigo recebem o padrao).
 
@@ -43,7 +44,7 @@ func load_or_create(account_key: String, display_name: String, zone: String, pos
 	data.name = display_name
 	data.x = float(data.x)
 	data.y = float(data.y)
-	for k in ["level", "xp", "created_at", "last_seen", "play_time"]:
+	for k in ["level", "xp", "hp", "created_at", "last_seen", "play_time"]:
 		data[k] = int(data[k])
 	if not data.facing in FACINGS:
 		data.facing = "down"
@@ -75,6 +76,7 @@ func _defaults(account_key: String, display_name: String, zone: String, pos: Vec
 		"facing": "down",
 		"level": 1,
 		"xp": 0,
+		"hp": -1,
 		"created_at": now,
 		"last_seen": now,
 		"play_time": 0,

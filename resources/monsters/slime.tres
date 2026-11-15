@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="MonsterData" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/slime_frames.tres" id="2"]
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Slime/Faceset.png" id="3"]
+
+[resource]
+script = ExtResource("1")
+id = "slime"
+display_name = "Slime"
+frames = ExtResource("2")
+faceset = ExtResource("3")
+max_hp = 30
+damage = 5
+speed = 30.0
+wander_speed = 14.0
+aggro_range = 52.0
+attack_range = 14.0
+attack_cooldown = 1.3
+leash_range = 140.0
+hitbox_radius = 6.0
+xp_reward = 10
+respawn_time = 12.0
