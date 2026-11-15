@@ -76,6 +76,8 @@ func _ready() -> void:
 	Combat.own_respawned.connect(_on_respawned)
 	Combat.own_hit.connect(_on_own_hit)
 	$NetHud/Log.visible = false  # o chat mostra as mensagens de sistema
+	_game_hud.hotbar.slot_clicked.connect(_use_slot)
+	_game_hud.pause_menu.help_requested.connect(func() -> void: _game_hud.controls.open())
 	_game_hud.pause_menu.leave_requested.connect(func() -> void:
 		NetworkManager.leave()
 		_back_to_menu(""))
@@ -211,6 +213,7 @@ func _switch_map(zone: String) -> void:
 ## Musica e clima da zona (cor, folhas, vaga-lumes, escuro com luz no jogador).
 func _apply_zone_look(zone: String) -> void:
 	_zone = zone
+	_hud.set_zone(Zones.display_name(zone))
 	GameAudio.play_music(Zones.MUSIC.get(zone, ""))
 	var look := Zones.look(zone)
 	var amb := $Ambience
@@ -341,6 +344,28 @@ func _on_own_hit(monster_path: NodePath) -> void:
 	var m := Combat.get_node_or_null(monster_path) as Node2D
 	if m and (_game_hud.target == null or not is_instance_valid(_game_hud.target)):
 		_game_hud.set_target(m)
+	if m is Monster:
+		(m as Monster).knockback(_player.global_position)
+		_hitstop()
+
+
+## Pausa curtissima no impacto (so o visual deste cliente): o golpe "pesa".
+const HITSTOP_SEC := 0.04
+var _hitstop_on := false
+
+
+func _exit_tree() -> void:
+	Engine.time_scale = 1.0  # saiu no meio de uma pausa de impacto
+
+
+func _hitstop() -> void:
+	if _hitstop_on:
+		return
+	_hitstop_on = true
+	Engine.time_scale = 0.05
+	await get_tree().create_timer(HITSTOP_SEC, true, false, true).timeout
+	Engine.time_scale = 1.0
+	_hitstop_on = false
 
 
 func _targets() -> Array[Node2D]:
@@ -389,8 +414,15 @@ func _input(event: InputEvent) -> void:
 			_game_hud.chat.close()
 			get_viewport().set_input_as_handled()
 		return
+	if event.is_action_pressed("help"):
+		_game_hud.pause_menu.close()
+		_game_hud.controls.toggle()
+		get_viewport().set_input_as_handled()
+		return
 	if event.is_action_pressed("ui_cancel"):
-		if _game_hud.pause_menu.visible:
+		if _game_hud.controls.visible:
+			_game_hud.controls.close()
+		elif _game_hud.pause_menu.visible:
 			_game_hud.pause_menu.close()
 		elif _game_hud.dialogue.visible:
 			_game_hud.dialogue.close()
@@ -403,6 +435,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("chat") and not _game_hud.blocks_input():
 		_game_hud.chat.open.call_deferred()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("chat_command") and not _game_hud.blocks_input():
+		_game_hud.chat.open.call_deferred("/")
 		get_viewport().set_input_as_handled()
 
 
@@ -423,8 +458,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("interact"):
 		_talk_to_nearest_npc()
 		return
-	if event.is_action_pressed("party_invite") and _game_hud.target is RemotePlayer:
-		Social.invite(_game_hud.target.display_name)
+	if event.is_action_pressed("party_invite"):
+		if _game_hud.target is RemotePlayer:
+			Social.invite(_game_hud.target.display_name)
+		else:
+			_game_hud.chat.add_line("sistema", "", "Selecione um jogador (clique nele) e aperte G para convidar.")
 		return
 	if event.is_action_pressed("attack") and _reconnect_attempt < 0:
 		if _player.try_attack(BASE_STATS.attack_cooldown):

@@ -44,10 +44,13 @@ func add_line(channel: String, author: String, text: String) -> void:
 		_lines.get_child(0).free()
 
 
-func open() -> void:
+## `prefix` ja vem escrito (tecla "/" abre com "/").
+func open(prefix := "") -> void:
 	is_open = true
 	_input.visible = true
+	_input.text = prefix
 	_input.grab_focus()
+	_input.caret_column = prefix.length()
 
 
 func close() -> void:
@@ -73,3 +76,22 @@ func _process(_delta: float) -> void:
 	for l in _lines.get_children():
 		var age := (now - int(l.get_meta("born"))) / 1000.0
 		l.modulate.a = 1.0 if is_open else clampf(LINE_TIME + 1.0 - age, 0.0, 1.0)
+	queue_redraw()
+
+
+## Fundo escuro translucido atras das linhas visiveis (o texto claro nao
+## some mais na grama da vila). Some junto com as linhas.
+func _draw() -> void:
+	var alpha := 0.0
+	var top := size.y
+	for l: Label in _lines.get_children():
+		if l.modulate.a > 0.01:
+			alpha = maxf(alpha, l.modulate.a)
+			top = minf(top, l.position.y + _lines.position.y)
+	if is_open:
+		alpha = 1.0
+		top = minf(top, _input.position.y)
+	if alpha <= 0.0:
+		return
+	var r := Rect2(Vector2(-3, top - 1), Vector2(240, size.y - top + 2))
+	draw_rect(r, Color(0.05, 0.03, 0.03, 0.45 * alpha))

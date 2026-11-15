@@ -117,14 +117,32 @@ static func bar(width: float, height: float, fill: Color) -> ProgressBar:
 	return b
 
 
-## Quadradinho de icone (inventario, barra de habilidades).
-static func slot(size := 22.0) -> Panel:
+const WOOD_PANEL := preload("res://assets/ui/ninja/Theme/Theme Wood/nine_path_panel.png")
+
+
+## Moldura de madeira do pacote (9-patch), atras da barra de habilidades.
+static func wood_frame(size: Vector2) -> NinePatchRect:
+	var n := NinePatchRect.new()
+	n.texture = WOOD_PANEL
+	n.patch_margin_left = 5
+	n.patch_margin_top = 5
+	n.patch_margin_right = 5
+	n.patch_margin_bottom = 5
+	n.size = size
+	n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return n
+
+
+## Quadradinho de icone (inventario, barra de habilidades). `ink` = no
+## pergaminho: fundo de papel mais escuro e borda de tinta.
+static func slot(size := 22.0, ink := false) -> Panel:
 	var p := Panel.new()
 	p.custom_minimum_size = Vector2(size, size)
 	var st := StyleBoxFlat.new()
-	st.bg_color = Color(0.1, 0.06, 0.05, 0.85)
+	st.bg_color = Color(0.1, 0.06, 0.05, 0.85) if not ink else Color(0.62, 0.48, 0.3, 0.45)
 	st.set_border_width_all(1)
-	st.border_color = Color(0.55, 0.4, 0.22)
+	st.border_color = Color(0.55, 0.4, 0.22) if not ink else Color(INK, 0.75)
+	st.set_corner_radius_all(2 if ink else 0)
 	p.add_theme_stylebox_override("panel", st)
 	var icon := TextureRect.new()
 	icon.name = "Icon"
@@ -142,6 +160,8 @@ static func slot(size := 22.0) -> Panel:
 	count.position = Vector2(size - 14, size - 15)
 	count.size = Vector2(13, 14)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	count.add_theme_constant_override("outline_size", 3)
+	count.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.03))
 	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	p.add_child(count)
 	return p

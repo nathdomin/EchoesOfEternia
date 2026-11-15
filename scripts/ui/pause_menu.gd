@@ -3,8 +3,9 @@ extends Control
 ## Menu de pausa (E22), Esc. O mundo continua (e um MMO): so abre as opcoes.
 
 signal leave_requested
+signal help_requested
 
-const SIZE := Vector2(210, 196)
+const SIZE := Vector2(210, 170)
 
 
 var _sliders: Array[HSlider] = []
@@ -38,10 +39,14 @@ func _ready() -> void:
 		row.add_child(s)
 		v.add_child(row)
 		_sliders.append(s)
+	var help := UiKit.ink_button("Controles e ajuda (F1)")
+	help.pressed.connect(func() -> void:
+		close()
+		help_requested.emit())
+	v.add_child(help)
 	var out := UiKit.ink_button("Sair para o menu")
 	out.pressed.connect(func() -> void: leave_requested.emit())
 	v.add_child(out)
-	v.add_child(UiKit.ink_text("1-3 habilidades, 4 poção\nI inventário, E conversar\nEnter chat, G convidar", 160))
 
 
 func open() -> void:

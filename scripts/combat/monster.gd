@@ -302,6 +302,16 @@ func _set_attack_seq(value: int) -> void:
 	t.tween_property(_sprite, "offset", Vector2.ZERO, 0.12)
 
 
+## Cliente: recuo curto do sprite para longe de quem acertou (so visual).
+func knockback(from: Vector2) -> void:
+	if state == State.DEAD:
+		return
+	var push := (global_position - from).normalized() * 3.0
+	var t := create_tween()
+	t.tween_property(_sprite, "offset", push, 0.05)
+	t.tween_property(_sprite, "offset", Vector2.ZERO, 0.12)
+
+
 func _refresh_visuals() -> void:
 	var dead := state == State.DEAD
 	_sprite.visible = not dead

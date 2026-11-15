@@ -36,7 +36,7 @@ O jogo é um **MMORPG com servidor dedicado**: o servidor roda separado (na nuve
 
 O personagem fica salvo no servidor: ao entrar de novo você aparece onde parou. A conexão é cifrada (DTLS) e o servidor guarda só o hash da senha. O menu lembra o servidor e a conta da última vez, nunca a senha.
 
-Ao entrar aparecem "Fulano entrou no mundo" e o contador de jogadores no canto. **Esc** sai e volta ao menu.
+Ao entrar aparecem "Fulano entrou no mundo" e o nome da zona no canto. **F1** abre a ajuda (abas Controles e Como jogar; abre sozinha no primeiro jogo).
 
 No jogo:
 
@@ -44,15 +44,17 @@ No jogo:
 |---|---|
 | WASD / setas | andar |
 | Espaço / J | ataque básico |
-| 1, 2, 3 | habilidades da classe |
+| 1, 2, 3 | habilidades da classe (ou clique na barra) |
 | 4 | poção |
 | Clique / Tab | escolher alvo |
-| E | conversar com NPC |
+| E | conversar com NPC / abrir baú |
 | I | inventário (clique usa/equipa) |
-| Enter | chat (`/g` grupo, `/convidar Nome`, `/aceitar`, `/sair`) |
+| Enter | chat (`/g` grupo, `/z` zona, `/w Nome` sussurro, `/r` responder, `/quem`, `/convidar Nome`, `/aceitar`, `/sair`) |
+| / | abre o chat já com "/" |
 | G | convidar o jogador selecionado para o grupo |
 | Esc | fecha janela → limpa alvo → pausa (volume da música e dos efeitos, sair para o menu) |
-| F3 | painel técnico (FPS, ping, zona, posição) |
+| F1 | ajuda: controles e como jogar |
+| F3 | painel técnico (FPS, ping, zona, posição, jogadores) |
 
 No primeiro login você escolhe a classe (Guerreiro, Mago ou Arqueiro). O Ancião, ao lado do ponto inicial, dá as primeiras missões. A estrada leste da vila leva à **Floresta Sombria** (Guarda Florestal, morcegos, slimes venenosos) e de lá à **Caverna do Rei Slime**, o chefe.
 
