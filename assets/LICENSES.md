@@ -22,3 +22,5 @@ O pacote completo (89 MB) não está no repositório: só copiamos o que é usad
 - **Efeitos** (`assets/effects/ninja/`): Attack, Elemental, Environment, Magic, Particle, Projectile, Slash, Smoke.
 - **UI** (`assets/ui/ninja/`): Dialog, Emote, Font, Receptacle (barras/corações), Skill Icon, Theme Wood.
 - **Músicas** (`audio/music/`): Village, Dark Forest, Dungeon, Fight.
+
+**Efeitos sonoros** (`audio/sfx/`): feitos para este projeto por síntese (`tools/gen_sfx.py`), sem material de terceiros.

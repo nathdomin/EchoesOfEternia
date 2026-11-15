@@ -105,6 +105,7 @@ func try_attack(cooldown: float) -> bool:
 	velocity = Vector2.ZERO
 	_update_animation()
 	spawn_slash(get_parent(), global_position, facing)
+	GameAudio.play("swing")
 	return true
 
 
@@ -124,6 +125,16 @@ static func spawn_slash(parent: Node, pos: Vector2, dir: Vector2i) -> void:
 	fx.position = pos + Vector2(0, -7) + Vector2(dir) * 10.0
 	fx.rotation = Vector2(dir).angle()
 	parent.add_child(fx)
+
+
+## Tremor de camera (dano, pisao do chefe). `strength` em px.
+func shake(strength: float, duration := 0.25) -> void:
+	var t := create_tween()
+	var steps := maxi(int(duration / 0.03), 2)
+	for i in steps:
+		var k := 1.0 - float(i) / steps
+		t.tween_property(_camera, "offset", Vector2(randf_range(-1, 1), randf_range(-1, 1)) * strength * k, 0.03)
+	t.tween_property(_camera, "offset", Vector2.ZERO, 0.03)
 
 
 func set_dead(value: bool) -> void:

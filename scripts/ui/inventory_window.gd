@@ -62,6 +62,7 @@ func _ready() -> void:
 func toggle() -> void:
 	visible = not visible
 	_discard_armed = -1
+	GameAudio.play("open")
 	if visible:
 		refresh()
 

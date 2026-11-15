@@ -80,11 +80,12 @@ func _update_animation(walking: bool) -> void:
 
 
 func _set_hp(value: int) -> void:
-	var took_damage := value < hp
+	var lost := hp - value
 	hp = value
-	if took_damage and is_node_ready() and not multiplayer.is_server():
+	if lost > 0 and is_node_ready() and not multiplayer.is_server() and not dead:
 		_sprite.modulate = Color(3, 3, 3)
 		create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.18)
+		FloatingText.spawn(get_parent().get_parent(), position, str(lost), FloatingText.HURT)
 
 
 func _set_dead(value: bool) -> void:
@@ -100,6 +101,7 @@ func _set_attack_seq(value: int) -> void:
 		return
 	_attack_until_ms = Time.get_ticks_msec() + 250
 	Player.spawn_slash(get_parent().get_parent(), position, facing)  # no mapa, nao em Players
+	GameAudio.play_at("swing", position)
 
 
 func _set_skin(value: String) -> void:

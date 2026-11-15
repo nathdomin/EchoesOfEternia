@@ -21,6 +21,7 @@ var inventory: InventoryWindow
 var dialogue: DialogueBox
 var class_chooser: ClassChooser
 var pause_menu: PauseMenu
+var debug_panel: DebugPanel
 var _xp_bar: ProgressBar
 var _display_name := ""
 
@@ -49,6 +50,8 @@ func _ready() -> void:
 	add_child(inventory)
 	class_chooser = ClassChooser.new()
 	add_child(class_chooser)
+	debug_panel = DebugPanel.new()
+	add_child(debug_panel)
 	pause_menu = PauseMenu.new()
 	add_child(pause_menu)
 	PlayerData.changed.connect(_on_me_changed)

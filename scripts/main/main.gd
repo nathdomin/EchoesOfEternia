@@ -34,6 +34,14 @@ var _report_timer := 0.0
 ## -1 = conectado; 0+ = tentativas de reconexao ja feitas
 var _reconnect_attempt := -1
 var _respawn_left := 0.0
+var _zone := ""
+var _last_hp := -1
+## Para os sons de item/missao (comparar o retrato anterior com o novo).
+var _last_item_total := -1
+var _last_done_quests := -1
+var _last_ready_quests := -1
+var _player_light: PointLight2D
+var _music_check := 0.0
 
 ## Mapa da zona atual (Village, Forest ou Dungeon; todas usam o script Village).
 @onready var _map: Village = $World/Village
@@ -57,7 +65,14 @@ func _ready() -> void:
 	_game_hud.setup_player(_player.skin, NetworkManager.player_name(multiplayer.get_unique_id()))
 	_game_hud.set_health(Combat.my_hp, Combat.my_max_hp)
 	Combat.own_health_changed.connect(_game_hud.set_health)
+	Combat.own_health_changed.connect(_on_own_health)
 	Combat.own_died.connect(_on_died)
+	Combat.boss_slam_seen.connect(func(pos: Vector2) -> void:
+		var d := pos.distance_to(_player.global_position)
+		if d < 160.0:
+			_player.shake(4.0 * (1.0 - d / 160.0) + 1.0, 0.35))
+	PlayerData.changed.connect(_on_player_data_changed)
+	_on_player_data_changed()
 	Combat.own_respawned.connect(_on_respawned)
 	Combat.own_hit.connect(_on_own_hit)
 	$NetHud/Log.visible = false  # o chat mostra as mensagens de sistema
@@ -81,6 +96,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_music_check -= delta
+	if _music_check <= 0.0:
+		_music_check = 0.5
+		_update_boss_music()
 	if _respawn_left > 0.0:
 		_respawn_left -= delta
 		_hud.show_banner("Você morreu. Renascendo em %d s..." % ceili(maxf(_respawn_left, 0.0)))
@@ -163,6 +182,7 @@ func _switch_map(zone: String) -> void:
 	var node_name := Zones.node_name(zone)
 	if _map and _map.name == node_name:
 		_player.set_camera_limits(_map.get_bounds())
+		_apply_zone_look(zone)
 		return
 	var path: String = Zones.SCENES.get(zone, Zones.SCENES.village)
 	var new_map := (load(path) as PackedScene).instantiate() as Village
@@ -185,6 +205,51 @@ func _switch_map(zone: String) -> void:
 	_map = new_map
 	$World.add_child(new_map)
 	_player.set_camera_limits(_map.get_bounds())
+	_apply_zone_look(zone)
+
+
+## Musica e clima da zona (cor, folhas, vaga-lumes, escuro com luz no jogador).
+func _apply_zone_look(zone: String) -> void:
+	_zone = zone
+	GameAudio.play_music(Zones.MUSIC.get(zone, ""))
+	var look := Zones.look(zone)
+	var amb := $Ambience
+	amb.position = Vector2.ZERO
+	(amb.get_node("Tint") as CanvasModulate).color = look.tint
+	var b := _map.get_bounds()
+	for n: String in ["Leaves", "Fireflies"]:
+		var p := amb.get_node(n) as CPUParticles2D
+		p.position = b.get_center()
+		p.emission_rect_extents = b.size / 2.0
+	var leaves := amb.get_node("Leaves") as CPUParticles2D
+	leaves.visible = look.leaves
+	leaves.emitting = look.leaves
+	var flies := amb.get_node("Fireflies") as CPUParticles2D
+	flies.visible = look.fireflies > 0
+	flies.emitting = look.fireflies > 0
+	if look.fireflies > 0 and flies.amount != look.fireflies:
+		flies.amount = look.fireflies
+	var vig := amb.get_node("Screen/Vignette") as ColorRect
+	(vig.material as ShaderMaterial).set_shader_parameter("strength", look.vignette)
+	if _player_light == null:
+		_player_light = PointLight2D.new()
+		var g := Gradient.new()
+		g.set_color(0, Color(1, 1, 1, 1))
+		g.set_color(1, Color(1, 1, 1, 0))
+		g.add_point(0.5, Color(1, 1, 1, 0.55))
+		var tex := GradientTexture2D.new()
+		tex.gradient = g
+		tex.width = 176
+		tex.height = 176
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		tex.fill_from = Vector2(0.5, 0.5)
+		tex.fill_to = Vector2(1.0, 0.5)
+		_player_light.texture = tex
+		_player_light.color = Color(1.0, 0.85, 0.6)
+		_player_light.energy = 0.6
+		_player_light.position = Vector2(0, -6)
+		_player.add_child(_player_light)
+	_player_light.enabled = look.light
 
 
 func _on_zone_changed(zone: String, pos: Vector2) -> void:
@@ -194,6 +259,7 @@ func _on_zone_changed(zone: String, pos: Vector2) -> void:
 	_player.place(pos, _player.facing)
 	_last_sent_pos = pos
 	Characters.notify_ready()
+	GameAudio.play("zone")
 	_hud.show_banner(Zones.display_name(zone))
 	get_tree().create_timer(2.0).timeout.connect(func() -> void:
 		if _respawn_left <= 0.0 and _reconnect_attempt < 0:
@@ -204,6 +270,7 @@ func _on_zone_changed(zone: String, pos: Vector2) -> void:
 
 func _on_died(respawn_seconds: float) -> void:
 	_player.set_dead(true)
+	GameAudio.play("death", 0.0)
 	_respawn_left = respawn_seconds
 
 
@@ -213,6 +280,60 @@ func _on_respawned(pos: Vector2) -> void:
 	_player.set_dead(false)
 	_player.place(pos, Vector2i.DOWN)
 	_last_sent_pos = pos
+
+
+## Chefe vivo perto (lutando ou a vista): musica de luta; senao a da zona.
+func _update_boss_music() -> void:
+	if _zone.is_empty() or _reconnect_attempt >= 0:
+		return
+	var fighting := false
+	for m in _map.get_node("Monsters").get_children():
+		if m is Monster and m.data and m.data.is_boss and not m.is_dead() 				and m.position.distance_to(_player.global_position) < 200.0:
+			fighting = true
+	GameAudio.play_music(Zones.BOSS_MUSIC if fighting else Zones.MUSIC.get(_zone, ""))
+
+
+## Vida propria mudou: numero de dano/cura, som e tremor.
+func _on_own_health(hp: int, max_hp: int) -> void:
+	var before := _last_hp
+	_last_hp = hp
+	if before < 0 or _player.is_dead:
+		return
+	var delta := hp - before
+	if delta < 0:
+		FloatingText.spawn(_map, _player.global_position, str(-delta), FloatingText.HURT)
+		GameAudio.play("hurt")
+		_player.shake(2.0)
+	elif delta >= maxi(8, max_hp / 12):
+		FloatingText.spawn(_map, _player.global_position, "+%d" % delta, FloatingText.HEAL)
+
+
+## Sons de item recebido, missao pronta e missao entregue.
+func _on_player_data_changed() -> void:
+	var me := PlayerData.me
+	if me.is_empty():
+		return
+	var items := 0
+	for s in me.get("inventory", []):
+		if s is Dictionary:
+			items += int(s.n)
+	var done := 0
+	var ready_n := 0
+	for qid: String in me.get("quests", {}):
+		var st := PlayerData.quest_state(me.quests, qid)
+		var q := PlayerData.quest(qid)
+		if st == "done":
+			done += 1
+		elif q and int(me.get("quest_progress", {}).get(qid, 0)) >= q.count:
+			ready_n += 1
+	if _last_done_quests >= 0:
+		if done > _last_done_quests or ready_n > _last_ready_quests:
+			GameAudio.play("quest", 0.0)
+		elif items > _last_item_total:
+			GameAudio.play("pickup")
+	_last_item_total = items
+	_last_done_quests = done
+	_last_ready_quests = ready_n
 
 
 ## O servidor confirmou um acerto: sem alvo, o monstro atingido vira o alvo.
@@ -286,6 +407,9 @@ func _input(event: InputEvent) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("debug_panel"):
+		_game_hud.debug_panel.toggle()
+		return
 	if _game_hud.blocks_input():
 		return
 	for i in 4:
@@ -323,6 +447,8 @@ func _use_slot(i: int) -> void:
 	if i == 3:
 		if _game_hud.hotbar.try_use(3):
 			PlayerData.use_potion()
+		else:
+			GameAudio.play("error", 0.0)
 		return
 	var ab := _game_hud.hotbar.ability(i)
 	if ab == null or not _game_hud.hotbar.try_use(i):

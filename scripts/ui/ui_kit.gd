@@ -64,6 +64,36 @@ static func ink_button(text: String) -> Button:
 	return b
 
 
+## Controle deslizante em tinta (volume na pausa): linha marrom, marcador vermelho.
+static func ink_slider(width := 90.0) -> HSlider:
+	var s := HSlider.new()
+	s.custom_minimum_size = Vector2(width, 12)
+	s.min_value = 0.0
+	s.max_value = 1.0
+	s.step = 0.05
+	s.focus_mode = Control.FOCUS_ALL
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(INK, 0.35)
+	track.content_margin_top = 1
+	track.content_margin_bottom = 1
+	var filled := StyleBoxFlat.new()
+	filled.bg_color = RUBRIC
+	filled.content_margin_top = 1
+	filled.content_margin_bottom = 1
+	s.add_theme_stylebox_override("slider", track)
+	s.add_theme_stylebox_override("grabber_area", filled)
+	s.add_theme_stylebox_override("grabber_area_highlight", filled)
+	var img := Image.create(5, 9, false, Image.FORMAT_RGBA8)
+	img.fill(INK)
+	img.fill_rect(Rect2i(1, 1, 3, 7), RUBRIC)
+	var knob := ImageTexture.create_from_image(img)
+	s.add_theme_icon_override("grabber", knob)
+	s.add_theme_icon_override("grabber_highlight", knob)
+	var focus := StyleBoxEmpty.new()
+	s.add_theme_stylebox_override("focus", focus)
+	return s
+
+
 static func dark_panel() -> PanelContainer:
 	var p := PanelContainer.new()
 	p.theme_type_variation = &"DarkPanel"

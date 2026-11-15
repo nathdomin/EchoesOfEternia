@@ -220,14 +220,16 @@ func _process(delta: float) -> void:
 
 
 func _set_hp(value: int) -> void:
-	var took_damage := value < hp
+	var lost := hp - value
 	hp = value
 	if not is_node_ready():
 		return
 	_refresh_visuals()
-	if took_damage and not multiplayer.is_server():
+	if lost > 0 and not multiplayer.is_server() and state != State.DEAD:
 		_sprite.modulate = Color(3, 3, 3)
 		create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.18)
+		FloatingText.spawn(get_parent().get_parent(), position + Vector2(0, _sprite.position.y * 2.0 + 18.0), str(lost), FloatingText.DAMAGE, data.is_boss)
+		GameAudio.play_at("hit", position)
 
 
 func _set_state(value: State) -> void:
@@ -240,6 +242,7 @@ func _set_state(value: State) -> void:
 		var fx := SMOKE.instantiate()
 		fx.position = position + Vector2(0, -6)
 		get_parent().get_parent().add_child(fx)
+		GameAudio.play_at("monster_die", position)
 	elif was_dead and value != State.DEAD:
 		position = net_position
 	_refresh_visuals()

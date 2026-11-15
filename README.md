@@ -51,7 +51,8 @@ No jogo:
 | I | inventário (clique usa/equipa) |
 | Enter | chat (`/g` grupo, `/convidar Nome`, `/aceitar`, `/sair`) |
 | G | convidar o jogador selecionado para o grupo |
-| Esc | fecha janela → limpa alvo → pausa (sair para o menu) |
+| Esc | fecha janela → limpa alvo → pausa (volume da música e dos efeitos, sair para o menu) |
+| F3 | painel técnico (FPS, ping, zona, posição) |
 
 No primeiro login você escolhe a classe (Guerreiro, Mago ou Arqueiro). O Ancião, ao lado do ponto inicial, dá as primeiras missões. A estrada leste da vila leva à **Floresta Sombria** (Guarda Florestal, morcegos, slimes venenosos) e de lá à **Caverna do Rei Slime**, o chefe.
 

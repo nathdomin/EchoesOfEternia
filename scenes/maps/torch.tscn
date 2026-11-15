@@ -1,0 +1,30 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/maps/torch.gd" id="1_torch"]
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Particle/Fire.png" id="2_fire"]
+
+[sub_resource type="Gradient" id="Grad_light"]
+offsets = PackedFloat32Array(0, 0.45, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.45, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="Tex_light"]
+gradient = SubResource("Grad_light")
+width = 160
+height = 160
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[node name="Torch" type="Node2D"]
+script = ExtResource("1_torch")
+
+[node name="Flame" type="Sprite2D" parent="."]
+position = Vector2(0, -4)
+texture = ExtResource("2_fire")
+hframes = 8
+
+[node name="Light" type="PointLight2D" parent="."]
+position = Vector2(0, -4)
+color = Color(1, 0.7, 0.4, 1)
+energy = 0.9
+texture = SubResource("Tex_light")
