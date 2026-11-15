@@ -14,14 +14,13 @@ Registre aqui **todo** pacote adicionado ao projeto, antes do primeiro commit qu
 O pacote completo (89 MB) não está no repositório: só copiamos o que é usado. Para adicionar algo, baixe o pacote no link acima e copie apenas o necessário.
 
 ## O que foi copiado
-- **Personagens** (`assets/characters/ninja/`): Knight (Guerreiro), SorcererBlack (Mago), Hunter (Arqueiro), OldMan e Noble (NPCs), `Shadow.png`.
-  Folhas: `Walk.png` = 4 colunas (baixo, cima, esquerda, direita) × 4 frames; `Idle.png`/`Attack.png` = 4 direções × 1 frame.
+Só o que o jogo usa (Gate 5: tudo o que não tinha referência foi removido).
+- **Personagens** (`assets/characters/ninja/`): Knight (Guerreiro), SorcererBlack (Mago), Hunter (Arqueiro), OldMan e Noble (NPCs) — `Walk`, `Idle`, `Attack`, `Dead`, `Faceset` — e `Shadow.png`.
   As animações prontas ficam em `resources/characters/*_frames.tres`.
-- **Monstros** (`assets/enemies/ninja/`): Slime, Slime2, Mushroom, Skull, BlueBat; chefe GiantSlime.
-- **Tilesets** (`assets/environments/ninja/tilesets/`): Floor, FloorDetail, Nature, House, Water, Dungeon, Relief. TileSet do jogo: `assets/environments/ninja/ninja_tileset.tres`.
-- **Cenário animado** (`assets/environments/ninja/animated/`): Flag, Flower, Water Ripples, Plant.
-- **Efeitos** (`assets/effects/ninja/`): Attack, Elemental, Environment, Magic, Particle, Projectile, Slash, Smoke.
-- **UI** (`assets/ui/ninja/`): Dialog, Emote, Font, Receptacle (barras/corações), Skill Icon, Theme Wood.
+- **Monstros** (`assets/enemies/ninja/`): Slime, Slime2, Mushroom, Skull, BlueBat e o chefe GiantSlime.
+- **Tilesets** (`assets/environments/ninja/tilesets/`): Floor, FloorDetail, Nature, House, Water, Relief. TileSet do jogo: `assets/environments/ninja/ninja_tileset.tres`.
+- **Efeitos** (`assets/effects/ninja/`): golpe, explosão, brilhos, fumaça, folhas/fogo das partículas e os projéteis das habilidades.
+- **UI** (`assets/ui/ninja/`): Theme Wood (tema e moldura da barra), ícones das habilidades e itens, barra de vida dos monstros.
 - **Músicas** (`audio/music/`): Village, Dark Forest, Dungeon, Fight.
 
 **Baú** (`assets/environments/custom/chest.png`): desenhado para este projeto (`tools/gen_chest.py`), no estilo do Ninja Adventure.
