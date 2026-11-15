@@ -217,18 +217,27 @@ func _spawn_avatar(id: int, data: Dictionary) -> RemotePlayer:
 	var avatar := REMOTE_PLAYER.instantiate() as RemotePlayer
 	avatar.name = str(id)
 	avatar.display_name = data.name
-	avatar.skin = data.skin
+	# Nivel e aparencia da classe ja no nascimento: quem esta na zona recebe o
+	# avatar certo de primeira (antes chegava "Nv1" e so depois o valor real)
+	avatar.level = int(data.get("level", 1))
+	var cid := String(data.get("class", ""))
+	avatar.skin = PlayerData.class_data(cid).skin if cid != "" else String(data.skin)
 	avatar.net_position = Vector2(data.x, data.y)
 	avatar.facing = FACING_VECTORS[data.facing]
-	(avatar.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(_can_see.bind(id))
+	(avatar.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(_can_see.bind(id, avatar))
 	_zones[data.zone].players.add_child(avatar, true)
 	return avatar
 
 
-## Filtro de visibilidade: `peer` recebe o avatar de `owner_id`?
+## Filtro de visibilidade: `peer` recebe este `avatar` de `owner_id`?
 ## So se estiver na mesma zona, ja tiver carregado o jogo e nao for o dono.
-func _can_see(peer: int, owner_id: int) -> bool:
+## E so o avatar ATUAL: na troca de zona o antigo ainda existe ate o fim do
+## quadro, e com a zona ja trocada ele "aparecia" para quem esta na zona nova
+## (o cliente recebia um avatar de um mapa que nem tem carregado).
+func _can_see(peer: int, owner_id: int, avatar: RemotePlayer) -> bool:
 	if peer == owner_id or not _online.has(peer) or not _online.has(owner_id):
+		return false
+	if _online[owner_id].get("avatar") != avatar:
 		return false
 	var viewer: Dictionary = _online[peer]
 	return viewer.ready and viewer.data.zone == _online[owner_id].data.zone
