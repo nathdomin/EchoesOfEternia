@@ -51,6 +51,8 @@ func _ready() -> void:
 			avatar.dead = false)
 	NetworkManager.account_logged_out.connect(func(id: int, _k: String) -> void: _players.erase(id))
 	NetworkManager.connection_ended.connect(func(_r: String) -> void: my_dead = false)
+	# Reconexao (E10) depois de cair morto: a sessao nova comeca viva
+	NetworkManager.connection_ready.connect(func() -> void: my_dead = false)
 
 
 # ---------- API do servidor ----------
@@ -134,6 +136,12 @@ func play_effect_in_zone(zone: String, effect_id: String, pos: Vector2) -> void:
 		_effect.rpc_id(pid, effect_id, pos)
 
 
+## Servidor: efeito visual so para um jogador (ex.: brilho do bau dele).
+func play_effect_for(id: int, effect_id: String, pos: Vector2) -> void:
+	if _players.has(id):
+		_effect.rpc_id(id, effect_id, pos)
+
+
 # ---------- API do cliente ----------
 
 ## O cliente atacou na direcao `dir` (o servidor decide se acertou).
@@ -191,11 +199,16 @@ func _on_player_died(id: int) -> void:
 func _respawn(id: int) -> void:
 	var p: Dictionary = _players[id]
 	p.dead = false
-	var avatar := Characters.avatar_of(id)
-	if avatar == null:
+	if Characters.avatar_of(id) == null:
 		return
-	var pos := Characters.respawn_position(id)
-	Characters.teleport(id, pos)
+	# Renasce sempre na praca da vila (o comeco do jogo); de outra zona, a
+	# troca de mapa vem antes do aviso de renascimento.
+	var pos := Characters.home_position()
+	if String(Characters.data_of(id).get("zone", "")) != Characters.home_zone():
+		Characters.move_to_zone(id, Characters.home_zone(), pos)
+	else:
+		Characters.teleport(id, pos)
+	var avatar := Characters.avatar_of(id)
 	avatar.health.reset()
 	avatar.dead = false
 	avatar.sync_health()
@@ -248,7 +261,7 @@ func _request_attack(dir: Vector2i) -> void:
 	# O golpe sai do centro do corpo (8 px acima dos pes)
 	var origin := Characters.position_of(id) + Vector2(0, -6)
 	for m: Monster in _monster_roots[zone].get_children():
-		if m.is_dead() or not m.hitbox.is_hit_by(origin, Vector2(dir), st.reach):
+		if not m.can_be_hit() or not m.hitbox.is_hit_by(origin, Vector2(dir), st.reach):
 			continue
 		m.health.take_damage(st.damage, id)
 		_hit_confirmed.rpc_id(id, get_path_to(m))
@@ -284,7 +297,7 @@ func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
 	var target: Monster = null
 	if not target_path.is_empty():
 		target = get_node_or_null(target_path) as Monster
-	if target and (target.is_dead() or target.zone != zone):
+	if target and (not target.can_be_hit() or target.zone != zone):
 		target = null
 	var hits: Array[Monster] = []
 	var fx_at := origin
@@ -341,11 +354,12 @@ func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
 		_ability_fx.rpc_id(pid, ab.id, origin, fx_at)
 
 
+## Monstros da zona que podem ser atingidos (vivos e nao voltando para casa).
 func _alive_monsters(zone: String) -> Array[Monster]:
 	var out: Array[Monster] = []
 	if _monster_roots.has(zone):
 		for m: Monster in _monster_roots[zone].get_children():
-			if not m.is_dead():
+			if m.can_be_hit():
 				out.append(m)
 	return out
 

@@ -124,7 +124,8 @@ func join(ip: String, port: int) -> Error:
 	_log("Conectando em %s:%d..." % [ip, port])
 	get_tree().create_timer(CONNECT_TIMEOUT).timeout.connect(func() -> void:
 		# ainda e a mesma tentativa e nao conectou: falhou
-		if multiplayer.multiplayer_peer == peer and 				peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTING:
+		if multiplayer.multiplayer_peer == peer and \
+				peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTING:
 			_on_connection_failed())
 	if not NetSecurity.is_pinned():
 		print("[Rede] Conexao cifrada (DTLS) sem certificado fixo: o servidor nao e verificado.")

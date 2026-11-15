@@ -104,7 +104,7 @@ func _process(delta: float) -> void:
 		_update_boss_music()
 	if _respawn_left > 0.0:
 		_respawn_left -= delta
-		_hud.show_banner("Você morreu. Renascendo em %d s..." % ceili(maxf(_respawn_left, 0.0)))
+		_game_hud.show_death(maxf(_respawn_left, 0.0))
 
 
 func _physics_process(delta: float) -> void:
@@ -158,6 +158,12 @@ func _on_reconnected() -> void:
 		return
 	_reconnect_attempt = -1
 	_hud.show_banner("")
+	# Caiu durante a contagem da morte: a sessao nova ja nasce viva (o
+	# servidor gravou o personagem renascido na vila); sai da tela de morte.
+	if _player.is_dead:
+		_respawn_left = 0.0
+		_game_hud.show_death(-1.0)
+		_player.set_dead(false)
 	var s := Characters.spawn
 	_switch_map(String(s.get("zone", "village")))
 	if s.has("position"):
@@ -215,6 +221,7 @@ func _apply_zone_look(zone: String) -> void:
 	_zone = zone
 	_hud.set_zone(Zones.display_name(zone))
 	GameAudio.play_music(Zones.MUSIC.get(zone, ""))
+	GameAudio.play_ambience(Zones.AMBIENCE.get(zone, {}))
 	var look := Zones.look(zone)
 	var amb := $Ambience
 	amb.position = Vector2.ZERO
@@ -275,14 +282,22 @@ func _on_died(respawn_seconds: float) -> void:
 	_player.set_dead(true)
 	GameAudio.play("death", 0.0)
 	_respawn_left = respawn_seconds
+	_hud.show_banner("")
+	_game_hud.set_target(null)
+	_game_hud.show_death(respawn_seconds)
 
 
 func _on_respawned(pos: Vector2) -> void:
 	_respawn_left = 0.0
-	_hud.show_banner("")
+	_game_hud.show_death(-1.0)
 	_player.set_dead(false)
 	_player.place(pos, Vector2i.DOWN)
 	_last_sent_pos = pos
+	_hud.show_banner("Você renasceu na %s." % Zones.display_name(_zone))
+	_game_hud.chat.add_line("sistema", "", "Você renasceu na praça da %s com a vida cheia." % Zones.display_name(_zone))
+	get_tree().create_timer(3.0).timeout.connect(func() -> void:
+		if _respawn_left <= 0.0 and _reconnect_attempt < 0:
+			_hud.show_banner(""))
 
 
 ## Chefe vivo perto (lutando ou a vista): musica de luta; senao a da zona.
@@ -291,7 +306,8 @@ func _update_boss_music() -> void:
 		return
 	var fighting := false
 	for m in _map.get_node("Monsters").get_children():
-		if m is Monster and m.data and m.data.is_boss and not m.is_dead() 				and m.position.distance_to(_player.global_position) < 200.0:
+		if m is Monster and m.data and m.data.is_boss and not m.is_dead() \
+				and m.position.distance_to(_player.global_position) < 200.0:
 			fighting = true
 	GameAudio.play_music(Zones.BOSS_MUSIC if fighting else Zones.MUSIC.get(_zone, ""))
 
@@ -502,6 +518,18 @@ func _use_slot(i: int) -> void:
 
 
 func _talk_to_nearest_npc() -> void:
+	# Bau perto (e ainda cheio para mim) vem primeiro
+	var chests := _map.get_node_or_null("Chests")
+	if chests:
+		for c in chests.get_children():
+			if c is Chest and c.global_position.distance_to(_player.global_position) <= Chest.OPEN_RANGE:
+				if c.is_open_for_me():
+					var left := ceili(PlayerData.chest_seconds_left(c.zone(), c.name) / 60.0)
+					_game_hud.chat.add_line("sistema", "", "Este baú já foi aberto. Volta a encher em %d min." % left)
+				else:
+					GameAudio.play("chest")
+					PlayerData.open_chest(c.name)
+				return
 	var npcs := _map.get_node_or_null("Npcs")
 	if npcs == null:
 		return

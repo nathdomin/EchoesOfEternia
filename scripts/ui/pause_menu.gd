@@ -1,57 +1,73 @@
 class_name PauseMenu
 extends Control
 ## Menu de pausa (E22), Esc. O mundo continua (e um MMO): so abre as opcoes.
+## Gate 5: tudo centralizado na pagina; titulo, tres botoes em letra gotica
+## e o volume em tinta, numa caixa propria.
 
 signal leave_requested
 signal help_requested
 
-const SIZE := Vector2(210, 170)
-
+const SIZE := Vector2(232, 196)
 
 var _sliders: Array[HSlider] = []
+var _first: Button
 
 
 func _ready() -> void:
 	visible = false
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(UiKit.dimmer())
+	var origin := ((Vector2(480, 270) - SIZE) / 2.0).round()
 	var page := UiKit.parchment(SIZE, 8.0)
-	page.position = (Vector2(480, 270) - SIZE) / 2.0
+	page.position = origin
 	add_child(page)
 	var v := VBoxContainer.new()
-	v.position = page.position + Vector2(24, 14)
-	v.add_theme_constant_override("separation", -2)
+	v.position = origin + Vector2(16, 12)
+	v.custom_minimum_size.x = SIZE.x - 32
+	v.add_theme_constant_override("separation", -4)
 	add_child(v)
-	v.add_child(UiKit.gothic("Pausa", 24, UiKit.RUBRIC))
-	var cont := UiKit.ink_button("Continuar")
-	cont.pressed.connect(close)
-	v.add_child(cont)
+	var title := UiKit.gothic("Pausa", 24, UiKit.RUBRIC)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(title)
+	_first = _button(v, "Continuar", close)
+	_button(v, "Ajuda", func() -> void:
+		close()
+		help_requested.emit())
+	_button(v, "Sair para o menu", func() -> void: leave_requested.emit())
+	# Volume: duas linhas em tinta, alinhadas
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 0)
+	box.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 6
+	v.add_child(spacer)
+	v.add_child(box)
 	for spec in [["Música", "music_volume"], ["Efeitos", "sfx_volume"]]:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		var l := UiKit.ink_text(spec[0])
-		l.custom_minimum_size.x = 52
+		l.custom_minimum_size.x = 46
 		row.add_child(l)
-		var s := UiKit.ink_slider(96)
+		var s := UiKit.ink_slider(110)
 		s.value = GameAudio.get(spec[1])
 		s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		s.value_changed.connect(_on_volume_changed)
 		row.add_child(s)
-		v.add_child(row)
+		box.add_child(row)
 		_sliders.append(s)
-	var help := UiKit.ink_button("Controles e ajuda (F1)")
-	help.pressed.connect(func() -> void:
-		close()
-		help_requested.emit())
-	v.add_child(help)
-	var out := UiKit.ink_button("Sair para o menu")
-	out.pressed.connect(func() -> void: leave_requested.emit())
-	v.add_child(out)
+
+
+func _button(parent: Control, text: String, action: Callable) -> Button:
+	var b := UiKit.ink_button(text)
+	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.pressed.connect(action)
+	parent.add_child(b)
+	return b
 
 
 func open() -> void:
 	visible = true
-	(get_child(-1).get_child(1) as Button).grab_focus()
+	_first.grab_focus()
 
 
 func _on_volume_changed(_v: float) -> void:

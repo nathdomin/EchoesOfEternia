@@ -50,7 +50,11 @@ var _travel_pending := false  ## cliente: esperando a resposta de uma viagem
 func _ready() -> void:
 	NetworkManager.account_logged_in.connect(_on_account_logged_in)
 	NetworkManager.account_logged_out.connect(_on_account_logged_out)
-	NetworkManager.connection_ended.connect(func(_r: String) -> void: spawn.clear())
+	NetworkManager.connection_ended.connect(func(_r: String) -> void:
+		spawn.clear()
+		_travel_pending = false)
+	# A resposta de uma viagem pendente se perde com a conexao
+	NetworkManager.connection_lost.connect(func() -> void: _travel_pending = false)
 
 
 # ---------- API do servidor ----------
@@ -68,7 +72,11 @@ func start_server(store: CharacterStore) -> void:
 ## O servidor registra cada zona carregada (cena com get_bounds(),
 ## get_spawn_position() e um no "Players"). A primeira e a zona inicial.
 func register_zone(zone: String, map: Node) -> void:
-	_zones[zone] = {"bounds": map.get_bounds(), "spawn": map.get_spawn_position(),
+	# Ponto inicial em coordenadas LOCAIS da zona: no servidor as zonas ficam
+	# afastadas (x = 0, 20000, 40000) e a posicao global apontava para fora
+	# do mapa (renascer na floresta/caverna jogava o personagem no vazio).
+	var spawn_point := map.get_node("SpawnPoint") as Node2D
+	_zones[zone] = {"bounds": map.get_bounds(), "spawn": spawn_point.position,
 			"players": map.get_node("Players"), "map": map}
 	if _default_zone.is_empty():
 		_default_zone = zone
@@ -132,11 +140,6 @@ func avatar_of(id: int) -> RemotePlayer:
 ## Vida salva no personagem (-1 = cheia).
 func saved_hp(id: int) -> int:
 	return int(_online[id].data.get("hp", -1)) if _online.has(id) else -1
-
-
-func respawn_position(id: int) -> Vector2:
-	var zone: String = _online[id].data.zone if _online.has(id) else _default_zone
-	return _zones[zone].spawn
 
 
 ## Servidor move o jogador (renascimento). O cliente e avisado pelo Combat.
@@ -214,18 +217,27 @@ func _spawn_avatar(id: int, data: Dictionary) -> RemotePlayer:
 	var avatar := REMOTE_PLAYER.instantiate() as RemotePlayer
 	avatar.name = str(id)
 	avatar.display_name = data.name
-	avatar.skin = data.skin
+	# Nivel e aparencia da classe ja no nascimento: quem esta na zona recebe o
+	# avatar certo de primeira (antes chegava "Nv1" e so depois o valor real)
+	avatar.level = int(data.get("level", 1))
+	var cid := String(data.get("class", ""))
+	avatar.skin = PlayerData.class_data(cid).skin if cid != "" else String(data.skin)
 	avatar.net_position = Vector2(data.x, data.y)
 	avatar.facing = FACING_VECTORS[data.facing]
-	(avatar.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(_can_see.bind(id))
+	(avatar.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(_can_see.bind(id, avatar))
 	_zones[data.zone].players.add_child(avatar, true)
 	return avatar
 
 
-## Filtro de visibilidade: `peer` recebe o avatar de `owner_id`?
+## Filtro de visibilidade: `peer` recebe este `avatar` de `owner_id`?
 ## So se estiver na mesma zona, ja tiver carregado o jogo e nao for o dono.
-func _can_see(peer: int, owner_id: int) -> bool:
+## E so o avatar ATUAL: na troca de zona o antigo ainda existe ate o fim do
+## quadro, e com a zona ja trocada ele "aparecia" para quem esta na zona nova
+## (o cliente recebia um avatar de um mapa que nem tem carregado).
+func _can_see(peer: int, owner_id: int, avatar: RemotePlayer) -> bool:
 	if peer == owner_id or not _online.has(peer) or not _online.has(owner_id):
+		return false
+	if _online[owner_id].get("avatar") != avatar:
 		return false
 	var viewer: Dictionary = _online[peer]
 	return viewer.ready and viewer.data.zone == _online[owner_id].data.zone
@@ -239,7 +251,17 @@ func _save(id: int) -> void:
 		c.data.hp = avatar.health.hp
 	c.data.play_time = int(c.data.play_time) + (now - c.since_ms) / 1000
 	c.since_ms = now - (now - c.since_ms) % 1000
-	if _store.save(c.data) == OK:
+	var out: Dictionary = c.data
+	if Combat.is_dead(id):
+		# Morto (contagem do renascimento): grava ja renascido na praca da
+		# vila. Sair ou cair durante a contagem nao volta vivo onde morreu.
+		out = c.data.duplicate()
+		var home := home_position()
+		out.zone = _default_zone
+		out.x = home.x
+		out.y = home.y
+		out.hp = -1
+	if _store.save(out) == OK:
 		c.dirty = false
 
 
@@ -308,7 +330,11 @@ func _request_travel(exit_name: String) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
-	if not _online.has(id) or Combat.is_dead(id) or not exit_name.is_valid_identifier():
+	if not _online.has(id):
+		return
+	# Sempre responde: sem resposta o cliente nunca mais pediria viagem
+	if Combat.is_dead(id) or not exit_name.is_valid_identifier():
+		_travel_denied.rpc_id(id)
 		return
 	var c: Dictionary = _online[id]
 	var data: Dictionary = c.data
@@ -323,8 +349,27 @@ func _request_travel(exit_name: String) -> void:
 	var target: Dictionary = _zones[exit.target_zone]
 	var entrance := (target.map as Node).get_node_or_null("Entrances/" + exit.target_entrance) as Node2D
 	var pos: Vector2 = entrance.position if entrance else target.spawn
+	move_to_zone(id, exit.target_zone, pos)
+
+
+## Zona inicial (onde se renasce) e o ponto de partida dela (local).
+func home_zone() -> String:
+	return _default_zone
+
+
+func home_position() -> Vector2:
+	return _zones[_default_zone].spawn
+
+
+## Servidor: leva o jogador para `zone` em `pos` (viagem ou renascimento):
+## recria o avatar na zona nova e avisa o cliente para trocar o mapa.
+func move_to_zone(id: int, zone: String, pos: Vector2) -> void:
+	if not _online.has(id) or not _zones.has(zone):
+		return
+	var c: Dictionary = _online[id]
+	var data: Dictionary = c.data
 	var old: RemotePlayer = c.avatar
-	data.zone = exit.target_zone
+	data.zone = zone
 	data.x = pos.x
 	data.y = pos.y
 	c.ready = false

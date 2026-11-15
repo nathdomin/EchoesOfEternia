@@ -25,6 +25,8 @@ var debug_panel: DebugPanel
 var controls: ControlsWindow
 var _tutorial_pending := false
 var _level_badge: Label
+var _death: Control
+var _death_count: Label
 var _xp_bar: ProgressBar
 var _display_name := ""
 
@@ -34,7 +36,7 @@ func _ready() -> void:
 	_xp_bar.tooltip_text = "Experiência"
 	_player_text.get_parent().add_child(_xp_bar)
 	var party := PartyFrames.new()
-	party.position = Vector2(4, 52)
+	party.position = Vector2(4, 58)
 	add_child(party)
 	var tracker := QuestTracker.new()
 	tracker.position = Vector2(480 - 164, 22)
@@ -69,7 +71,7 @@ func _ready() -> void:
 	badge.content_margin_top = -2
 	badge.content_margin_bottom = -1
 	_level_badge.add_theme_stylebox_override("normal", badge)
-	_level_badge.position = Vector2(2, 30)
+	_level_badge.position = Vector2(1, 22)
 	_level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_player_face.add_child(_level_badge)
 	chat = ChatBox.new()
@@ -84,6 +86,7 @@ func _ready() -> void:
 	add_child(class_chooser)
 	debug_panel = DebugPanel.new()
 	add_child(debug_panel)
+	_build_death_screen()
 	controls = ControlsWindow.new()
 	add_child(controls)
 	_tutorial_pending = ControlsWindow.first_time()
@@ -91,6 +94,41 @@ func _ready() -> void:
 	add_child(pause_menu)
 	PlayerData.changed.connect(_on_me_changed)
 	_on_me_changed()
+
+
+## Tela de morte: vermelho escuro, "Voce morreu" grande e a contagem.
+func _build_death_screen() -> void:
+	_death = Control.new()
+	_death.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_death.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_death.visible = false
+	var shade := ColorRect.new()
+	shade.color = Color(0.25, 0.0, 0.0, 0.45)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_death.add_child(shade)
+	var title := UiKit.gothic("Você morreu", 48, Color(0.95, 0.25, 0.2))
+	title.add_theme_constant_override("outline_size", 6)
+	title.add_theme_color_override("font_outline_color", Color(0.08, 0.02, 0.02))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.size = Vector2(480, 56)
+	title.position = Vector2(0, 88)
+	_death.add_child(title)
+	_death_count = Label.new()
+	_death_count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_death_count.size = Vector2(480, 16)
+	_death_count.position = Vector2(0, 146)
+	_death_count.add_theme_constant_override("outline_size", 4)
+	_death_count.add_theme_color_override("font_outline_color", Color(0.08, 0.02, 0.02))
+	_death.add_child(_death_count)
+	add_child(_death)
+
+
+## seconds < 0 esconde a tela de morte.
+func show_death(seconds: float) -> void:
+	_death.visible = seconds >= 0.0
+	if _death.visible:
+		_death_count.text = "Renascendo na praça da vila em %d s..." % ceili(seconds)
 
 
 ## Alguma janela que pega o teclado esta aberta? (o personagem nao anda)

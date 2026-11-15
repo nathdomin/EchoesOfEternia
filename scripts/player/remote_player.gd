@@ -19,6 +19,8 @@ const WALK_THRESHOLD := 0.75 ## px de distancia para considerar andando
 @export var display_name := ""
 @export var skin := "knight":
 	set = _set_skin
+## Nivel: reenviado a cada 1 s (replication_interval do Sync), alem do
+## nascimento. Se uma atualizacao se perder, a placa se corrige sozinha.
 @export var level := 1:
 	set = _set_level
 @export var net_position := Vector2.ZERO
@@ -112,6 +114,8 @@ func _set_skin(value: String) -> void:
 
 
 func _set_level(value: int) -> void:
+	if value == level:
+		return  # reenvio periodico sem mudanca
 	level = value
 	if is_node_ready():
 		_refresh_name()

@@ -83,7 +83,7 @@ func _ready() -> void:
 func toggle() -> void:
 	visible = not visible
 	_discard_armed = -1
-	GameAudio.play("open")
+	GameAudio.play("open" if visible else "close")
 	if visible:
 		refresh()
 
@@ -132,10 +132,13 @@ func _on_slot_input(event: InputEvent, i: int) -> void:
 		return
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		_discard_armed = -1
+		if it.equip_slot() != "":
+			GameAudio.play("equip")
 		PlayerData.use_slot(i)
 	elif event.button_index == MOUSE_BUTTON_RIGHT:
 		if _discard_armed == i:
 			PlayerData.discard(i)
+			GameAudio.play("drop")
 			_discard_armed = -1
 			_info.text = "%s descartado." % it.display_name
 		else:
@@ -145,4 +148,5 @@ func _on_slot_input(event: InputEvent, i: int) -> void:
 
 func _on_equip_input(event: InputEvent, slot: String) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		GameAudio.play("equip")
 		PlayerData.unequip(slot)

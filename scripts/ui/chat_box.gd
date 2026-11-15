@@ -6,6 +6,9 @@ extends VBoxContainer
 
 const MAX_LINES := 7
 const LINE_TIME := 12.0
+## Altura maxima das linhas (px): mensagens longas nao sobem por cima do
+## quadro do grupo; as mais antigas somem primeiro (Gate 5).
+const MAX_HEIGHT := 92.0
 const COLORS := {"global": Color(1, 0.96, 0.88), "grupo": Color(0.55, 0.85, 1.0), "zona": Color(0.7, 1.0, 0.65),
 		"de": Color(1.0, 0.6, 0.9), "para": Color(1.0, 0.6, 0.9), "sistema": Color(1, 0.88, 0.5)}
 const PREFIX := {"grupo": "[Grupo] %s: ", "zona": "[Zona] %s: ", "de": "%s sussurra: ", "para": "Para %s: ", "global": "%s: "}
@@ -72,6 +75,12 @@ var bottom_left := Vector2(4, 240)
 func _process(_delta: float) -> void:
 	reset_size()
 	position = bottom_left - Vector2(0, size.y)
+	var used := 0.0
+	var all := _lines.get_children()
+	for i in range(all.size() - 1, -1, -1):
+		var line := all[i] as Label
+		used += line.get_combined_minimum_size().y - 3.0
+		line.visible = used <= MAX_HEIGHT
 	var now := Time.get_ticks_msec()
 	for l in _lines.get_children():
 		var age := (now - int(l.get_meta("born"))) / 1000.0
@@ -85,7 +94,7 @@ func _draw() -> void:
 	var alpha := 0.0
 	var top := size.y
 	for l: Label in _lines.get_children():
-		if l.modulate.a > 0.01:
+		if l.visible and l.modulate.a > 0.01:
 			alpha = maxf(alpha, l.modulate.a)
 			top = minf(top, l.position.y + _lines.position.y)
 	if is_open:
