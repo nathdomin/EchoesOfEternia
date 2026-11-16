@@ -10,6 +10,11 @@ ECHOES OF ETERNIA - como jogar
 3. Na primeira entrada voce escolhe a classe (Guerreiro, Mago ou Arqueiro).
    A escolha e definitiva.
 
+ATUALIZACOES
+  O jogo se atualiza sozinho: ao abrir, ele baixa a versao nova e reabre.
+  Deixe a pasta do jogo num lugar seu (Documentos, Area de Trabalho), nao em
+  "Arquivos de Programas". Ultima versao: github.com/nathdomin/EchoesOfEternia-releases
+
 CONTROLES (F1 mostra tudo dentro do jogo)
   WASD ou setas  andar
   Espaco ou J    atacar
