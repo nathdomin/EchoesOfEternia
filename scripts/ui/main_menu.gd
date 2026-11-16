@@ -78,6 +78,8 @@ func _ready() -> void:
 	else:
 		_open_login(Session.create_account)
 		_set_error(_join_error, error)
+	if ClientUpdater.enabled() and not auto_login:
+		_start_updater()
 	_play_intro()
 
 
@@ -251,6 +253,26 @@ func _leave_to(scene: String) -> void:
 		get_tree().quit()
 	else:
 		get_tree().change_scene_to_file(scene)
+
+
+# ---------- atualizacao automatica (Fase 7) ----------
+
+func _start_updater() -> void:
+	var label := Label.new()
+	label.theme_type_variation = &"InkLabel"
+	label.position = Vector2(36, 212)
+	label.size = Vector2(408, 16)
+	label.add_theme_color_override("font_color", Color(0.55, 0.12, 0.08))
+	label.visible = false
+	add_child(label)
+	var updater := ClientUpdater.new()
+	updater.status.connect(func(text: String, busy: bool) -> void:
+		label.text = text
+		label.visible = true
+		# Instalando: nao deixa entrar no mundo com a versao que vai ser trocada
+		for b: Button in [%JoinButton, %CreateButton, %JoinConnect]:
+			b.disabled = busy)
+	add_child(updater)
 
 
 # ---------- cena viva na janela da capitular ----------

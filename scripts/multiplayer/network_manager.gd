@@ -242,7 +242,7 @@ func _login(version: String, username: String, secret: String, mode: int) -> voi
 		return  # uma tentativa por conexao
 	_login_tried[id] = true
 	if version != GameVersion.VERSION:
-		_reject(id, "Versão diferente: o servidor usa %s e você %s. Atualize o jogo." % [GameVersion.VERSION, version])
+		_reject(id, "Versão diferente (servidor %s, você %s). Reabra o jogo para atualizar ou baixe em %s" % [GameVersion.VERSION, version, ClientUpdater.DOWNLOAD_PAGE])
 		return
 	if players.size() >= max_players:
 		_reject(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
