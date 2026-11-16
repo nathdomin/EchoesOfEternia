@@ -8,6 +8,8 @@ param(
 	[string]$Usuario = "ubuntu"
 )
 $ErrorActionPreference = "Stop"
+# O ssh do Windows recusa chave que outros usuarios podem ler (chave copiada de outro PC).
+icacls $Chave /inheritance:r /grant:r "$($env:USERNAME):R" | Out-Null
 $base = "https://github.com/nathdomin/EchoesOfEternia-releases/releases/latest/download"
 # Uma linha so (sem aspas duplas): o PowerShell 5 estraga aspas passadas ao ssh.
 $cmd = 'set -e; d=$(mktemp -d); cd $d; b=echoes_server.x86_64; if [ $(uname -m) = aarch64 ]; then b=echoes_server.arm64; fi; ' +
