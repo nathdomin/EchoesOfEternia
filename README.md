@@ -1,109 +1,89 @@
 # Echoes of Eternia
 
-MMORPG em pixel art feito em Godot 4 — servidor dedicado, contas e personagens salvos.
+MMORPG em pixel art feito em **Godot 4.7.2**, como demo. Os jogadores entram num mundo compartilhado hospedado num servidor dedicado na nuvem, com contas, personagens salvos e até 16 pessoas ao mesmo tempo.
 
-📄 **Plano de trabalho da equipe:** [docs/Echoes_of_Eternia_Plano_de_Trabalho.pdf](docs/Echoes_of_Eternia_Plano_de_Trabalho.pdf) (também em `.docx`). Leia antes de começar.
+**Jogar:** baixe o zip em [EchoesOfEternia-releases](https://github.com/nathdomin/EchoesOfEternia-releases/releases/latest), descompacte e abra o `EchoesOfEternia.exe` (Windows). O servidor oficial, `152.67.51.151:7777`, já vem preenchido, e o jogo se atualiza sozinho.
 
-## Versão do Godot
+## O que tem
 
-**Godot 4.7.2 standard** (não .NET)
+- **Mundo:** 3 zonas (vila, floresta e caverna) com passagens entre elas e baús de tesouro. Cada zona tem clima e música próprios.
+- **Combate:** ataques validados no servidor e monstros com IA. O chefe, o Rei Slime, tem um ataque em área. Quem morre renasce na vila.
+- **Progressão:** XP e níveis até o 10. São 3 classes (Guerreiro, Mago e Arqueiro), cada uma com 3 habilidades.
+- **Itens:** inventário de 20 espaços, equipamento (arma, armadura e acessório), saque dos monstros e poções.
+- **Social:** chat global, de grupo, de zona e mensagem privada. Grupos de até 4 dividem a XP e recebem a cura de grupo.
+- **Missões:** NPCs com diálogo, missões encadeadas e um rastreador na tela.
+- **Interface:** HUD completa e menu no estilo manuscrito medieval. O F1 abre a ajuda, com o tutorial.
 
-Todos os PCs precisam da **mesma versão** e dos **Export Templates** dessa versão.
+## Como funciona
 
-## Equipe e donos
+| Parte | Como é feita |
+|---|---|
+| Autoridade | O **servidor dedicado** decide dano, vida, IA dos monstros, XP, itens, saque, missões, chat e grupo. O cliente move só o próprio personagem, e o servidor confere a velocidade e recusa teletransporte. |
+| Rede | ENet sobre UDP, porta 7777. Personagens e monstros nascem pelo `MultiplayerSpawner` e se sincronizam pelo `MultiplayerSynchronizer`; cada jogador só recebe a zona onde está. As posições remotas são interpoladas. |
+| Segurança | A conexão é cifrada com DTLS, e o cliente só aceita o certificado do servidor oficial. As senhas ficam guardadas só como PBKDF2-HMAC-SHA256 com salt. Há bloqueio após tentativas erradas e limite de mensagens no chat. |
+| Persistência | Um JSON por conta e por personagem, com gravação atômica. Salva quando o jogador sai, a cada 60 s e quando o servidor para. |
+| Quedas | O cliente reconecta sozinho com um token de sessão de uso único, sem pedir a senha de novo. |
+| Versões | O servidor recusa clientes de outra versão. O cliente baixa a versão nova da release, confere o SHA-256, troca o `.exe` e reabre. |
+| Hospedagem | Uma VM Oracle Always Free (São Paulo) com Ubuntu e um serviço `systemd`. O custo é zero. |
 
-Só o dono edita as cenas `.tscn` da sua área.
+Cliente e servidor são **o mesmo projeto**: com `--server`, ou exportado com a feature `dedicated_server`, o jogo abre o servidor sem janela.
 
-| Papel | Responsável | Áreas |
-|---|---|---|
-| A — Rede e menus | | `scripts/multiplayer/`, NetworkManager, menus, `net_test`, overlay F3 |
-| B — Player e combate | | `scenes/characters/`, `scripts/player/`, `scripts/combat/`, ClassData |
-| C — Mundo e inimigos | | `scenes/maps/`, `scenes/enemies/`, `scenes/npcs/`, `scripts/enemies/`, `scripts/quests/` |
-| D — UI, polimento e entrega | | `scenes/ui/`, efeitos, áudio, exportação |
+## Rodar a partir do código
 
-## Primeiros passos
+1. Instale o **Godot 4.7.2 standard** (não o .NET) e abra o `project.godot`.
+2. No editor, vá em **Debug → Customize Run Instances**, ative *Enable Multiple Instances* e configure os argumentos:
+   - instância 1 (servidor): `--server`
+   - instância 2: `--join=127.0.0.1 --user=Ana --pass=segredo1 --create`
+   - instância 3: `--join=127.0.0.1 --user=Bia --pass=segredo2 --create`
+3. Aperte **F5**. Sem argumentos, o jogo abre o menu: use **Criar conta** com o servidor `127.0.0.1`, porta 7777.
 
-1. Clone **fora** do OneDrive/Google Drive (ex.: `C:\Dev\EchoesOfEternia`).
-2. Abra o `project.godot` no Godot.
-3. Rode o teste de rede (Gate 0) — veja abaixo.
+Mais opções da linha de comando:
+- **Servidor:** `--port=N`, `--max-players=N` e `--data=PASTA` (por padrão, 7777, 16 e `user://data`).
+- **Cliente** (só em build de debug): `--fake-version=X`, que testa a recusa por versão.
 
-## Rodar o jogo
+Para parar o servidor salvando todos os personagens, crie um arquivo `stop.request` na pasta de dados.
 
-O jogo é um **MMORPG com servidor dedicado**: o servidor roda separado (na nuvem ou no seu PC) e os jogadores entram nele.
-
-1. Rode um servidor: abra o projeto e use **Debug → Customize Run Instances** (veja abaixo) ou, com o jogo exportado, `EchoesOfEternia.exe --headless --server`.
-2. **F5** abre o **menu**. Na primeira vez use **Criar conta**: nome da conta, senha (mínimo 6 caracteres, digitada duas vezes) e servidor (`127.0.0.1` se for no seu PC) com porta 7777. Depois é só **Entrar no mundo** com a mesma conta e senha.
-
-O personagem fica salvo no servidor: ao entrar de novo você aparece onde parou. A conexão é cifrada (DTLS) e o servidor guarda só o hash da senha. O menu lembra o servidor e a conta da última vez, nunca a senha.
-
-Ao entrar aparecem "Fulano entrou no mundo" e o nome da zona no canto. **F1** abre a ajuda (abas Controles e Como jogar; abre sozinha no primeiro jogo).
-
-No jogo:
+### Controles
 
 | Tecla | Ação |
 |---|---|
 | WASD / setas | andar |
-| Espaço / J | ataque básico |
-| 1, 2, 3 | habilidades da classe (ou clique na barra) |
-| 4 | poção |
+| Espaço / J | atacar |
+| 1, 2, 3 · 4 | habilidades da classe · poção |
 | Clique / Tab | escolher alvo |
-| E | conversar com NPC / abrir baú |
-| I | inventário (clique usa/equipa) |
-| Enter | chat (`/g` grupo, `/z` zona, `/w Nome` sussurro, `/r` responder, `/quem`, `/convidar Nome`, `/aceitar`, `/sair`) |
-| / | abre o chat já com "/" |
+| E | falar com NPC / abrir baú |
+| I | inventário |
+| Enter | chat (`/g`, `/z`, `/w Nome`, `/r`, `/quem`, `/convidar Nome`, `/aceitar`, `/sair`) |
 | G | convidar o jogador selecionado para o grupo |
-| Esc | fecha janela → limpa alvo → pausa (volume da música e dos efeitos, sair para o menu) |
-| F1 | ajuda: controles e como jogar |
-| F3 | painel técnico (FPS, ping, zona, posição, jogadores) |
+| Esc | pausa (volume, ajuda, sair) |
+| F1 / F3 | ajuda / painel técnico (FPS, ping) |
 
-No primeiro login você escolhe a classe (Guerreiro, Mago ou Arqueiro). O Ancião, ao lado do ponto inicial, dá as primeiras missões. A estrada leste da vila leva à **Floresta Sombria** (Guarda Florestal, morcegos, slimes venenosos) e de lá à **Caverna do Rei Slime**, o chefe.
+## Servidor e versões
 
-**Mapa da vila:** `scenes/maps/village.tscn`. Para editar, abra a cena e pinte com o painel TileMap: `Ground` (chão, terra, água), `GroundDetail` (flores pequenas) ou `Objects` (árvores, casas, barracas — com colisão). Mantenha as saídas norte e leste livres: elas levam às futuras áreas.
+- **Colocar o servidor numa VM:** [deploy/README.md](deploy/README.md), com o passo a passo da Oracle em [deploy/PASSO_A_PASSO_ORACLE.md](deploy/PASSO_A_PASSO_ORACLE.md).
+- **Exportar** (Project → Export):
+  - **Cliente Windows** sai em `export/windows/`;
+  - **Servidor Linux x86_64 / ARM64** sai em `export/server/`.
+- **Publicar uma versão:** aumente `GameVersion.VERSION` (`scripts/systems/game_version.gd`) e `config/version`, rode `tools/publicar.ps1` e depois `deploy/atualizar_servidor.ps1`.
 
-**Arte:** pacote Ninja Adventure (CC0). Veja `assets/LICENSES.md` antes de adicionar qualquer asset.
+## Estrutura
 
-## Testar com várias janelas (sem clicar no menu)
+| Pasta | Conteúdo |
+|---|---|
+| `scripts/multiplayer/` | rede, login, sincronização de personagens |
+| `scripts/server/` | contas, personagens salvos, tokens de sessão, servidor |
+| `scripts/combat/`, `scripts/progression/` | combate, monstros, XP, classes, itens, missões |
+| `scripts/ui/` | HUD, menus, janelas |
+| `scenes/maps/` | vila, floresta, caverna |
+| `resources/` | dados do jogo em `.tres`: classes, habilidades, itens, monstros, missões |
+| `deploy/` | instalação e atualização do servidor na VM |
+| `tools/` | geração de sons e baú, empacotamento e publicação |
 
-No editor: **Debug → Customize Run Instances**, ative *Enable Multiple Instances* e use nos argumentos de cada instância:
+## Licença e créditos
 
-- instância 1 (servidor): `--server`
-- instância 2: `--join=127.0.0.1 --user=Ana --pass=segredo1`
-- instância 3: `--join=127.0.0.1 --user=Bia --pass=segredo2`
+- **Código:** licença [MIT](LICENSE).
+- **Arte e música:** [Ninja Adventure Asset Pack](https://pixel-boy.itch.io/ninja-adventure-asset-pack) (Pixel-Boy & AAA), CC0.
+- **Sons:** parte do Kenney (CC0); o resto foi gerado em `tools/gen_sfx.py`.
+- **Fontes:** Pixelify Sans e Jacquard 12/24 (SIL OFL 1.1) e Kenney Mini (CC0).
 
-Acrescente `--create` para criar a conta se ela ainda não existir (se já existir, o jogo entra com ela). Entrar com uma conta que já está online derruba a sessão anterior, que é salva antes.
-
-Servidor: `--port=N`, `--max-players=N` e `--data=PASTA` (padrão 7777, 16 e `user://data`, onde ficam as contas). Cliente (só em build de debug, pula o menu): `--join=IP`, `--port=N`, `--user=X`, `--pass=Y`, `--create` e `--fake-version=0.0.0` (testa a recusa por versão diferente).
-
-Para desligar o servidor salvando todos os personagens, crie um arquivo vazio `stop.request` na pasta de dados (na VM o `systemctl stop` faz isso). Para zerar as contas e personagens de teste do seu PC, apague a pasta `data` em `%APPDATA%\Godot\app_userdata\Echoes of Eternia\`.
-
-**Servidor na nuvem:** passo a passo em [deploy/README.md](deploy/README.md).
-
-## Teste de rede (Gate 0)
-
-A cena de teste fica em `scenes/debug/net_test.tscn` (não é a cena principal: abra-a e rode com **F6**, "Run Current Scene").
-
-**No editor (mesmo PC):** Debug → Customize Run Instances → ative *Enable Multiple Instances*, quantidade 2.
-Na instância 1 clique **Hospedar**; na 2, **Entrar** com `127.0.0.1`. O log deve mostrar `pong ... ms` nas duas.
-Atalho: nos argumentos de cada instância use `--host` ou `--join=127.0.0.1`.
-
-**Entre PCs (LAN):** PC A clica **Hospedar** e lê o IPv4 mostrado na tela. PC B digita esse IP e clica **Entrar**.
-Na primeira execução o Windows pergunta sobre o firewall: permita em **redes privadas** (porta UDP 7777).
-
-**Entre PCs (Tailscale):** igual, usando o IP `100.x.y.z` do host mostrado no app do Tailscale.
-
-**Pelo .exe:** `EchoesOfEternia.exe res://scenes/debug/net_test.tscn -- --host` (ou `-- --join=192.168.0.10`).
-
-## Exportar
-
-Project → Export:
-- **Cliente Windows** → `export/windows/` (o jogo para os jogadores).
-- **Servidor Linux x86_64** ou **Servidor Linux ARM64** → `export/server/` (para a VM; veja `deploy/README.md`).
-
-A pasta `export/` é ignorada pelo git.
-Executáveis são distribuídos pela **Release** do GitHub, nunca commitados.
-O `.exe` não é assinado: no aviso do Windows clique em **Mais informações → Executar assim mesmo**.
-
-## Fluxo de trabalho
-
-`git pull` na `main` → branch `feat/<assunto>` → commits pequenos → PR testado → outra pessoa aprova → merge.
-Detalhes na seção 7 do plano de trabalho.
+Detalhes de cada asset em [assets/LICENSES.md](assets/LICENSES.md).

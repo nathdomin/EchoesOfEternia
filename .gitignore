@@ -15,3 +15,7 @@ Thumbs.db
 # Chave privada do servidor (DTLS) nunca vai para o repo.
 # O certificado publico certs/server.crt pode ir.
 *.key
+
+# Documentos internos (ficam so no PC, fora do repositorio publico)
+docs/Echoes_of_Eternia_Plano_de_Trabalho.*
+docs/Echoes_of_Eternia_Plano_Estrategico.pdf

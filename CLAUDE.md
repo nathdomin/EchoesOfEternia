@@ -1,6 +1,6 @@
 # Echoes of Eternia — instruções para o Claude Code
 
-**MMORPG** em pixel art (Godot 4 + GDScript): servidor dedicado na nuvem, contas com senha, personagens salvos, até 16 jogadores, zonas. Pequeno, mas um MMO de verdade — **não é uma demo**. Plano completo da equipe (v3): `docs/Echoes_of_Eternia_Plano_de_Trabalho.docx`.
+**MMORPG** em pixel art (Godot 4 + GDScript): servidor dedicado na nuvem, contas com senha, personagens salvos, até 16 jogadores, zonas. Pequeno, mas um MMO de verdade — **não é uma demo**. Plano completo da equipe (v3): `docs/Echoes_of_Eternia_Plano_de_Trabalho.docx` (só no PC, fora do git: o repositório é público).
 
 ## Regras de execução
 1. Uma etapa (E1…E24) por vez. **Não avançar para a próxima etapa sem autorização.**
