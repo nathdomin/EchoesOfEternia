@@ -6,7 +6,11 @@ ECHOES OF ETERNIA - como jogar
    "Mais informacoes" e depois em "Executar assim mesmo" (o jogo nao e
    assinado digitalmente). Se o firewall perguntar, clique em Permitir.
 2. No menu, clique em "Criar conta": escolha um nome e uma senha.
-   O servidor ja vem preenchido. Nas proximas vezes, use "Entrar no mundo".
+   Nas proximas vezes, use "Entrar no mundo".
+
+   SERVIDOR:  152.67.51.151      PORTA:  7777
+   (ja vem preenchido; se o campo estiver diferente, digite estes valores)
+
 3. Na primeira entrada voce escolhe a classe (Guerreiro, Mago ou Arqueiro).
    A escolha e definitiva.
 
