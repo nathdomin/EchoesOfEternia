@@ -66,7 +66,8 @@ No menu do cliente: **Entrar no mundo** → IP = IP público da VM, porta 7777.
 | Ver se está rodando | `systemctl status echoes-server` |
 | Reiniciar | `sudo systemctl restart echoes-server` |
 | Parar (salva todos antes) | `sudo systemctl stop echoes-server` |
-| Atualizar para uma versão nova (faz backup antes) | `sudo bash update_server.sh ./echoes_server.arm64` |
+| Atualizar para a última versão publicada (faz backup antes) | No Windows com a chave: `deploy/atualizar_servidor.ps1 -Ip IP -Chave CHAVE` (a VM baixa sozinha da release) |
+| Atualizar com um executável local | `sudo bash update_server.sh ./echoes_server.arm64` |
 | Backup manual das contas | `sudo tar czf ~/echoes-dados.tgz -C /var/lib echoes` |
 | Quantas contas existem | `sudo ls /var/lib/echoes/accounts \| wc -l` |
 

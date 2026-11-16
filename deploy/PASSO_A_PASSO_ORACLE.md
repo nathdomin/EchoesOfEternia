@@ -50,7 +50,15 @@ Com isso eu gero o cliente da entrega, que já abre apontando para o servidor e 
 **Nunca mande o arquivo `.key`** nem o `server.key` da VM.
 
 ## Atualizar depois (versão nova do jogo)
-Mesmo comando com `-Atualizar`. Ele salva os personagens e faz backup antes de trocar:
+Quando uma versão nova for publicada, rode nesta pasta o comando abaixo. A VM baixa a versão nova sozinha, e este PC não precisa receber arquivo nenhum. O script salva os personagens e faz backup antes de trocar:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\atualizar_servidor.ps1 -Ip 123.45.67.89 -Chave C:\Users\voce\echoes.key
+```
+
+Os jogadores não fazem nada: o jogo se atualiza sozinho ao abrir.
+
+Para instalar a partir dos arquivos desta pasta, em vez de baixar, use o mesmo comando da instalação com `-Atualizar`:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\enviar_para_vm.ps1 -Ip 123.45.67.89 -Chave C:\Users\voce\echoes.key -Atualizar
