@@ -242,7 +242,10 @@ func _login(version: String, username: String, secret: String, mode: int) -> voi
 		return  # uma tentativa por conexao
 	_login_tried[id] = true
 	if version != GameVersion.VERSION:
-		_reject(id, "Versão diferente (servidor %s, você %s). Reabra o jogo para atualizar ou baixe em %s" % [GameVersion.VERSION, version, ClientUpdater.DOWNLOAD_PAGE])
+		# Cabe em 3 linhas no formulario do menu, inclusive nas versoes antigas
+		# (que nao podem ser corrigidas): o endereco quebra na barra.
+		_reject(id, "Versão diferente: servidor %s, você %s.\nBaixe a nova em github.com/%s/\n%s" % [
+				GameVersion.VERSION, version, ClientUpdater.REPO.get_slice("/", 0), ClientUpdater.REPO.get_slice("/", 1)])
 		return
 	if players.size() >= max_players:
 		_reject(id, "O servidor está cheio (%d jogadores). Tente mais tarde." % max_players)
