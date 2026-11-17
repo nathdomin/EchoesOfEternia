@@ -341,6 +341,13 @@ func _on_player_data_changed() -> void:
 	var me := PlayerData.me
 	if me.is_empty():
 		return
+	# Escolheu a classe agora: o boneco passa a ter a aparencia dela (antes
+	# ficava com a sorteada na criacao da conta ate entrar de novo)
+	var cid := String(me.get("class", ""))
+	if cid != "" and PlayerData.class_data(cid).skin != _player.skin:
+		var who := NetworkManager.player_name(multiplayer.get_unique_id())
+		_player.setup_look(PlayerData.class_data(cid).skin, who)
+		_game_hud.setup_player(_player.skin, who)
 	var items := 0
 	for s in me.get("inventory", []):
 		if s is Dictionary:

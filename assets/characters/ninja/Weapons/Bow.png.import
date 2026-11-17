@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2bklhl8gigaw"
-path="res://.godot/imported/Walk.png-b0f24ed68d6651d7faedc1a55da05542.ctex"
+uid="uid://m5yua7qgwbwa"
+path="res://.godot/imported/Bow.png-a2ddcce4410f7268cd978cdb4422663f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/ninja/SorcererBlack/Walk.png"
-dest_files=["res://.godot/imported/Walk.png-b0f24ed68d6651d7faedc1a55da05542.ctex"]
+source_file="res://assets/characters/ninja/Weapons/Bow.png"
+dest_files=["res://.godot/imported/Bow.png-a2ddcce4410f7268cd978cdb4422663f.ctex"]
 
 [params]
 

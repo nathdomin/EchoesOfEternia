@@ -15,7 +15,7 @@ O pacote completo (89 MB) não está no repositório: só copiamos o que é usad
 
 ## O que foi copiado
 Só o que o jogo usa (Gate 5: tudo o que não tinha referência foi removido).
-- **Personagens** (`assets/characters/ninja/`): Knight (Guerreiro), SorcererBlack (Mago), Hunter (Arqueiro), OldMan e Noble (NPCs) — `Walk`, `Idle`, `Attack`, `Dead`, `Faceset` — e `Shadow.png`.
+- **Personagens** (`assets/characters/ninja/`): Knight (Guerreiro), NinjaMageOrange (Mago), Villager5 (Arqueiro), OldMan e Noble (NPCs); armas na mão em `Weapons/` (Sword e MagicWand `SpriteInHand`, Bow `Sprite`) — `Walk`, `Idle`, `Attack`, `Dead`, `Faceset` — e `Shadow.png`.
   As animações prontas ficam em `resources/characters/*_frames.tres`.
 - **Monstros** (`assets/enemies/ninja/`): Slime, Slime2, Mushroom, Skull, BlueBat e o chefe GiantSlime.
 - **Tilesets** (`assets/environments/ninja/tilesets/`): Floor, FloorDetail, Nature, House, Water, Relief. TileSet do jogo: `assets/environments/ninja/ninja_tileset.tres`.

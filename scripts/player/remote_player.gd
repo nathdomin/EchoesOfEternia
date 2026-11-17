@@ -42,9 +42,12 @@ const SLASH := preload("res://scenes/effects/slash.tscn")
 @onready var health: HealthComponent = $Health
 @onready var hitbox: HitboxComponent = $Hitbox
 var _attack_until_ms := 0
+var _weapon := Sprite2D.new()
 
 
 func _ready() -> void:
+	_weapon.visible = false
+	add_child(_weapon)
 	_sprite.sprite_frames = Player.frames_for(skin)
 	_refresh_name()
 	position = net_position
@@ -73,10 +76,15 @@ func _process(delta: float) -> void:
 func _update_animation(walking: bool) -> void:
 	if dead:
 		_sprite.play("dead")
+		_weapon.visible = false
 		return
 	var kind := "walk_" if walking else "idle_"
-	if Time.get_ticks_msec() < _attack_until_ms:
+	var attacking := Time.get_ticks_msec() < _attack_until_ms
+	if attacking:
 		kind = "attack_"
+		Player.weapon_pose(_weapon, skin, facing)
+	else:
+		_weapon.visible = false
 	var anim: String = kind + Player.DIR_NAMES.get(facing, "down")
 	if _sprite.animation != anim:
 		_sprite.play(anim)

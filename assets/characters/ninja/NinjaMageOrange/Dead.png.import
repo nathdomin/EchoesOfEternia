@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2k8xplnfks5t"
-path="res://.godot/imported/Attack.png-5cf3d08941f0f0b86c4c64008108e5f7.ctex"
+uid="uid://cdnb2ajwdl1ur"
+path="res://.godot/imported/Dead.png-f5772953450e50cc569288aa7b7491c3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/ninja/SorcererBlack/Attack.png"
-dest_files=["res://.godot/imported/Attack.png-5cf3d08941f0f0b86c4c64008108e5f7.ctex"]
+source_file="res://assets/characters/ninja/NinjaMageOrange/Dead.png"
+dest_files=["res://.godot/imported/Dead.png-f5772953450e50cc569288aa7b7491c3.ctex"]
 
 [params]
 

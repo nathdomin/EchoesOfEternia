@@ -20,17 +20,31 @@ const SPEED := 80.0
 ## Aparencias disponiveis (sorteada por conta e salva no personagem).
 const SKINS := {
 	"knight": preload("res://resources/characters/knight_frames.tres"),
-	"hunter": preload("res://resources/characters/hunter_frames.tres"),
-	"sorcerer": preload("res://resources/characters/sorcerer_black_frames.tres"),
+	"hunter": preload("res://resources/characters/ranger_frames.tres"),
+	"sorcerer": preload("res://resources/characters/mage_frames.tres"),
 	"noble": preload("res://resources/characters/noble_frames.tres"),
 }
 const OWN_NAME_COLOR := Color(1.0, 0.85, 0.4)
 ## Retrato de cada aparencia (quadro do jogador na HUD).
 const FACESETS := {
 	"knight": preload("res://assets/characters/ninja/Knight/Faceset.png"),
-	"hunter": preload("res://assets/characters/ninja/Hunter/Faceset.png"),
-	"sorcerer": preload("res://assets/characters/ninja/SorcererBlack/Faceset.png"),
+	"hunter": preload("res://assets/characters/ninja/Villager5/Faceset.png"),
+	"sorcerer": preload("res://assets/characters/ninja/NinjaMageOrange/Faceset.png"),
 	"noble": preload("res://assets/characters/ninja/Noble/Faceset.png"),
+}
+## Arma na mao durante o ataque, por aparencia (o avatar remoto so conhece
+## a aparencia). Os desenhos apontam para baixo; `weapon_pose` gira.
+const WEAPONS := {
+	"knight": preload("res://assets/characters/ninja/Weapons/Sword.png"),
+	"hunter": preload("res://assets/characters/ninja/Weapons/Bow.png"),
+	"sorcerer": preload("res://assets/characters/ninja/Weapons/MagicWand.png"),
+}
+## Mao do personagem (em relacao aos pes) olhando para cada lado.
+const WEAPON_HAND := {
+	Vector2i.DOWN: Vector2(4, -5),
+	Vector2i.UP: Vector2(-4, -9),
+	Vector2i.LEFT: Vector2(-4, -6),
+	Vector2i.RIGHT: Vector2(4, -6),
 }
 const SLASH := preload("res://scenes/effects/slash.tscn")
 ## O desenho do corte nao e centrado no quadro: este deslocamento poe o meio
@@ -67,9 +81,12 @@ var _dash_speed := 0.0
 @onready var _sprite: AnimatedSprite2D = $Sprite
 @onready var _camera: Camera2D = $Camera2D
 @onready var _name_label: Label = $NameLabel
+var _weapon := Sprite2D.new()
 
 
 func _ready() -> void:
+	_weapon.visible = false
+	add_child(_weapon)
 	_camera.make_current()
 	_update_animation()
 
@@ -96,6 +113,19 @@ func setup_look(p_skin: String, display_name: String) -> void:
 	ls.font_color = OWN_NAME_COLOR
 	_name_label.label_settings = ls
 	_update_animation()
+
+
+## Arma `w` na mao de quem tem a aparencia `p_skin`, olhando para `dir`
+## (usado tambem pelo RemotePlayer). Olhando para cima, fica atras do corpo.
+static func weapon_pose(w: Sprite2D, p_skin: String, dir: Vector2i) -> void:
+	w.texture = WEAPONS.get(p_skin)
+	var d := Vector2(dir)
+	w.rotation = d.angle() - PI / 2.0
+	# Arma larga (arco) vai mais para fora, senao fica em cima do corpo
+	var wide := maxf((w.texture.get_width() - w.texture.get_height()) / 2.0, 0.0) if w.texture else 0.0
+	w.position = WEAPON_HAND.get(dir, Vector2(0, -6)) + d * (4.0 + wide)
+	w.z_index = -1 if dir == Vector2i.UP else 1
+	w.visible = w.texture != null
 
 
 ## Coloca o player num ponto (spawn salvo ou correcao do servidor).
@@ -126,6 +156,7 @@ func try_attack(cooldown: float, aim: Vector2, reach := 20.0, melee := true) -> 
 	anim_state = AnimState.ATTACK
 	velocity = Vector2.ZERO
 	_update_animation()
+	weapon_pose(_weapon, skin, facing)
 	if not melee:
 		return 1
 	spawn_slash(get_parent(), global_position, aim, reach, _combo == 3)
@@ -198,6 +229,7 @@ func play_cast() -> void:
 	anim_state = AnimState.ATTACK
 	velocity = Vector2.ZERO
 	_update_animation()
+	weapon_pose(_weapon, skin, facing)
 
 
 ## Efeito de golpe a frente de quem bate (usado tambem pelos RemotePlayer),
@@ -226,6 +258,7 @@ func shake(strength: float, duration := 0.25) -> void:
 
 func set_dead(value: bool) -> void:
 	is_dead = value
+	_weapon.visible = false
 	velocity = Vector2.ZERO
 	_dodge_left = 0.0
 	_sprite.modulate.a = 1.0
@@ -249,6 +282,7 @@ func _physics_process(delta: float) -> void:
 		_attack_left -= delta
 		if _attack_left <= 0.0:
 			anim_state = AnimState.IDLE
+			_weapon.visible = false
 		return
 	var input := Vector2.ZERO
 	if not input_locked:

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://crg6kv4u6mwu1"
-path="res://.godot/imported/Idle.png-47483059564ecac03ec9f606fd4db605.ctex"
+uid="uid://dvibtybv83idg"
+path="res://.godot/imported/Faceset.png-58f88832f34a4cffb75dc928adaa2a49.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/ninja/Hunter/Idle.png"
-dest_files=["res://.godot/imported/Idle.png-47483059564ecac03ec9f606fd4db605.ctex"]
+source_file="res://assets/characters/ninja/NinjaMageOrange/Faceset.png"
+dest_files=["res://.godot/imported/Faceset.png-58f88832f34a4cffb75dc928adaa2a49.ctex"]
 
 [params]
 
