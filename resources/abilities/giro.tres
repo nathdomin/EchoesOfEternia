@@ -8,7 +8,7 @@
 script = ExtResource("3_38cfl")
 id = "giro"
 display_name = "Giro de Espada"
-description = "Acerta todos os monstros em volta."
+description = "Gira a espada e acerta todos os monstros em volta."
 icon = ExtResource("2_moqab")
 kind = 0
 power = 1.4

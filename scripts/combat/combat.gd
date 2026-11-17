@@ -10,6 +10,10 @@ extends Node
 ## aplica o dano (HealthComponent) -> a vida chega pelo Sync do monstro.
 ## Combo: 3 golpes seguidos (CombatStats.combo_window); o 3o bate mais forte
 ## e empurra. Esquiva (Shift): corrida curta com alguns instantes sem dano.
+## Revisao das classes: Arqueiro e Mago tem golpe basico de longe (projetil,
+## ClassData.basic_range). A mira (alvo selecionado ou direcao) segue
+## Targeting; habilidades saem em qualquer angulo e podem deixar lento,
+## congelar, empurrar, provocar e proteger (AbilityData).
 ##
 ## Vida do jogador: fica no RemotePlayer do servidor (HealthComponent). Os
 ## outros veem pelo Sync do avatar; o dono recebe por _own_health.
@@ -20,6 +24,7 @@ signal own_respawned(pos: Vector2)
 ## Servidor: um jogador derrotou um monstro (a E16 da XP aqui).
 signal monster_defeated(killer_id: int, monster: Monster)
 ## Cliente: o proprio ataque acertou este monstro (para o quadro do alvo).
+## Tambem chega das habilidades.
 ## `heavy` = 3o golpe do combo.
 signal own_hit(monster_path: NodePath, heavy: bool)
 ## Cliente: a esquiva evitou um golpe.
@@ -113,7 +118,14 @@ func monster_attack(monster: Monster, target_id: int, damage: int) -> void:
 	if _dodging(target_id):
 		_dodged.rpc_id(target_id)
 		return
-	avatar.health.take_damage(damage, 0)
+	avatar.health.take_damage(_guarded(target_id, damage), 0)
+
+
+## Servidor: dano reduzido pelo Grito de Guerra (AbilityData.guard).
+func _guarded(id: int, damage: int) -> int:
+	if _players.has(id) and Time.get_ticks_msec() < int(_players[id].get("guard_until", 0)):
+		return maxi(1, roundi(damage * float(_players[id].get("guard_mult", 1.0))))
+	return damage
 
 
 ## Servidor: o jogador esta no meio da esquiva (sem levar dano)?
@@ -147,7 +159,7 @@ func boss_slam(monster: Monster, radius: float, damage: int) -> void:
 			if avatar and _dodging(pid):
 				_dodged.rpc_id(pid)
 			elif avatar:
-				avatar.health.take_damage(damage, 0)
+				avatar.health.take_damage(_guarded(pid, damage), 0)
 
 
 ## Servidor: manda a vida atual para o dono.
@@ -172,10 +184,10 @@ func play_effect_for(id: int, effect_id: String, pos: Vector2) -> void:
 # ---------- API do cliente ----------
 
 ## O cliente atacou mirando `aim` (normalizada) estando em `pos` (o
-## servidor decide se acertou).
-func request_attack(aim: Vector2, pos: Vector2) -> void:
+## servidor decide se acertou). `target`: alvo do golpe de longe (ou null).
+func request_attack(aim: Vector2, pos: Vector2, target: Node = null) -> void:
 	if NetworkManager.is_logged_in() and not my_dead:
-		_request_attack.rpc_id(1, aim, pos)
+		_request_attack.rpc_id(1, aim, pos, get_path_to(target) if target else NodePath())
 
 
 ## O cliente comecou uma esquiva (o servidor libera o movimento extra e
@@ -185,10 +197,11 @@ func request_dodge() -> void:
 		_request_dodge.rpc_id(1)
 
 
-## Habilidade `index` (0-2) da classe, mirando `target` (pode ser null).
-func request_ability(index: int, dir: Vector2i, target: Node) -> void:
+## Habilidade `index` (0-2) da classe na direcao `aim` (normalizada), com o
+## alvo `target` (pode ser null).
+func request_ability(index: int, aim: Vector2, target: Node) -> void:
 	if NetworkManager.is_logged_in() and not my_dead:
-		_request_ability.rpc_id(1, index, dir, get_path_to(target) if target else NodePath())
+		_request_ability.rpc_id(1, index, aim, get_path_to(target) if target else NodePath())
 
 
 # ---------- servidor: login, vida, morte ----------
@@ -276,7 +289,7 @@ func _process(delta: float) -> void:
 # ---------- RPCs ----------
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_attack(aim: Vector2, at: Vector2) -> void:
+func _request_attack(aim: Vector2, at: Vector2, target_path: NodePath) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
@@ -301,12 +314,24 @@ func _request_attack(aim: Vector2, at: Vector2) -> void:
 	p.combo_until = now + int((st.attack_cooldown + BASE_STATS.combo_window) * 1000.0)
 	var heavy := step == 3
 	avatar.facing = cardinal(aim)
-	avatar.attack_seq += 1  # os outros veem o golpe
 	# Posicao do cliente se estiver perto da validada (a validada chega atrasada)
 	var feet := Characters.position_of(id)
 	if at.is_finite() and at.distance_to(feet) <= ATTACK_POS_TOLERANCE:
 		feet = at
 	var origin := feet + BODY
+	var cls: ClassData = st["class"]
+	if cls.is_ranged():
+		# Golpe basico de longe: projetil no alvo ou no 1o monstro na linha
+		var hit := _projectile_target(zone, origin, aim, cls.basic_range, _valid_target(target_path, zone))
+		var to := origin + aim * cls.basic_range
+		if hit:
+			to = hit.hitbox.center()
+			hit.health.take_damage(roundi(st.damage * cls.basic_power), id)
+			_hit_confirmed.rpc_id(id, get_path_to(hit), false)
+		for pid in Characters.players_in_zone(zone):
+			_shot_fx.rpc_id(pid, cls.id, origin, to, id)
+		return
+	avatar.attack_seq += 1  # os outros veem o golpe
 	var damage := roundi(st.damage * (BASE_STATS.combo_finisher_mult if heavy else 1.0))
 	for m: Monster in _monster_roots[zone].get_children():
 		if not m.can_be_hit() or not m.hitbox.is_hit_by(origin, aim, st.reach):
@@ -340,14 +365,15 @@ static func cardinal(v: Vector2) -> Vector2i:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
+func _request_ability(index: int, aim: Vector2, target_path: NodePath) -> void:
 	if not multiplayer.is_server():
 		return
 	var id := multiplayer.get_remote_sender_id()
 	if not _players.has(id) or _players[id].dead:
 		return
-	if not dir in [Vector2i.DOWN, Vector2i.UP, Vector2i.LEFT, Vector2i.RIGHT]:
+	if not aim.is_finite() or absf(aim.length() - 1.0) > 0.05:
 		return
+	aim = aim.normalized()
 	var st := PlayerData.stats_of(id)
 	var cls: ClassData = st["class"]
 	if String(Characters.data_of(id).get("class", "")) == "" or index < 0 or index >= cls.abilities.size():
@@ -362,38 +388,40 @@ func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
 	var avatar := Characters.avatar_of(id)
 	if zone.is_empty() or avatar == null:
 		return
-	avatar.facing = dir  # os outros veem o lancamento pelo _ability_fx
+	avatar.facing = cardinal(aim)  # os outros veem o lancamento pelo _ability_fx
 	var origin := Characters.position_of(id) + BODY
 	var damage := roundi(st.damage * ab.power)
-	# Alvo escolhido pelo cliente: so vale se for um monstro vivo da zona
-	var target: Monster = null
-	if not target_path.is_empty():
-		target = get_node_or_null(target_path) as Monster
-	if target and (not target.can_be_hit() or target.zone != zone):
-		target = null
+	var target := _valid_target(target_path, zone)
 	var hits: Array[Monster] = []
 	var fx_at := origin
 	match ab.kind:
-		AbilityData.Kind.MELEE_AROUND:
+		AbilityData.Kind.MELEE_AROUND, AbilityData.Kind.WARCRY, AbilityData.Kind.LEAP:
 			for m in _alive_monsters(zone):
 				if m.hitbox.overlaps(origin, ab.radius):
 					hits.append(m)
 		AbilityData.Kind.MELEE_CONE:
 			for m in _alive_monsters(zone):
-				if m.hitbox.is_hit_by(origin, Vector2(dir), ab.range):
+				if m.hitbox.is_hit_by(origin, aim, ab.range):
 					hits.append(m)
-			fx_at = HitboxComponent.arc_center(origin, Vector2(dir), ab.range)
+			fx_at = HitboxComponent.arc_center(origin, aim, ab.range)
 		AbilityData.Kind.RANGED:
-			if target == null or target.hitbox.center().distance_to(origin) > ab.range + target.hitbox.radius:
-				target = _nearest_in_front(zone, origin, Vector2(dir), ab.range)
-			if target:
-				hits.append(target)
-				fx_at = target.hitbox.center()
+			fx_at = origin + aim * ab.range
+			if ab.pierce:
+				var alive := _alive_monsters(zone)
+				for i in Targeting.ray_hits(origin, aim, ab.range, _hitboxes(alive)):
+					hits.append(alive[i])
 			else:
-				fx_at = origin + Vector2(dir) * ab.range * 0.5
+				var hit := _projectile_target(zone, origin, aim, ab.range, target)
+				if hit:
+					fx_at = hit.hitbox.center()
+					hits.append(hit)
+			if ab.splash > 0.0 and (not hits.is_empty() or not ab.pierce):
+				for m in _alive_monsters(zone):
+					if not m in hits and m.hitbox.overlaps(fx_at, ab.splash):
+						hits.append(m)
 		AbilityData.Kind.AREA_TARGET:
-			fx_at = origin + Vector2(dir) * ab.range * 0.5
-			if target and target.hitbox.center().distance_to(origin) <= ab.range:
+			fx_at = origin + aim * ab.range * 0.6
+			if target and target.hitbox.center().distance_to(origin) <= ab.range + target.hitbox.radius:
 				fx_at = target.hitbox.center()
 			for m in _alive_monsters(zone):
 				if m.hitbox.overlaps(fx_at, ab.radius):
@@ -417,13 +445,63 @@ func _request_ability(index: int, dir: Vector2i, target_path: NodePath) -> void:
 						if m.is_fighting(pid):
 							m.add_threat(id, total_healed * 0.5)
 							break
+	if ab.kind == AbilityData.Kind.WARCRY and ab.guard < 1.0:
+		_players[id].guard_until = now + int(ab.guard_seconds * 1000.0)
+		_players[id].guard_mult = ab.guard
+	if ab.kind == AbilityData.Kind.LEAP:
+		Characters.grant_dash(id, ab.range + 8.0)
 	for m in hits:
+		_apply_ability(id, ab, damage if ab.power > 0.0 else 0, m, origin)
+	for pid in Characters.players_in_zone(zone):
+		_ability_fx.rpc_id(pid, ab.id, origin, fx_at, id)
+
+
+## Servidor: dano e efeitos de uma habilidade num monstro.
+func _apply_ability(id: int, ab: AbilityData, damage: int, m: Monster, origin: Vector2) -> void:
+	if ab.kind == AbilityData.Kind.WARCRY:
+		m.taunt(id)
+	if damage > 0:
 		if ab.threat > 1.0:
 			m.add_threat(id, damage * (ab.threat - 1.0))
 		m.health.take_damage(damage, id)
 		_hit_confirmed.rpc_id(id, get_path_to(m), false)
-	for pid in Characters.players_in_zone(zone):
-		_ability_fx.rpc_id(pid, ab.id, origin, fx_at, id)
+	if not m.can_be_hit():
+		return  # morreu com o golpe
+	if ab.knockback > 0.0:
+		m.push_back((m.hitbox.center() - origin).normalized(), ab.knockback)
+	if ab.slow > 0.0:
+		m.apply_slow(ab.slow, ab.slow_seconds)
+	if ab.stun_seconds > 0.0:
+		m.apply_stun(ab.stun_seconds)
+	if damage == 0 and ab.kind != AbilityData.Kind.WARCRY:
+		m.add_threat(id, 5.0)  # efeito sem dano tambem chama a atencao
+
+
+## Alvo mandado pelo cliente: so vale se for um monstro vivo desta zona.
+func _valid_target(path: NodePath, zone: String) -> Monster:
+	if path.is_empty():
+		return null
+	var m := get_node_or_null(path) as Monster
+	return m if m and m.can_be_hit() and m.zone == zone else null
+
+
+## Projetil: o alvo, se estiver ao alcance e na direcao mirada (o cliente
+## mirou nele); senao o 1o monstro na linha.
+func _projectile_target(zone: String, origin: Vector2, aim: Vector2, reach: float, target: Monster) -> Monster:
+	if target:
+		var to := target.hitbox.center() - origin
+		if to.length() <= reach + target.hitbox.radius and (to.length() < Targeting.CLOSE or aim.dot(to.normalized()) >= 0.8):
+			return target
+	var alive := _alive_monsters(zone)
+	var on_line := Targeting.ray_hits(origin, aim, reach, _hitboxes(alive))
+	return alive[on_line[0]] if not on_line.is_empty() else null
+
+
+func _hitboxes(monsters: Array[Monster]) -> Array:
+	var out := []
+	for m in monsters:
+		out.append(m.hitbox)
+	return out
 
 
 ## Monstros da zona que podem ser atingidos (vivos e nao voltando para casa).
@@ -434,18 +512,6 @@ func _alive_monsters(zone: String) -> Array[Monster]:
 			if m.can_be_hit():
 				out.append(m)
 	return out
-
-
-func _nearest_in_front(zone: String, origin: Vector2, dir: Vector2, reach: float) -> Monster:
-	var best: Monster = null
-	var best_d := INF
-	for m in _alive_monsters(zone):
-		var to := m.hitbox.center() - origin
-		var d := to.length()
-		if d <= reach + m.hitbox.radius and d < best_d and (d < 8.0 or dir.dot(to / d) >= 0.7):
-			best = m
-			best_d = d
-	return best
 
 
 ## Servidor -> zona: efeito de habilidade (projetil de `from` ate `to` e efeito em `to`).
@@ -466,11 +532,15 @@ func _ability_fx(ability_id: String, from: Vector2, to: Vector2, caster_id: int)
 				rp.play_cast()
 	match ab.kind:
 		AbilityData.Kind.RANGED:
-			GameAudio.play_at("throw" if ab.projectile and ab.id != "bola_de_fogo" else "magic", from)
+			GameAudio.play_at("throw" if ab.id == "tiro_perfurante" else "magic", from)
 		AbilityData.Kind.AREA_TARGET:
 			GameAudio.play_at("magic", from)
 		AbilityData.Kind.HEAL:
 			GameAudio.play_at("heal", from)
+		AbilityData.Kind.WARCRY:
+			GameAudio.play_at("slam", from)
+		AbilityData.Kind.LEAP:
+			GameAudio.play_at("dodge", from)
 		_:
 			GameAudio.play_at("swing", from)
 	var delay := 0.0
@@ -492,8 +562,34 @@ func _ability_fx(ability_id: String, from: Vector2, to: Vector2, caster_id: int)
 			var fx := ab.effect.instantiate() as Node2D
 			fx.position = to
 			world.add_child(fx)
-			if ab.kind == AbilityData.Kind.AREA_TARGET:
+			if ab.kind == AbilityData.Kind.AREA_TARGET or ab.splash > 0.0:
 				GameAudio.play_at("explosion", to)
+
+
+## Servidor -> zona: golpe basico de longe (projetil da classe de `from` ate `to`).
+@rpc("authority", "call_remote", "reliable")
+func _shot_fx(class_id: String, from: Vector2, to: Vector2, caster_id: int) -> void:
+	if not class_id in PlayerData.CLASS_IDS:
+		return
+	var cls := PlayerData.class_data(class_id)
+	var world := _fx_parent()
+	if world == null or cls.basic_projectile == null or not from.is_finite() or not to.is_finite():
+		return
+	if caster_id != multiplayer.get_unique_id():
+		for map in world.get_children():
+			var rp := map.get_node_or_null("Players/%d" % caster_id) as RemotePlayer
+			if rp:
+				rp.play_cast()
+	GameAudio.play_at("throw" if cls.id == "arqueiro" else "magic", from, 0.08)
+	var p := Sprite2D.new()
+	p.texture = cls.basic_projectile
+	p.position = from
+	p.rotation = (to - from).angle() - deg_to_rad(cls.basic_projectile_angle)
+	p.z_index = 3
+	world.add_child(p)
+	var t := p.create_tween()
+	t.tween_property(p, "position", to, clampf(from.distance_to(to) / 320.0, 0.05, 0.45))
+	t.tween_callback(p.queue_free)
 
 
 @rpc("authority", "call_remote", "reliable")

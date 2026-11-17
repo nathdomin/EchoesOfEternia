@@ -38,6 +38,7 @@ const SLASH := preload("res://scenes/effects/slash.tscn")
 const SLASH_OFFSET := Vector2(-6, -3)
 const ATTACK_TIME := 0.22  ## segundos parado na pose de ataque
 const BASE_STATS := preload("res://resources/combat/player_base.tres")
+const LEAP_TIME := 0.2
 
 @export var speed := SPEED
 @export var acceleration := 900.0
@@ -45,6 +46,9 @@ const BASE_STATS := preload("res://resources/combat/player_base.tres")
 
 var anim_state: AnimState = AnimState.IDLE
 var facing := Vector2i.DOWN        ## direcao cardinal para onde o player olha
+## Direcao (8 sentidos) em que andou por ultimo: mira dos golpes quando nao
+## ha alvo (revisao das classes). `facing` e so o desenho (4 sentidos).
+var aim_dir := Vector2.DOWN
 var skin := "knight"
 var is_dead := false
 ## Chat/dialogo abertos: o teclado nao move o personagem.
@@ -58,6 +62,7 @@ var _combo_until_ms := 0
 var _dodge_left := 0.0
 var _dodge_dir := Vector2.ZERO
 var _next_dodge_ms := 0
+var _dash_speed := 0.0
 
 @onready var _sprite: AnimatedSprite2D = $Sprite
 @onready var _camera: Camera2D = $Camera2D
@@ -99,6 +104,7 @@ func place(pos: Vector2, dir: Vector2i) -> void:
 	velocity = Vector2.ZERO
 	if DIR_NAMES.has(dir):
 		facing = dir
+		aim_dir = Vector2(dir)
 	anim_state = AnimState.DEAD if is_dead else AnimState.IDLE
 	_update_animation()
 	_camera.reset_smoothing()
@@ -107,7 +113,8 @@ func place(pos: Vector2, dir: Vector2i) -> void:
 ## Golpe (E12): pose de ataque + efeito na direcao `aim` (normalizada).
 ## Retorna o passo do combo (1-3) ou 0 se em recarga, morto ou esquivando.
 ## Quem decide se acertou e o servidor (Combat.request_attack).
-func try_attack(cooldown: float, aim: Vector2, reach := 20.0) -> int:
+## `melee` false (Arqueiro, Mago): so a pose; o projetil vem do servidor.
+func try_attack(cooldown: float, aim: Vector2, reach := 20.0, melee := true) -> int:
 	var now := Time.get_ticks_msec()
 	if is_dead or now < _next_attack_ms or _dodge_left > 0.0:
 		return 0
@@ -119,6 +126,8 @@ func try_attack(cooldown: float, aim: Vector2, reach := 20.0) -> int:
 	anim_state = AnimState.ATTACK
 	velocity = Vector2.ZERO
 	_update_animation()
+	if not melee:
+		return 1
 	spawn_slash(get_parent(), global_position, aim, reach, _combo == 3)
 	GameAudio.play("swing", 0.06 if _combo < 3 else 0.0, 1.0)
 	if _combo == 3:
@@ -139,6 +148,7 @@ func try_dodge() -> bool:
 	_dodge_dir = dir.normalized() if dir != Vector2.ZERO else Vector2(facing)
 	_next_dodge_ms = now + int(BASE_STATS.dodge_cooldown * 1000.0)
 	_dodge_left = BASE_STATS.dodge_time
+	_dash_speed = BASE_STATS.dodge_distance / BASE_STATS.dodge_time
 	_attack_left = 0.0
 	anim_state = AnimState.WALK
 	facing = _cardinal(_dodge_dir)
@@ -146,6 +156,20 @@ func try_dodge() -> bool:
 	_sprite.modulate.a = 0.55
 	GameAudio.play("dodge")
 	return true
+
+
+## Salto para Tras (Arqueiro): corrida curta na direcao `dir`, olhando para
+## o lado contrario. O servidor libera o movimento (Characters.grant_dash).
+func leap(dir: Vector2, distance: float) -> void:
+	if is_dead or dir == Vector2.ZERO:
+		return
+	_dodge_dir = dir.normalized()
+	_dodge_left = LEAP_TIME
+	_dash_speed = distance / LEAP_TIME
+	_attack_left = 0.0
+	facing = _cardinal(-_dodge_dir)
+	anim_state = AnimState.WALK
+	_update_animation()
 
 
 ## Segundos que faltam para poder esquivar de novo (0 = pronta).
@@ -214,7 +238,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if _dodge_left > 0.0:
 		_dodge_left -= delta
-		velocity = _dodge_dir * BASE_STATS.dodge_distance / BASE_STATS.dodge_time
+		velocity = _dodge_dir * _dash_speed
 		move_and_slide()
 		_ghost()
 		if _dodge_left <= 0.0:
@@ -233,6 +257,7 @@ func _physics_process(delta: float) -> void:
 	if input != Vector2.ZERO:
 		velocity = velocity.move_toward(input * speed, acceleration * delta)
 		facing = _facing_for(input)
+		aim_dir = input.normalized()
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 

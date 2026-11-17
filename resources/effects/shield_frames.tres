@@ -1,0 +1,53 @@
+[gd_resource type="SpriteFrames" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Magic/Shield/SpriteSheetYellow.png" id="1_tex"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield0"]
+atlas = ExtResource("1_tex")
+region = Rect2(0, 0, 24, 26)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield1"]
+atlas = ExtResource("1_tex")
+region = Rect2(24, 0, 24, 26)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield2"]
+atlas = ExtResource("1_tex")
+region = Rect2(48, 0, 24, 26)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield3"]
+atlas = ExtResource("1_tex")
+region = Rect2(72, 0, 24, 26)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield4"]
+atlas = ExtResource("1_tex")
+region = Rect2(96, 0, 24, 26)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_shield5"]
+atlas = ExtResource("1_tex")
+region = Rect2(120, 0, 24, 26)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_shield0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_shield1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_shield2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_shield3")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_shield4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_shield5")
+}],
+"loop": false,
+"name": &"shield",
+"speed": 12.0
+}]

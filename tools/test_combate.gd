@@ -3,7 +3,9 @@ extends Node
 ##   godot --headless --path . res://tools/test_combate.tscn
 ## Confere a area do golpe (igual nas 4 direcoes, alcance, lados), se o
 ## efeito de corte cai no centro da area que acerta e a direcao do
-## personagem ao andar na diagonal. Sai com codigo 1 se algo falhar.
+## personagem ao andar na diagonal. Revisao das classes: mira (Targeting),
+## direcao de mira em 8 sentidos, lentidao/congelamento/provocacao dos
+## monstros e os kits das 3 classes. Sai com codigo 1 se algo falhar.
 
 var _fails := 0
 var _player: Player
@@ -13,6 +15,9 @@ func _ready() -> void:
 	_test_hitbox()
 	_test_slash_matches_hit()
 	await _test_facing()
+	_test_targeting()
+	await _test_monster_status()
+	_test_class_kits()
 	print("RESULTADO: %s" % ("OK" if _fails == 0 else "%d FALHA(S)" % _fails))
 	get_tree().quit(1 if _fails > 0 else 0)
 
@@ -108,3 +113,61 @@ func _hold(actions: Array, frames: int) -> void:
 		Input.action_press(a)
 	for i in frames:
 		await get_tree().physics_frame
+
+
+func _test_targeting() -> void:
+	print("Mira (alvo sem travar):")
+	var o := Vector2.ZERO
+	var right := Vector2.RIGHT
+	_check(Targeting.keeps_target(o, right, Vector2(60, 10), 8.0, 100.0), "alvo a frente ao alcance continua")
+	_check(not Targeting.keeps_target(o, right, Vector2(-60, 0), 8.0, 100.0), "alvo atras e trocado")
+	_check(not Targeting.keeps_target(o, right, Vector2(150, 0), 8.0, 100.0), "alvo longe demais e trocado")
+	_check(Targeting.keeps_target(o, right, Vector2(-8, 0), 8.0, 100.0), "alvo encostado atras continua")
+	var behind := _monster_at(Vector2(-20, 7))
+	var front_far := _monster_at(Vector2(80, 7))
+	var front_near := _monster_at(Vector2(40, 17))
+	var side := _monster_at(Vector2(5, 90))
+	var boxes := [behind, front_far, front_near, side]
+	_check(Targeting.best_in_front(o, right, boxes, 100.0) == 2, "escolhe o mais perto a frente (nao o de tras)")
+	_check(Targeting.best_in_front(o, Vector2.LEFT, boxes, 100.0) == 0, "virado para tras escolhe o de tras")
+	_check(Targeting.best_in_front(o, right, boxes, 20.0) == -1, "nada a frente ao alcance = sem alvo")
+	var line := [_monster_at(Vector2(90, 8)), _monster_at(Vector2(30, 8)), _monster_at(Vector2(60, 40))]
+	var hits := Targeting.ray_hits(o, right, 120.0, line)
+	_check(hits == [1, 0], "projetil acerta na ordem da linha e ignora quem esta fora %s" % [hits])
+	_check(Targeting.ray_hits(o, right, 50.0, line) == [1], "projetil para no alcance")
+
+
+func _test_monster_status() -> void:
+	print("Efeitos nos monstros:")
+	var root := Node2D.new()
+	add_child(root)
+	var m: Monster = (load("res://scenes/combat/monster.tscn") as PackedScene).instantiate()
+	m.monster_id = "slime"
+	root.add_child(m)
+	m.apply_slow(0.5, 0.3)
+	_check(m.status == Monster.Status.SLOW and is_equal_approx(m._speed_mult(), 0.5), "lentidao deixa a velocidade pela metade")
+	m.apply_stun(0.3)
+	_check(m.status == Monster.Status.FROZEN, "congelado")
+	m.taunt(77)
+	_check(m._target == 77 and m.is_fighting(77), "provocacao faz o monstro perseguir quem gritou")
+	await get_tree().create_timer(0.7).timeout
+	_check(m.status == Monster.Status.NONE, "efeitos acabam no tempo certo (status %d)" % m.status)
+	var boss: Monster = (load("res://scenes/combat/monster.tscn") as PackedScene).instantiate()
+	boss.monster_id = "giant_slime"
+	root.add_child(boss)
+	boss.apply_stun(1.0)
+	_check(boss.status != Monster.Status.FROZEN, "chefe nao congela")
+	root.queue_free()
+
+
+func _test_class_kits() -> void:
+	print("Classes:")
+	for cid in PlayerData.CLASS_IDS:
+		var c := PlayerData.class_data(cid)
+		var ok := c.abilities.size() == 3
+		for ab in c.abilities:
+			ok = ok and ab != null and ab.icon != null and ab.effect != null and ab.id != "" 					and ResourceLoader.exists("res://resources/abilities/%s.tres" % ab.id)
+		_check(ok, "%s: 3 habilidades com icone, efeito e id do arquivo" % c.display_name)
+		if c.is_ranged():
+			_check(c.basic_projectile != null and c.basic_range >= 80.0, "%s: golpe basico de longe (%d px)" % [c.display_name, c.basic_range])
+	_check(not PlayerData.class_data("guerreiro").is_ranged(), "Guerreiro: golpe basico de perto")

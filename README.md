@@ -8,7 +8,12 @@ MMORPG em pixel art feito em **Godot 4.7.2**, como demo. Os jogadores entram num
 
 - **Mundo:** 3 zonas (vila, floresta e caverna) com passagens entre elas e baús de tesouro. Cada zona tem clima e música próprios.
 - **Combate:** ataques validados no servidor e monstros com IA. O chefe, o Rei Slime, tem um ataque em área. Quem morre renasce na vila.
-- **Progressão:** XP e níveis até o 10. São 3 classes (Guerreiro, Mago e Arqueiro), cada uma com 3 habilidades.
+- **Progressão:** XP e níveis até o 10.
+- **Classes:** cada uma tem um papel próprio, e as habilidades podem deixar os monstros lentos, congelá-los, empurrá-los ou provocá-los.
+  - **Guerreiro (tanque):** ataque com espada, de perto. Habilidades: Golpe Pesado (empurra), Giro de Espada e Grito de Guerra (atrai os monstros e reduz o dano recebido).
+  - **Arqueiro (dano de longe):** ataque com flechas. Habilidades: Tiro Perfurante (atravessa a fila), Chuva de Flechas (deixa lento) e Salto para Trás.
+  - **Mago (controle e cura):** ataque com orbes. Habilidades: Bola de Fogo (explode), Nova de Gelo (congela) e Cura do grupo.
+- **Mira:** no estilo MMO. Os golpes vão no alvo selecionado enquanto ele estiver ao alcance e à frente do personagem; se ele ficar atrás ou longe, o alvo passa a ser o monstro mais perto à frente.
 - **Itens:** inventário de 20 espaços, equipamento (arma, armadura e acessório), saque dos monstros e poções.
 - **Social:** chat global, de grupo, de zona e mensagem privada. Grupos de até 4 dividem a XP e recebem a cura de grupo.
 - **Missões:** NPCs com diálogo, missões encadeadas e um rastreador na tela.
@@ -50,7 +55,7 @@ Para parar o servidor salvando todos os personagens, crie um arquivo `stop.reque
 | WASD / setas | andar |
 | Espaço / J | atacar |
 | 1, 2, 3 · 4 | habilidades da classe · poção |
-| Clique / Tab | escolher alvo |
+| Clique / Tab | escolher outro alvo (sem isso, o alvo é o monstro à frente) |
 | E | falar com NPC / abrir baú |
 | I | inventário |
 | Enter | chat (`/g`, `/z`, `/w Nome`, `/r`, `/quem`, `/convidar Nome`, `/aceitar`, `/sair`) |

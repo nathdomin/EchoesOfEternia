@@ -12,8 +12,11 @@ extends CharacterBody2D
 ## Cliente: so desenha. Interpola a posicao, mostra a barra de vida, pisca
 ## ao levar dano e ao preparar o golpe, faz fumaca ao morrer e um "bote" ao
 ## atacar.
+## Revisao das classes: efeitos das habilidades (lentidao, congelado,
+## provocacao), decididos no servidor; `status` sincronizado so pinta o monstro.
 
 enum State { IDLE, CHASE, RETURN, DEAD, WINDUP }
+enum Status { NONE, SLOW, FROZEN }
 
 const FOLLOW_RATE := 12.0
 const SNAP_DISTANCE := 64.0
@@ -27,6 +30,7 @@ const LUNGE_REACH := 8.0
 ## Monstros mais perto que isto se afastam um do outro (nao se empilham).
 const SEPARATION := 12.0
 const WINDUP_TINT := Color(1.7, 0.55, 0.45)
+const STATUS_TINT := {Status.NONE: Color.WHITE, Status.SLOW: Color(0.7, 0.85, 1.35), Status.FROZEN: Color(0.55, 0.8, 1.9)}
 
 ## Sincronizados (MultiplayerSynchronizer "Sync").
 @export var monster_id := "slime"
@@ -39,6 +43,8 @@ const WINDUP_TINT := Color(1.7, 0.55, 0.45)
 	set = _set_state
 @export var attack_seq := 0:
 	set = _set_attack_seq
+@export var status := Status.NONE:
+	set = _set_status
 
 var data: MonsterData
 # So no servidor:
@@ -59,6 +65,10 @@ var _next_slam_ms := 0
 var _pending := ""
 var _strike_at_ms := 0
 var _windup_tween: Tween
+## Efeitos das habilidades (so no servidor): ate quando e quanto.
+var _slow_until_ms := 0
+var _slow_mult := 1.0
+var _stun_until_ms := 0
 
 @onready var health: HealthComponent = $Health
 @onready var hitbox: HitboxComponent = $Hitbox
@@ -132,6 +142,15 @@ func _physics_process(delta: float) -> void:
 			_respawn()
 		return
 
+	_update_status(now)
+	if now < _stun_until_ms and state != State.RETURN:
+		# Congelado: parado, sem atacar (o golpe em preparo e perdido)
+		if state == State.WINDUP:
+			_pending = ""
+			state = State.CHASE
+		velocity = Vector2.ZERO
+		return
+
 	if state == State.WINDUP:
 		# Parado preparando o golpe, virado para o alvo
 		velocity = Vector2.ZERO
@@ -154,7 +173,7 @@ func _physics_process(delta: float) -> void:
 			var tpos := Characters.position_of(_target)
 			var dist := position.distance_to(tpos)
 			if dist > data.attack_range:
-				_move_towards(tpos, data.speed)
+				_move_towards(tpos, data.speed * _speed_mult())
 			else:
 				velocity = _separation() * data.speed * 0.6
 				_face(tpos - position)
@@ -254,6 +273,53 @@ func _separation() -> Vector2:
 	return push
 
 
+## Servidor: lentidao (velocidade x `mult`) por `secs`. Fica a mais forte.
+func apply_slow(mult: float, secs: float) -> void:
+	if state == State.DEAD or mult <= 0.0 or mult >= 1.0 or secs <= 0.0:
+		return
+	var now := Time.get_ticks_msec()
+	_slow_mult = minf(_slow_mult, mult) if now < _slow_until_ms else mult
+	_slow_until_ms = maxi(_slow_until_ms, now + int(secs * 1000.0))
+	_update_status(now)
+
+
+## Servidor: congela por `secs` (para e nao ataca). O chefe e imune.
+func apply_stun(secs: float) -> void:
+	if state == State.DEAD or data.is_boss or secs <= 0.0:
+		return
+	var now := Time.get_ticks_msec()
+	_stun_until_ms = maxi(_stun_until_ms, now + int(secs * 1000.0))
+	_update_status(now)
+
+
+## Servidor: provocacao (Grito de Guerra). Passa a perseguir `id`: a ameaca
+## dele fica bem acima da maior da lista.
+func taunt(id: int) -> void:
+	if id == 0 or state == State.DEAD or state == State.RETURN:
+		return
+	var top := 0.0
+	for v: float in _threat.values():
+		top = maxf(top, v)
+	_threat[id] = top * 1.5 + 50.0
+	_target = id
+	if state == State.IDLE:
+		state = State.CHASE
+
+
+func _speed_mult() -> float:
+	return _slow_mult if Time.get_ticks_msec() < _slow_until_ms else 1.0
+
+
+func _update_status(now: int) -> void:
+	var s := Status.NONE
+	if now < _stun_until_ms:
+		s = Status.FROZEN
+	elif now < _slow_until_ms:
+		s = Status.SLOW
+	if s != status:
+		status = s
+
+
 ## Servidor: ameaca extra (habilidade de guerreiro, cura de quem ele ataca).
 func add_threat(id: int, amount: float) -> void:
 	if id != 0 and state != State.DEAD and state != State.RETURN and amount > 0.0:
@@ -305,6 +371,9 @@ func _on_damaged(amount: int, source_id: int) -> void:
 
 
 func _on_died(killer_id: int) -> void:
+	_slow_until_ms = 0
+	_stun_until_ms = 0
+	status = Status.NONE
 	hp = 0
 	state = State.DEAD
 	velocity = Vector2.ZERO
@@ -347,7 +416,7 @@ func _set_hp(value: int) -> void:
 	_refresh_visuals()
 	if lost > 0 and not multiplayer.is_server() and state != State.DEAD:
 		_sprite.modulate = Color(3, 3, 3)
-		create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.18)
+		create_tween().tween_property(_sprite, "modulate", STATUS_TINT[status], 0.18)
 		FloatingText.spawn(get_parent().get_parent(), position + Vector2(0, _sprite.position.y * 2.0 + 18.0), str(lost), FloatingText.DAMAGE, data.is_boss)
 		GameAudio.play_at("hit", position)
 
@@ -367,6 +436,18 @@ func _set_state(value: State) -> void:
 	elif was_dead and value != State.DEAD:
 		position = net_position
 	_refresh_visuals()
+
+
+## Cliente: azulado (lento) ou gelo (congelado, animacao parada).
+func _set_status(value: Status) -> void:
+	status = value
+	if not is_node_ready() or multiplayer.is_server():
+		return
+	_sprite.modulate = STATUS_TINT[value]
+	if value == Status.FROZEN:
+		_sprite.pause()
+	else:
+		_sprite.play()
 
 
 ## Cliente: pisca avermelhado e recua um pouco enquanto prepara o golpe.

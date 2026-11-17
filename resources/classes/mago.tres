@@ -2,17 +2,26 @@
 
 [ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="1_ohltf"]
 [ext_resource type="Resource" path="res://resources/abilities/bola_de_fogo.tres" id="2_ugedg"]
-[ext_resource type="Resource" path="res://resources/abilities/explosao.tres" id="3_hyaf1"]
+[ext_resource type="Resource" path="res://resources/abilities/nova_gelo.tres" id="3_hyaf1"]
 [ext_resource type="Resource" path="res://resources/abilities/cura.tres" id="4_auwtl"]
 [ext_resource type="Script" path="res://scripts/progression/class_data.gd" id="5_dkrdw"]
+[ext_resource type="Texture2D" path="res://assets/effects/ninja/Projectile/EnergyBall.png" id="9_orb"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_orb"]
+atlas = ExtResource("9_orb")
+region = Rect2(0, 0, 16, 16)
 
 [resource]
 script = ExtResource("5_dkrdw")
 id = "mago"
 display_name = "Mago"
-description = "Pouca vida, magias de longe e cura o grupo."
 skin = "sorcerer"
 base_hp = 90
 base_damage = 10
 hp_per_level = 12
 abilities = Array[ExtResource("1_ohltf")]([ExtResource("2_ugedg"), ExtResource("3_hyaf1"), ExtResource("4_auwtl")])
+description = "Controle e cura: orbes de longe, explosões, congela os monstros e cura o grupo."
+attack_cooldown = 0.7
+basic_range = 100.0
+basic_power = 1.0
+basic_projectile = SubResource("AtlasTexture_orb")
