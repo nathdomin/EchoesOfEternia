@@ -12,3 +12,4 @@ icon = ExtResource("1_lhcpp")
 kind = 1
 max_stack = 1
 bonus_damage = 3
+price = 30

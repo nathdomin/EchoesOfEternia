@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/espada_aco.tres" id="it_espada_aco"]
+[ext_resource type="Resource" path="res://resources/items/arco_longo.tres" id="it_arco_longo"]
+[ext_resource type="Resource" path="res://resources/items/cajado_runico.tres" id="it_cajado_runico"]
+
+[resource]
+script = ExtResource("1_script")
+id = "morcegos_da_caverna"
+title = "Asas no escuro"
+giver = "explorador"
+giver_name = "Explorador"
+requires = "caminho_da_caverna"
+min_level = 6
+offer_text = "Morcegos da caverna não me deixam explorar. Derrote 8 e te dou algo raro."
+progress_text = "Ainda ouço as asas."
+done_text = "Silêncio, enfim! Uma arma rara, como prometi."
+kind = 0
+target_id = "cave_bat"
+target_name = "Morcegos da caverna"
+count = 8
+reward_xp = 450
+reward_gold = 50
+class_rewards = Array[ExtResource("2_item")]([ExtResource("it_espada_aco"), ExtResource("it_arco_longo"), ExtResource("it_cajado_runico")])

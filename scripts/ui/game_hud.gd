@@ -23,6 +23,7 @@ var class_chooser: ClassChooser
 var pause_menu: PauseMenu
 var debug_panel: DebugPanel
 var status_bar: StatusBar
+var shop: ShopWindow
 var controls: ControlsWindow
 var _tutorial_pending := false
 var _level_badge: Label
@@ -87,6 +88,9 @@ func _ready() -> void:
 	add_child(chat)
 	dialogue = DialogueBox.new()
 	add_child(dialogue)
+	shop = ShopWindow.new()
+	add_child(shop)
+	dialogue.shop_requested.connect(shop.open)
 	inventory = InventoryWindow.new()
 	inventory.position = (Vector2(480, 270) - InventoryWindow.SIZE) / 2.0 - Vector2(0, 8)
 	add_child(inventory)
@@ -141,7 +145,7 @@ func show_death(seconds: float) -> void:
 
 ## Alguma janela que pega o teclado esta aberta? (o personagem nao anda)
 func blocks_input() -> bool:
-	return chat.is_open or dialogue.visible or class_chooser.visible or pause_menu.visible or controls.visible
+	return chat.is_open or dialogue.visible or class_chooser.visible or pause_menu.visible or controls.visible 			or shop.visible
 
 
 
@@ -181,10 +185,14 @@ func set_target(node: Node2D) -> void:
 	if node == null:
 		return
 	if node is Monster:
-		_target_name.text = node.display_name() + ("  (chefe)" if node.data.is_boss else "")
+		# Pacote C: nivel do monstro (vermelho se for bem mais forte que eu)
+		_target_name.text = "%s  Nv %d%s" % [node.display_name(), node.data.level, "  (chefe)" if node.data.is_boss else ""]
+		var gap := node.data.level - int(PlayerData.me.get("level", 1))
+		_target_name.add_theme_color_override("font_color", Color(1, 0.45, 0.4) if gap >= 3 				else (Color(0.65, 0.65, 0.65) if gap <= -PlayerData.XP_GAP_HALF else Color(1, 0.96, 0.88)))
 		_target_face.texture = node.data.faceset
 	elif node is RemotePlayer:
 		_target_name.text = "%s  Nv %d  (G convida)" % [node.display_name, node.level]
+		_target_name.remove_theme_color_override("font_color")
 		_target_face.texture = Player.FACESETS.get(node.skin, Player.FACESETS.knight)
 	_process(0.0)
 

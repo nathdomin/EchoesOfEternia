@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
+
+[resource]
+script = ExtResource("1_script")
+id = "veneno_na_trilha"
+title = "Veneno na trilha"
+giver = "guarda"
+giver_name = "Guarda Florestal"
+requires = "cogumelos_sombrios"
+min_level = 5
+offer_text = "Slimes venenosos tomaram a trilha do sul. Cuidado com o veneno! Derrote 8."
+progress_text = "A trilha do sul ainda borbulha."
+done_text = "Você é resistente! Leve estas poções grandes."
+kind = 0
+target_id = "slime2"
+target_name = "Slimes venenosos"
+count = 8
+reward_xp = 320
+reward_item = ExtResource("it_pocao_grande")
+reward_count = 3
+reward_gold = 40

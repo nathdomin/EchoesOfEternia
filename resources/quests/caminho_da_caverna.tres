@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+
+[resource]
+script = ExtResource("1_script")
+id = "caminho_da_caverna"
+title = "O caminho da caverna"
+giver = "guarda"
+giver_name = "Guarda Florestal"
+requires = "veneno_na_trilha"
+min_level = 6
+offer_text = "Um explorador acampou na caverna a nordeste. Leve este mapa a ele."
+progress_text = "O Explorador precisa do mapa."
+done_text = "Meu mapa! Achei que tinha perdido para os morcegos."
+kind = 2
+target_id = "explorador"
+target_name = "Mapa"
+count = 1
+reward_xp = 150
+turn_in_to = "explorador"
+turn_in_name = "Explorador"

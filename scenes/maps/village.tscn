@@ -5,11 +5,21 @@
 [ext_resource type="Script" path="res://scripts/combat/monster_spawn_point.gd" id="3_spawnpt"]
 [ext_resource type="Resource" path="res://resources/monsters/slime.tres" id="4_slime"]
 [ext_resource type="Resource" path="res://resources/monsters/mushroom.tres" id="5_mushroom"]
-[ext_resource type="Resource" path="res://resources/monsters/skull.tres" id="6_skull"]
+[ext_resource type="Resource" path="res://resources/monsters/skull_lake.tres" id="6_cvwtv"]
 [ext_resource type="PackedScene" path="res://scenes/npc/npc.tscn" id="7_npc"]
+[ext_resource type="SpriteFrames" path="res://resources/characters/noble_frames.tres" id="8_2rv7i"]
 [ext_resource type="Script" path="res://scripts/maps/zone_exit.gd" id="8_exit"]
-[ext_resource type="PackedScene" path="res://scenes/world/chest.tscn" id="chest_scene"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Noble/Faceset.png" id="9_acto6"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="10_y06tb"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="11_m66gb"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="12_5nr1w"]
+[ext_resource type="Resource" path="res://resources/items/espada_ferro.tres" id="13_mwvcf"]
+[ext_resource type="Resource" path="res://resources/items/arco_curto.tres" id="14_2j656"]
+[ext_resource type="Resource" path="res://resources/items/cajado_aprendiz.tres" id="15_ew6p2"]
+[ext_resource type="Resource" path="res://resources/items/kunai.tres" id="16_uw434"]
+[ext_resource type="Resource" path="res://resources/items/armadura.tres" id="17_n0rsa"]
 [ext_resource type="Resource" path="res://resources/loot/bau_vila.tres" id="chest_loot"]
+[ext_resource type="PackedScene" path="res://scenes/world/chest.tscn" id="chest_scene"]
 
 [node name="Village" type="Node2D" unique_id=1914662227]
 y_sort_enabled = true
@@ -33,68 +43,89 @@ tile_set = ExtResource("2_eaflo")
 [node name="SpawnPoint" type="Marker2D" parent="." unique_id=1364941220]
 position = Vector2(456, 296)
 
-[node name="Players" type="Node2D" parent="."]
+[node name="Players" type="Node2D" parent="." unique_id=73444974]
 y_sort_enabled = true
 
-[node name="PlayerSpawner" type="MultiplayerSpawner" parent="."]
+[node name="PlayerSpawner" type="MultiplayerSpawner" parent="." unique_id=1035551090]
 _spawnable_scenes = PackedStringArray("res://scenes/characters/remote_player.tscn")
 spawn_path = NodePath("../Players")
 
-[node name="Monsters" type="Node2D" parent="."]
+[node name="Monsters" type="Node2D" parent="." unique_id=754142528]
 y_sort_enabled = true
 
-[node name="MonsterSpawner" type="MultiplayerSpawner" parent="."]
+[node name="MonsterSpawner" type="MultiplayerSpawner" parent="." unique_id=1355116160]
 _spawnable_scenes = PackedStringArray("res://scenes/combat/monster.tscn")
 spawn_path = NodePath("../Monsters")
 
-[node name="MonsterSpawns" type="Node2D" parent="."]
+[node name="MonsterSpawns" type="Node2D" parent="." unique_id=50790561]
 
-[node name="Slimes" type="Marker2D" parent="MonsterSpawns"]
+[node name="Slimes" type="Marker2D" parent="MonsterSpawns" unique_id=1270577787]
 position = Vector2(170, 462)
 script = ExtResource("3_spawnpt")
 monster = ExtResource("4_slime")
 count = 3
 radius = 36.0
 
-[node name="Mushrooms" type="Marker2D" parent="MonsterSpawns"]
+[node name="Mushrooms" type="Marker2D" parent="MonsterSpawns" unique_id=1863726017]
 position = Vector2(770, 96)
 script = ExtResource("3_spawnpt")
 monster = ExtResource("5_mushroom")
-count = 2
-radius = 32.0
 
-[node name="Skulls" type="Marker2D" parent="MonsterSpawns"]
+[node name="Skulls" type="Marker2D" parent="MonsterSpawns" unique_id=901601545]
 position = Vector2(570, 500)
 script = ExtResource("3_spawnpt")
-monster = ExtResource("6_skull")
-count = 2
+monster = ExtResource("6_cvwtv")
+count = 3
 radius = 28.0
 
-[node name="Npcs" type="Node2D" parent="."]
+[node name="SlimesDoSul" type="Marker2D" parent="MonsterSpawns" unique_id=1440142117]
+position = Vector2(296, 520)
+script = ExtResource("3_spawnpt")
+monster = ExtResource("4_slime")
+count = 3
+radius = 28.0
+
+[node name="CogumelosDoLeste" type="Marker2D" parent="MonsterSpawns" unique_id=316055069]
+position = Vector2(824, 456)
+script = ExtResource("3_spawnpt")
+monster = ExtResource("5_mushroom")
+radius = 26.0
+
+[node name="Npcs" type="Node2D" parent="." unique_id=1328108511]
 y_sort_enabled = true
 
-[node name="Anciao" parent="Npcs" instance=ExtResource("7_npc")]
+[node name="Anciao" parent="Npcs" unique_id=1103898712 instance=ExtResource("7_npc")]
 position = Vector2(424, 266)
 greeting = "Bons ventos, viajante. A vila anda cheia de problemas..."
+idle_lines = PackedStringArray("Dizem que o Rei Slime nasceu da gosma de mil slimes.", "A floresta fica a leste. Siga a estrada de terra.", "Na minha idade, até os cogumelos me assustam.")
 
-[node name="Exits" type="Node2D" parent="."]
+[node name="Mercador" parent="Npcs" unique_id=1348151142 instance=ExtResource("7_npc")]
+position = Vector2(520, 232)
+npc_id = "mercador"
+display_name = "Mercador"
+frames = ExtResource("8_2rv7i")
+faceset = ExtResource("9_acto6")
+greeting = "Poções, armas, tudo honesto! Quase tudo."
+idle_lines = PackedStringArray("Compro gosma, esporo e osso. Não pergunte por quê.", "Ouro de monstro também é ouro, viajante.")
+tint = Color(1, 0.92, 0.75, 1)
+shop_items = Array[ExtResource("10_y06tb")]([ExtResource("11_m66gb"), ExtResource("12_5nr1w"), ExtResource("13_mwvcf"), ExtResource("14_2j656"), ExtResource("15_ew6p2"), ExtResource("16_uw434"), ExtResource("17_n0rsa")])
 
-[node name="ToForest" type="Area2D" parent="Exits"]
+[node name="Exits" type="Node2D" parent="." unique_id=463828835]
+
+[node name="ToForest" type="Area2D" parent="Exits" unique_id=1146027442]
 position = Vector2(888, 296)
 monitorable = false
 script = ExtResource("8_exit")
-target_zone = "forest"
-target_entrance = "FromVillage"
 size = Vector2(16, 56)
 
-[node name="Entrances" type="Node2D" parent="."]
+[node name="Entrances" type="Node2D" parent="." unique_id=369821151]
 
-[node name="FromForest" type="Marker2D" parent="Entrances"]
+[node name="FromForest" type="Marker2D" parent="Entrances" unique_id=411321815]
 position = Vector2(856, 296)
 
-[node name="Chests" type="Node2D" parent="."]
+[node name="Chests" type="Node2D" parent="." unique_id=440793156]
 y_sort_enabled = true
 
-[node name="BauDoPomar" parent="Chests" instance=ExtResource("chest_scene")]
+[node name="BauDoPomar" parent="Chests" unique_id=1728072349 instance=ExtResource("chest_scene")]
 position = Vector2(150, 330)
 loot = ExtResource("chest_loot")

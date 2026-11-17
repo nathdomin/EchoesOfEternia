@@ -12,3 +12,5 @@ icon = ExtResource("1_fle1t")
 kind = 2
 max_stack = 1
 bonus_hp = 45
+price = 180
+rarity = 1

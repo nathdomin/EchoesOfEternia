@@ -3,14 +3,18 @@
 [ext_resource type="Script" path="res://scripts/world/loot_table.gd" id="1_loot"]
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
 [ext_resource type="Resource" path="res://resources/items/anel.tres" id="it_anel"]
+[ext_resource type="Resource" path="res://resources/items/arco_curto.tres" id="it_arco_curto"]
+[ext_resource type="Resource" path="res://resources/items/cajado_aprendiz.tres" id="it_cajado_aprendiz"]
+[ext_resource type="Resource" path="res://resources/items/espada_ferro.tres" id="it_espada_ferro"]
 [ext_resource type="Resource" path="res://resources/items/esporo.tres" id="it_esporo"]
 [ext_resource type="Resource" path="res://resources/items/kunai.tres" id="it_kunai"]
 [ext_resource type="Resource" path="res://resources/items/pocao.tres" id="it_pocao"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
 
 [resource]
 script = ExtResource("1_loot")
-items = Array[ExtResource("2_item")]([ExtResource("it_pocao"), ExtResource("it_esporo"), ExtResource("it_kunai"), ExtResource("it_anel")])
-chances = Array[float]([0.8, 0.4, 0.15, 0.12])
-amounts = Array[int]([2, 1, 1, 1])
+items = Array[ExtResource("2_item")]([ExtResource("it_pocao"), ExtResource("it_esporo"), ExtResource("it_pocao_grande"), ExtResource("it_kunai"), ExtResource("it_espada_ferro"), ExtResource("it_arco_curto"), ExtResource("it_cajado_aprendiz"), ExtResource("it_anel")])
+chances = Array[float]([0.8, 0.4, 0.2, 0.15, 0.1, 0.1, 0.1, 0.1])
+amounts = Array[int]([2, 1, 1, 1, 1, 1, 1, 1])
 guaranteed = ExtResource("it_pocao")
 respawn_seconds = 900

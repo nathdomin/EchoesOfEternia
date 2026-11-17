@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/espada_ferro.tres" id="it_espada_ferro"]
+[ext_resource type="Resource" path="res://resources/items/arco_curto.tres" id="it_arco_curto"]
+[ext_resource type="Resource" path="res://resources/items/cajado_aprendiz.tres" id="it_cajado_aprendiz"]
+
+[resource]
+script = ExtResource("1_script")
+id = "carta_ao_guarda"
+title = "Carta ao Guarda"
+giver = "anciao"
+giver_name = "Ancião"
+requires = "ossos_do_lago"
+min_level = 3
+offer_text = "Você está pronto. Leve esta carta ao Guarda Florestal, na floresta a leste."
+progress_text = "O Guarda espera minha carta."
+done_text = "Uma carta do Ancião! Tome, uma arma de verdade para a mata."
+kind = 2
+target_id = "guarda"
+target_name = "Carta"
+count = 1
+reward_xp = 120
+class_rewards = Array[ExtResource("2_item")]([ExtResource("it_espada_ferro"), ExtResource("it_arco_curto"), ExtResource("it_cajado_aprendiz")])
+turn_in_to = "guarda"
+turn_in_name = "Guarda Florestal"

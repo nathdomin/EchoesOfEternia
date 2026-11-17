@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="it_elmo"]
+
+[resource]
+script = ExtResource("1_script")
+id = "caveiras_antigas"
+title = "Caveiras antigas"
+giver = "explorador"
+giver_name = "Explorador"
+requires = "ossos_antigos"
+min_level = 8
+offer_text = "As caveiras douradas guardam o salão do Rei. Derrote 5."
+progress_text = "O salão ainda está guardado."
+done_text = "O caminho até o Rei está aberto. Este elmo vai te proteger."
+kind = 0
+target_id = "skull_ancient"
+target_name = "Caveiras antigas"
+count = 5
+reward_xp = 650
+reward_item = ExtResource("it_elmo")
+reward_count = 1
+reward_gold = 80

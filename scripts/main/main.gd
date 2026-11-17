@@ -279,6 +279,7 @@ func _apply_zone_look(zone: String) -> void:
 func _on_zone_changed(zone: String, pos: Vector2) -> void:
 	_game_hud.set_target(null)
 	_game_hud.dialogue.close()
+	_game_hud.shop.close()
 	_switch_map(zone)
 	_player.place(pos, _player.facing)
 	_last_sent_pos = pos
@@ -467,6 +468,8 @@ func _input(event: InputEvent) -> void:
 			_game_hud.controls.close()
 		elif _game_hud.pause_menu.visible:
 			_game_hud.pause_menu.close()
+		elif _game_hud.shop.visible:
+			_game_hud.shop.close()
 		elif _game_hud.dialogue.visible:
 			_game_hud.dialogue.close()
 		elif _game_hud.inventory.visible:

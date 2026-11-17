@@ -5,6 +5,8 @@ extends Control
 ## O servidor confere a distancia ate o NPC e o estado da missao.
 
 signal closed
+## Pacote C: o jogador escolheu "Comércio" com este NPC.
+signal shop_requested(npc: Npc)
 
 const SIZE := Vector2(340, 118)
 
@@ -43,38 +45,54 @@ func _ready() -> void:
 
 
 func open(npc: Npc) -> void:
+	var reopening := visible and _npc == npc
 	_npc = npc
 	if not visible:
 		GameAudio.play("open")
 	visible = true
 	_face.texture = npc.faceset
+	_face.modulate = npc.tint
 	_name.text = npc.display_name
 	for b in _buttons.get_children():
 		_buttons.remove_child(b)
 		b.queue_free()
 	var me := PlayerData.me
-	var text := npc.greeting
+	var text := ""
 	var action := Callable()
 	var action_label := ""
-	for q in PlayerData.quests_of(npc.npc_id):
-		var st := PlayerData.quest_state(me.quests, q.id)
-		if st == "active":
-			var prog := int(me.quest_progress.get(q.id, 0))
-			if prog >= q.count:
-				text = q.done_text
-				action = func() -> void: PlayerData.turn_in_quest(q.id)
-				action_label = "Entregar"
-			else:
-				text = "%s (%s %d/%d)" % [q.progress_text, q.target_name, prog, q.count]
+	var cls := String(me.get("class", ""))
+	# Pacote C: entregas prontas aqui primeiro (inclusive recados de outro
+	# NPC), depois o andamento das missoes deste NPC, depois uma nova.
+	var quests := PlayerData.quests_for(npc.npc_id)
+	for q in quests:
+		if PlayerData.quest_state(me.quests, q.id) == "active" and q.turn_in_npc() == npc.npc_id 				and int(me.quest_progress.get(q.id, 0)) >= q.count:
+			text = q.done_text
+			action = func() -> void: PlayerData.turn_in_quest(q.id)
+			action_label = "Entregar"
 			break
-		if st == "" and PlayerData.can_accept(me, q):
-			text = "%s\nRecompensa: %d XP%s" % [q.offer_text, q.reward_xp,
-					", " + q.reward_item.display_name if q.reward_item else ""]
-			action = func() -> void:
-				GameAudio.play("confirm")
-				PlayerData.accept_quest(q.id)
-			action_label = "Aceitar"
-			break
+	if action_label.is_empty():
+		for q in quests:
+			if q.giver != npc.npc_id:
+				continue
+			var st := PlayerData.quest_state(me.quests, q.id)
+			if st == "active":
+				var prog := int(me.quest_progress.get(q.id, 0))
+				if q.turn_in_npc() != npc.npc_id:
+					text = "%s (fale com %s)" % [q.progress_text, q.turn_in_npc_name()]
+				else:
+					text = "%s (%s %d/%d)" % [q.progress_text, q.target_name, prog, q.count]
+				break
+			if PlayerData.can_accept(me, q, PlayerData.server_now()):
+				text = "%s
+Recompensa: %s" % [q.offer_text, _reward_text(q, cls)]
+				action = func() -> void:
+					GameAudio.play("confirm")
+					PlayerData.accept_quest(q.id)
+				action_label = "Aceitar"
+				break
+	if text.is_empty():
+		# Nada de missao: cumprimento e, nas proximas conversas, outras falas
+		text = npc.next_idle_line() if not reopening else _text.text
 	_text.text = text
 	# Opcoes: setas escolhem, Enter confirma (UiKit.choices); a primeira ja
 	# vem marcada, com ou sem missao.
@@ -83,12 +101,32 @@ func open(npc: Npc) -> void:
 		var b := UiKit.ink_button(action_label)
 		b.pressed.connect(action)
 		options.append(b)
+	if not npc.shop_items.is_empty():
+		var shop := UiKit.ink_button("Comércio")
+		shop.pressed.connect(func() -> void:
+			var n := _npc
+			close()
+			shop_requested.emit(n))
+		options.append(shop)
 	var bye := UiKit.ink_button("Até logo")
 	bye.pressed.connect(close)
 	options.append(bye)
 	for b in options:
 		_buttons.add_child(b)
 	UiKit.choices(options)
+
+
+## "120 XP, 30 de ouro, Espada de Ferro"
+static func _reward_text(q: QuestData, cls: String) -> String:
+	var parts: PackedStringArray = ["%d XP" % q.reward_xp]
+	if q.reward_gold > 0:
+		parts.append("%d de ouro" % q.reward_gold)
+	if q.reward_item:
+		parts.append(q.reward_item.display_name + (" x%d" % q.reward_count if q.reward_count > 1 else ""))
+	var ci := q.class_reward(cls)
+	if ci:
+		parts.append(ci.display_name)
+	return ", ".join(parts)
 
 
 func close() -> void:

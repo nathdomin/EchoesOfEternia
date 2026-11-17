@@ -13,3 +13,5 @@ kind = 3
 max_stack = 1
 bonus_damage = 4
 bonus_hp = 20
+price = 240
+rarity = 2

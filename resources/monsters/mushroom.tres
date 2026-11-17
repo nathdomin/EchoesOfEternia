@@ -1,24 +1,27 @@
 [gd_resource type="Resource" script_class="MonsterData" format=3]
 
-[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1"]
-[ext_resource type="SpriteFrames" path="res://resources/monsters/mushroom_frames.tres" id="2"]
-[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Mushroom/Faceset.png" id="3"]
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="3_x1h2q"]
-[ext_resource type="Resource" path="res://resources/items/esporo.tres" id="4_16jvm"]
-[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="5_gmr43"]
-[ext_resource type="Resource" path="res://resources/items/armadura.tres" id="6_gnix8"]
-[ext_resource type="Resource" path="res://resources/items/anel.tres" id="7_m0rot"]
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/mushroom_frames.tres" id="2_frames"]
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Mushroom/Faceset.png" id="3_face"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="4_item"]
+[ext_resource type="Resource" path="res://resources/items/esporo.tres" id="it_esporo"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="it_pocao"]
+[ext_resource type="Resource" path="res://resources/items/armadura.tres" id="it_armadura"]
+[ext_resource type="Resource" path="res://resources/items/anel.tres" id="it_anel"]
 
 [resource]
-script = ExtResource("1")
+script = ExtResource("1_script")
 id = "mushroom"
+frames = ExtResource("2_frames")
+faceset = ExtResource("3_face")
 display_name = "Cogumelo Bravo"
-frames = ExtResource("2")
-faceset = ExtResource("3")
+level = 2
 max_hp = 45
 damage = 8
 aggro_range = 60.0
 xp_reward = 18
 respawn_time = 15.0
-loot_items = Array[ExtResource("3_x1h2q")]([ExtResource("4_16jvm"), ExtResource("5_gmr43"), ExtResource("6_gnix8"), ExtResource("7_m0rot")])
+gold_min = 1
+gold_max = 3
+loot_items = Array[ExtResource("4_item")]([ExtResource("it_esporo"), ExtResource("it_pocao"), ExtResource("it_armadura"), ExtResource("it_anel")])
 loot_chances = PackedFloat32Array(0.7, 0.2, 0.06, 0.05)

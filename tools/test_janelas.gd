@@ -178,7 +178,7 @@ func _test_tracker(layer: CanvasLayer) -> void:
 	for c in t.get_children():
 		if c is Label and not c.is_queued_for_deletion():
 			texts.append(c.text)
-	_check("Volte ao Guarda Florestal" in texts, "missão pronta diz a quem voltar %s" % [texts])
+	_check("Volte ao Explorador" in texts, "missão pronta diz a quem voltar %s" % [texts])
 	_check(t.get_rect().end.x <= 480.0, "não sai da tela (termina em x %.0f)" % t.get_rect().end.x)
 	await _shot("rastreador")
 	t.queue_free()

@@ -1,19 +1,25 @@
 [gd_resource type="Resource" script_class="QuestData" format=3]
 
-[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="1_3orhb"]
-[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="2_etygm"]
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="it_pocao"]
 
 [resource]
-script = ExtResource("2_etygm")
+script = ExtResource("1_script")
 id = "gosma_na_horta"
 title = "Gosma na horta"
 giver = "anciao"
 giver_name = "Ancião"
+requires = ""
+min_level = 1
 offer_text = "Os slimes do sudoeste estão comendo a horta! Derrote 5 deles para mim."
-progress_text = "Ainda tem slime na horta... continue!"
-done_text = "A horta agradece! Tome, para a próxima luta."
+progress_text = "A horta ainda sofre."
+done_text = "A horta agradece! Leve estas poções."
+kind = 0
 target_id = "slime"
 target_name = "Slimes"
+count = 5
 reward_xp = 60
-reward_item = ExtResource("1_3orhb")
+reward_item = ExtResource("it_pocao")
 reward_count = 2
+reward_gold = 10

@@ -12,3 +12,4 @@ icon = ExtResource("1_8pn65")
 kind = 0
 max_stack = 10
 heal = 45
+price = 15

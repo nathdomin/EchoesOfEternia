@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+
+[resource]
+script = ExtResource("1_script")
+id = "gosma_para_o_mercador"
+title = "Sabão de gosma"
+giver = "mercador"
+giver_name = "Mercador"
+requires = ""
+min_level = 1
+offer_text = "Faço sabão com gosma de slime! Traga 6 e eu pago bem."
+progress_text = "Seis gosmas, nem uma a menos."
+done_text = "Que cheiro... perfeito! Aqui está seu ouro."
+kind = 1
+target_id = "gosma"
+target_name = "Gosmas"
+count = 6
+reward_xp = 80
+reward_gold = 40

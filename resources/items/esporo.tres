@@ -13,3 +13,4 @@ id = "esporo"
 display_name = "Esporo"
 description = "Cheira a floresta úmida."
 icon = SubResource("AtlasTexture_nungd")
+price = 12

@@ -12,3 +12,5 @@ icon = ExtResource("1_eef1y")
 kind = 1
 max_stack = 1
 bonus_damage = 6
+price = 90
+rarity = 1
