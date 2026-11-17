@@ -103,8 +103,16 @@ func _set_attack_seq(value: int) -> void:
 	if not changed or not is_node_ready() or multiplayer.is_server():
 		return
 	_attack_until_ms = Time.get_ticks_msec() + 250
-	Player.spawn_slash(get_parent().get_parent(), position, facing)  # no mapa, nao em Players
+	Player.spawn_slash(get_parent().get_parent(), position, Vector2(facing))  # no mapa, nao em Players
 	GameAudio.play_at("swing", position)
+
+
+## Pose de lancar habilidade (o efeito vem do Combat._ability_fx).
+func play_cast() -> void:
+	if dead:
+		return
+	_attack_until_ms = Time.get_ticks_msec() + 250
+	_update_animation(false)
 
 
 func _set_skin(value: String) -> void:

@@ -131,6 +131,14 @@ func position_of(id: int) -> Vector2:
 	return Vector2(_online[id].data.x, _online[id].data.y)
 
 
+## Servidor: libera `px` a mais de movimento por ~1 s (esquiva validada no
+## Combat), alem do limite normal de velocidade.
+func grant_dash(id: int, px: float) -> void:
+	if _online.has(id):
+		_online[id].dash_px = px
+		_online[id].dash_until_ms = Time.get_ticks_msec() + 1000
+
+
 func avatar_of(id: int) -> RemotePlayer:
 	if not _online.has(id) or not is_instance_valid(_online[id].avatar):
 		return null
@@ -302,7 +310,9 @@ func _report_position(pos: Vector2, facing: Vector2i) -> void:
 	var current := Vector2(data.x, data.y)
 	var dist := current.distance_to(pos)
 	var bounds: Rect2 = _zones[data.zone].bounds
-	if not pos.is_finite() or not bounds.has_point(pos) or dist > c.budget + TOLERANCE_PX:
+	# Esquiva (Combat): credito extra que some em ~1 s
+	var dash := float(c.get("dash_px", 0.0)) if now < int(c.get("dash_until_ms", 0)) else 0.0
+	if not pos.is_finite() or not bounds.has_point(pos) or dist > c.budget + dash + TOLERANCE_PX:
 		if now - c.warned_ms > 5000:
 			c.warned_ms = now
 			_log("Movimento recusado de %s: %.0f px (permitido %.0f)" % [data.name, dist, c.budget + TOLERANCE_PX])
@@ -312,6 +322,8 @@ func _report_position(pos: Vector2, facing: Vector2i) -> void:
 			c.corrected_ms = now
 			_correct_position.rpc_id(id, current)
 		return
+	if dist > c.budget and dash > 0.0:
+		c.dash_px = maxf(dash - (dist - c.budget), 0.0)
 	c.budget = maxf(c.budget - dist, 0.0)
 	data.x = pos.x
 	data.y = pos.y

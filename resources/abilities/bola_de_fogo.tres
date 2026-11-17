@@ -22,3 +22,4 @@ range = 110.0
 radius = 0.0
 effect = ExtResource("1_e3lht")
 projectile = SubResource("AtlasTexture_sq6nm")
+projectile_angle = -135.0

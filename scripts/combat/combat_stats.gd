@@ -13,3 +13,20 @@ extends Resource
 @export var regen_delay := 6.0
 ## Fracao da vida maxima recuperada por segundo.
 @export var regen_per_sec := 0.03
+
+@export_group("Esquiva")
+## Distancia (px) e duracao (s) da corrida da esquiva (Shift).
+@export var dodge_distance := 40.0
+@export var dodge_time := 0.16
+## Recarga da esquiva (s; o servidor confere).
+@export var dodge_cooldown := 2.5
+## Tempo (s) sem levar dano a partir do inicio da esquiva.
+@export var dodge_invuln := 0.35
+
+@export_group("Combo")
+## Golpes seguidos dentro desta janela (s, alem da recarga) formam o combo.
+@export var combo_window := 0.9
+## O 3o golpe do combo da este multiplicador de dano...
+@export var combo_finisher_mult := 1.6
+## ...e empurra o monstro (px; o chefe nao e empurrado).
+@export var combo_knockback := 12.0

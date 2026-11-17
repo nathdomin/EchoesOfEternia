@@ -39,7 +39,7 @@ def mix(*xs):
 TARGETS = {"amb_wind": -30, "amb_cave": -31, "drip": -22, "bird0": -25, "bird1": -25, "bird2": -25,
 		"swing": -18, "throw": -18, "hit": -16, "hurt": -16, "monster_die": -17, "death": -15,
 		"levelup": -15, "quest": -16, "potion": -17, "magic": -18, "explosion": -15, "heal": -17,
-		"slam": -14, "zone": -17}
+		"slam": -14, "zone": -17, "warning": -17, "dodge": -19}
 def save(name, x, vol=0.5):
     x = x / (np.max(np.abs(x)) + 1e-9)
     act = x[np.abs(x) > 0.02]
@@ -96,6 +96,10 @@ gap = lambda d: np.zeros(int(SR*d))
 save("bird0", cat(chirp(2600, 3600, 0.07), gap(0.05), chirp(2700, 3800, 0.07), gap(0.05), chirp(2500, 3300, 0.1)))
 save("bird1", cat(chirp(3200, 2200, 0.12), gap(0.08), chirp(3000, 2000, 0.16)))
 save("bird2", cat(*[cat(chirp(3800, 4300, 0.04), gap(0.03)) for _ in range(5)]))
+# combate dinamico: aviso do pisao (dois toques graves subindo) e esquiva (sopro rapido)
+save("warning", cat(mix(note(150, 0.12, "square", 0.3, curve=0.8), 0.5*note(75, 0.12, "tri")), gap(0.05),
+		mix(note(190, 0.16, "square", 0.3, curve=1.0), 0.5*note(95, 0.16, "tri"))))
+save("dodge", lp_sweep(N(0.16), 0.08, 0.5) * env(int(SR*0.16), a=0.01, curve=1.6) + 0.25*sweep(500, 1300, 0.16, "sine")*env(int(SR*0.16), curve=2))
 print("ok", sorted(os.listdir(out)))
 # click, open, close, pickup, error, chest, equip, drop, confirm e step0..4 vem de
 # tools/import_kenney_sfx.py (sons gravados, CC0).

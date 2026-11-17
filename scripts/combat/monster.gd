@@ -4,12 +4,16 @@ extends CharacterBody2D
 ## sincronizado so com quem esta na mesma zona.
 ##
 ## Servidor: IA (passear perto de casa -> perseguir quem chega perto ->
-## atacar -> desistir se for longe demais de casa e voltar curado), vida
-## (HealthComponent), morte e respawn no mesmo lugar.
+## avisar e atacar -> desistir se for longe demais de casa e voltar curado),
+## vida (HealthComponent), morte e respawn no mesmo lugar.
+## Combate dinamico: antes de cada golpe o monstro para e pisca (WINDUP,
+## `MonsterData.windup`); o dano so sai se o alvo ainda estiver no alcance e
+## nao estiver esquivando. O chefe marca o pisao no chao antes de dar.
 ## Cliente: so desenha. Interpola a posicao, mostra a barra de vida, pisca
-## ao levar dano, faz fumaca ao morrer e um "bote" ao atacar.
+## ao levar dano e ao preparar o golpe, faz fumaca ao morrer e um "bote" ao
+## atacar.
 
-enum State { IDLE, CHASE, RETURN, DEAD }
+enum State { IDLE, CHASE, RETURN, DEAD, WINDUP }
 
 const FOLLOW_RATE := 12.0
 const SNAP_DISTANCE := 64.0
@@ -18,6 +22,11 @@ const SMOKE := preload("res://scenes/effects/smoke.tscn")
 const THREAT_SWITCH := 1.1
 ## Distancia minima ate o jogador para continuar na lista de ameaca.
 const THREAT_KEEP_RANGE := 140.0
+## No fim do aviso, o golpe ainda acerta ate attack_range + isto (o bote).
+const LUNGE_REACH := 8.0
+## Monstros mais perto que isto se afastam um do outro (nao se empilham).
+const SEPARATION := 12.0
+const WINDUP_TINT := Color(1.7, 0.55, 0.45)
 
 ## Sincronizados (MultiplayerSynchronizer "Sync").
 @export var monster_id := "slime"
@@ -46,6 +55,10 @@ var _wander_to := Vector2.ZERO
 var _wander_wait := 0.0
 var _respawn_at_ms := 0
 var _next_slam_ms := 0
+## Golpe em preparo (WINDUP): "attack" ou "slam", e quando ele sai.
+var _pending := ""
+var _strike_at_ms := 0
+var _windup_tween: Tween
 
 @onready var health: HealthComponent = $Health
 @onready var hitbox: HitboxComponent = $Hitbox
@@ -77,7 +90,9 @@ func _ready() -> void:
 		_bar.scale = Vector2(2, 1)
 		_bar.position.x = -18
 		$Shadow.scale = Vector2(3, 2)
+	# Hitbox no meio do desenho, do tamanho do corpo (o chefe e grande)
 	hitbox.radius = data.hitbox_radius
+	hitbox.position = Vector2(0, _sprite.position.y)
 	if multiplayer.is_server():
 		health.max_hp = data.max_hp
 		health.reset()
@@ -117,6 +132,15 @@ func _physics_process(delta: float) -> void:
 			_respawn()
 		return
 
+	if state == State.WINDUP:
+		# Parado preparando o golpe, virado para o alvo
+		velocity = Vector2.ZERO
+		if _target != 0 and Combat.can_be_attacked(_target, zone):
+			_face(Characters.position_of(_target) - position)
+		if now >= _strike_at_ms:
+			_strike()
+		return
+
 	if state == State.RETURN:
 		_move_towards(home, data.speed)
 		if position.distance_to(home) < 4.0:
@@ -132,15 +156,15 @@ func _physics_process(delta: float) -> void:
 			if dist > data.attack_range:
 				_move_towards(tpos, data.speed)
 			else:
-				velocity = Vector2.ZERO
+				velocity = _separation() * data.speed * 0.6
 				_face(tpos - position)
 				if now >= _next_attack_ms:
-					_next_attack_ms = now + int(data.attack_cooldown * 1000.0)
-					attack_seq += 1
-					Combat.monster_attack(self, _target, data.damage)
-			if data.is_boss and now >= _next_slam_ms and dist < data.slam_radius * 1.5:
-				_next_slam_ms = now + int(data.slam_every * 1000.0)
-				Combat.boss_slam(self, data.slam_radius, roundi(data.damage * data.slam_damage_mult))
+					_next_attack_ms = now + int((data.windup + data.attack_cooldown) * 1000.0)
+					_start_windup("attack", data.windup)
+			if data.is_boss and state != State.WINDUP and now >= _next_slam_ms and dist < data.slam_radius * 1.5:
+				_next_slam_ms = now + int((data.slam_every + data.slam_telegraph) * 1000.0)
+				_start_windup("slam", data.slam_telegraph)
+				Combat.warn_area(zone, position, data.slam_radius, data.slam_telegraph)
 			if position.distance_to(home) > data.leash_range:
 				_target = 0
 				_forget()
@@ -181,6 +205,55 @@ func _pick_target() -> void:
 		_threat[_target] = 1.0  # quem chegou perto primeiro
 
 
+## Servidor: comeca a preparar um golpe ("attack" ou "slam") que sai em `secs`.
+func _start_windup(kind: String, secs: float) -> void:
+	_pending = kind
+	_strike_at_ms = Time.get_ticks_msec() + int(secs * 1000.0)
+	velocity = Vector2.ZERO
+	state = State.WINDUP
+
+
+## Servidor: fim do aviso. O golpe so acerta se o alvo ainda estiver perto
+## (o Combat ainda confere a esquiva); o pisao acerta quem ficou no circulo.
+func _strike() -> void:
+	var kind := _pending
+	_pending = ""
+	state = State.CHASE
+	if kind == "slam":
+		Combat.boss_slam(self, data.slam_radius, roundi(data.damage * data.slam_damage_mult))
+		return
+	attack_seq += 1  # o bote aparece mesmo quando erra
+	if _target != 0 and Combat.can_be_attacked(_target, zone) 			and position.distance_to(Characters.position_of(_target)) <= data.attack_range + LUNGE_REACH:
+		Combat.monster_attack(self, _target, data.damage)
+
+
+## Servidor: o 3o golpe do combo empurra o monstro e interrompe o golpe que
+## ele preparava (o chefe nao e empurrado nem interrompido).
+func push_back(dir: Vector2, px: float) -> void:
+	if data.is_boss or state == State.DEAD or state == State.RETURN:
+		return
+	move_and_collide(dir * px)
+	net_position = position
+	if state == State.WINDUP and _pending == "attack":
+		_pending = ""
+		state = State.CHASE
+		_next_attack_ms = maxi(_next_attack_ms, Time.get_ticks_msec() + 500)
+
+
+## Empurrao para longe dos monstros vizinhos (0..1 por vizinho).
+func _separation() -> Vector2:
+	var push := Vector2.ZERO
+	for other in get_parent().get_children():
+		if other == self or not other is Monster or (other as Monster).state == State.DEAD:
+			continue
+		var d: Vector2 = position - (other as Monster).position
+		var l := d.length()
+		if l < SEPARATION:
+			var away := d / l if l > 0.01 else Vector2.from_angle(randf() * TAU)
+			push += away * (SEPARATION - l) / SEPARATION
+	return push
+
+
 ## Servidor: ameaca extra (habilidade de guerreiro, cura de quem ele ataca).
 func add_threat(id: int, amount: float) -> void:
 	if id != 0 and state != State.DEAD and state != State.RETURN and amount > 0.0:
@@ -193,6 +266,7 @@ func is_fighting(id: int) -> bool:
 
 
 func _forget() -> void:
+	_pending = ""
 	_damage_by.clear()
 	_threat.clear()
 
@@ -213,6 +287,7 @@ func _move_towards(target: Vector2, speed: float) -> void:
 	velocity = dir.normalized() * speed if dir.length() > 1.0 else Vector2.ZERO
 	if velocity != Vector2.ZERO:
 		_face(velocity)
+	velocity += _separation() * speed * 0.6
 
 
 func _face(dir: Vector2) -> void:
@@ -282,6 +357,7 @@ func _set_state(value: State) -> void:
 	state = value
 	if not is_node_ready() or multiplayer.is_server():
 		return
+	_windup_visual(value == State.WINDUP)
 	if value == State.DEAD and not was_dead:
 		# No mapa da zona, nao no container de rede (Monsters so tem monstros)
 		var fx := SMOKE.instantiate()
@@ -291,6 +367,21 @@ func _set_state(value: State) -> void:
 	elif was_dead and value != State.DEAD:
 		position = net_position
 	_refresh_visuals()
+
+
+## Cliente: pisca avermelhado e recua um pouco enquanto prepara o golpe.
+func _windup_visual(on: bool) -> void:
+	if _windup_tween:
+		_windup_tween.kill()
+		_windup_tween = null
+	if not on:
+		_sprite.self_modulate = Color.WHITE
+		return
+	_windup_tween = create_tween().set_loops()
+	_windup_tween.tween_property(_sprite, "self_modulate", WINDUP_TINT, 0.09)
+	_windup_tween.tween_property(_sprite, "self_modulate", Color.WHITE, 0.09)
+	var back := create_tween()
+	back.tween_property(_sprite, "offset", -Vector2(facing) * 2.0, 0.12)
 
 
 func _set_attack_seq(value: int) -> void:
