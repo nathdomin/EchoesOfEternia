@@ -12,6 +12,8 @@ const TIMEOUT_SEC := 90.0
 
 var _cls := "guerreiro"
 var _hits := 0
+## Monstros que o servidor confirmou ter acertado (para saber se morreram).
+var _hit_paths: Array[NodePath] = []
 var _fails := 0
 var _main: Node
 var _player: Player
@@ -26,7 +28,9 @@ func _ready() -> void:
 	cfg.load("user://client.cfg")
 	cfg.set_value("ui", "tutorial_seen", true)
 	cfg.save("user://client.cfg")
-	Combat.own_hit.connect(func(_p: NodePath, _h: bool) -> void: _hits += 1)
+	Combat.own_hit.connect(func(p: NodePath, _h: bool) -> void:
+		_hits += 1
+		_hit_paths.append(p))
 	get_tree().create_timer(TIMEOUT_SEC).timeout.connect(func() -> void:
 		print("TEMPO ESGOTADO")
 		get_tree().quit(1))
@@ -61,6 +65,7 @@ func _run() -> void:
 
 	# Golpe basico: 3 vezes
 	await _approach(cls)
+	_describe_target()
 	var before := _hits
 	for i in 3:
 		_press("attack")
@@ -72,6 +77,7 @@ func _run() -> void:
 		var ab: AbilityData = cls.abilities[i]
 		await _approach(cls, ab)
 		before = _hits
+		_hit_paths.clear()
 		var start := _player.global_position
 		_main.call("_use_slot", i)
 		var status_seen := false
@@ -87,7 +93,15 @@ func _run() -> void:
 			_:
 				_check(hits > 0, "%s: acerta (%d)" % [ab.display_name, hits])
 		if ab.slow > 0.0 or ab.stun_seconds > 0.0:
-			_check(status_seen, "%s: monstro fica %s" % [ab.display_name, "congelado" if ab.stun_seconds > 0.0 else "lento"])
+			# Monstro que morre com o golpe nao chega a ficar lento (o servidor so
+			# aplica o efeito em quem sobreviveu): isso tambem vale
+			var all_died := not _hit_paths.is_empty()
+			for p in _hit_paths:
+				var m := Combat.get_node_or_null(p) as Monster
+				if m and not m.is_dead():
+					all_died = false
+			_check(status_seen or all_died, "%s: monstro fica %s%s" % [ab.display_name,
+					"congelado" if ab.stun_seconds > 0.0 else "lento", "" if status_seen else " (ou morreu no golpe)"])
 		await _wait(0.4)
 	print("RESULTADO: %s" % ("OK" if _fails == 0 else "%d FALHA(S)" % _fails))
 	get_tree().quit(1 if _fails > 0 else 0)
@@ -149,6 +163,14 @@ func _clear_line_to(m: Monster) -> bool:
 	var q := PhysicsRayQueryParameters2D.create(from, to, Combat.WALL_MASK)
 	var hit := _player.get_world_2d().direct_space_state.intersect_ray(q)
 	return hit.is_empty() or (hit.position as Vector2).distance_to(to) <= m.hitbox.radius
+
+
+## Diagnostico: qual monstro esta mais perto, a que distancia e se ha linha livre.
+func _describe_target() -> void:
+	var m := _nearest()
+	if m:
+		print("        alvo: %s (Nv%d) a %.0f px, linha livre: %s, %s" % [m.display_name(), m.data.level,
+				m.global_position.distance_to(_player.global_position), _clear_line_to(m), "morto" if m.is_dead() else "vivo"])
 
 
 func _nearest() -> Monster:
