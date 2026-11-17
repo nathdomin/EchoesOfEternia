@@ -33,7 +33,7 @@
 - E5 mensagens de sistema · E9 nome sobre cada jogador, mundo compartilhado · E12/E13 barra de vida, quadro do alvo · E16 level up · E17 hotbar 1–4 · E18 inventário/loot/equipamento · E19 chat (global, grupo, sistema) · E20 grupo + quadro do grupo · E21 NPC com diálogo no estilo manuscrito + rastreador de missão · Fase 6 números de dano, painel F3.
 
 ## Pixel art e assets
-- Viewport 480×270, stretch `viewport`, scale `integer`, filtro padrão Nearest, janela 1440×810 (3×), renderer Compatibility (por isso partículas são `CPUParticles2D`).
+- Viewport 480×270, stretch `viewport`, scale `integer`, filtro padrão Nearest, janela 1440×810 (3×); o jogador escolhe 960×540, 1440×810 ou 1920×1080 na pausa ("Tela", `DisplaySettings`, `client.cfg` seção `video`; se não cabe em janela no monitor, vira tela cheia), renderer Compatibility (por isso partículas são `CPUParticles2D`).
 - Base visual única: **Ninja Adventure Asset Pack** (Pixel-Boy & AAA, CC0), top-down 16×16. Não misturar com outros estilos. Detalhes do que foi copiado em `assets/LICENSES.md`.
 - Personagens: `AnimatedSprite2D` com `resources/characters/<nome>_frames.tres` (animações `idle_/walk_/attack_` + `down/up/left/right`, e `dead`). Sombra `assets/characters/ninja/Shadow.png` sob cada personagem.
 - Atmosfera: `scenes/maps/ambience.tscn` (CanvasModulate, folhas, vaga-lumes, vinheta `shaders/vignette.gdshader`).
