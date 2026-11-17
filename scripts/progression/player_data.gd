@@ -249,6 +249,7 @@ func refresh_stats(id: int, notify := true) -> void:
 	avatar.health.hp = mini(avatar.health.hp, st.max_hp)
 	avatar.level = int(data.level)
 	avatar.skin = st["class"].skin if String(data.get("class", "")) != "" else String(data.skin)
+	avatar.outfit = int(data.get("outfit", 0))
 	avatar.sync_health()
 	if notify:
 		Combat.push_health(id)
@@ -271,6 +272,7 @@ func push(id: int) -> void:
 		"quests": data.quests, "quest_progress": progress, "max_hp": st.max_hp, "damage": st.damage,
 		"name": data.name, "skin": data.skin, "chests": _chest_timers(data),
 		"gold": int(data.get("gold", 0)), "now": int(Time.get_unix_time_from_system()),
+		"outfit": int(data.get("outfit", 0)), "tutorial_seen": bool(data.get("tutorial_seen", false)),
 	})
 
 
@@ -673,8 +675,9 @@ func _sell(slot: int) -> void:
 
 # ---------- API do cliente ----------
 
-func choose_class(cid: String) -> void:
-	_choose_class.rpc_id(1, cid)
+## `outfit` = cor da roupa (pacote E, Player.OUTFIT_SHIFTS).
+func choose_class(cid: String, outfit := 0) -> void:
+	_choose_class.rpc_id(1, cid, outfit)
 
 
 func use_slot(slot: int) -> void:
@@ -723,12 +726,13 @@ func _level_up(level: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _choose_class(cid: String) -> void:
+func _choose_class(cid: String, outfit: int) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	var data := Characters.data_of(id)
 	if data.is_empty() or data["class"] != "" or not cid in CLASS_IDS:
 		return
 	data["class"] = cid
+	data.outfit = clampi(outfit, 0, Player.OUTFIT_SHIFTS.size() - 1)
 	data.skin = class_data(cid).skin
 	refresh_stats(id)
 	var avatar := Characters.avatar_of(id)

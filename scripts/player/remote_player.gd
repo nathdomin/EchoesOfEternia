@@ -33,6 +33,11 @@ const WALK_THRESHOLD := 0.75 ## px de distancia para considerar andando
 	set = _set_dead
 @export var attack_seq := 0:
 	set = _set_attack_seq
+## Pacote E: direcao real do ultimo golpe (o corte aparece nela, nao so nas 4
+## direcoes) e a cor da roupa.
+@export var attack_aim := Vector2.ZERO
+@export var outfit := 0:
+	set = _set_outfit
 
 const SLASH := preload("res://scenes/effects/slash.tscn")
 
@@ -43,16 +48,25 @@ const SLASH := preload("res://scenes/effects/slash.tscn")
 @onready var hitbox: HitboxComponent = $Hitbox
 var _attack_until_ms := 0
 var _weapon := Sprite2D.new()
+## Pacote E: barra de vida pequena sobre a cabeca (grupo ou dano recente).
+var _bar: ProgressBar
+var _hurt_until_ms := 0
 
 
 func _ready() -> void:
 	_weapon.visible = false
 	add_child(_weapon)
 	_sprite.sprite_frames = Player.frames_for(skin)
+	_sprite.material = Player.outfit_material(outfit)
 	_refresh_name()
 	position = net_position
 	if multiplayer.is_server():
 		set_process(false)  # no servidor quem move e o Characters
+		return
+	_bar = UiKit.bar(18, 2, Color(0.85, 0.2, 0.2))
+	_bar.position = Vector2(-9, -20)
+	_bar.visible = false
+	add_child(_bar)
 	_update_animation(false)
 
 
@@ -71,6 +85,14 @@ func _process(delta: float) -> void:
 	else:
 		position = position.lerp(net_position, 1.0 - exp(-FOLLOW_RATE * delta))
 	_update_animation(dist > WALK_THRESHOLD)
+	# Barra: no meu grupo sempre; dos outros, por alguns segundos depois de apanhar
+	var in_party := false
+	for m in Social.party:
+		if int(m.get("id", 0)) == int(str(name)):
+			in_party = true
+	_bar.visible = (in_party or Time.get_ticks_msec() < _hurt_until_ms) and hp < max_hp
+	_bar.max_value = maxi(max_hp, 1)
+	_bar.value = hp
 
 
 func _update_animation(walking: bool) -> void:
@@ -94,6 +116,7 @@ func _set_hp(value: int) -> void:
 	var lost := hp - value
 	hp = value
 	if lost > 0 and is_node_ready() and not multiplayer.is_server() and not dead:
+		_hurt_until_ms = Time.get_ticks_msec() + 4000
 		_sprite.modulate = Color(3, 3, 3)
 		create_tween().tween_property(_sprite, "modulate", Color.WHITE, 0.18)
 		FloatingText.spawn(get_parent().get_parent(), position, str(lost), FloatingText.HURT)
@@ -111,8 +134,11 @@ func _set_attack_seq(value: int) -> void:
 	if not changed or not is_node_ready() or multiplayer.is_server():
 		return
 	_attack_until_ms = Time.get_ticks_msec() + 250
-	Player.spawn_slash(get_parent().get_parent(), position, Vector2(facing))  # no mapa, nao em Players
-	GameAudio.play_at("swing", position)
+	# A mira chega no mesmo pacote, mas pode ser aplicada depois deste setter
+	(func() -> void:
+		var aim := attack_aim if attack_aim.length() > 0.5 else Vector2(facing)
+		Player.spawn_slash(get_parent().get_parent(), position, aim.normalized())  # no mapa, nao em Players
+		GameAudio.play_at("swing", position)).call_deferred()
 
 
 ## Pose de lancar habilidade (o efeito vem do Combat._ability_fx).
@@ -127,6 +153,13 @@ func _set_skin(value: String) -> void:
 	skin = value
 	if is_node_ready():
 		_sprite.sprite_frames = Player.frames_for(skin)
+		_refresh_name()
+
+
+func _set_outfit(value: int) -> void:
+	outfit = value
+	if is_node_ready():
+		_sprite.material = Player.outfit_material(outfit)
 
 
 func _set_level(value: int) -> void:
@@ -140,3 +173,5 @@ func _set_level(value: int) -> void:
 ## Nome com o nivel ao lado, como nos MMOs ("Lia Nv5").
 func _refresh_name() -> void:
 	_name_label.text = "%s Nv%d" % [display_name, level] if display_name != "" else ""
+	if Player.CLASS_NAME_COLORS.has(skin) and not multiplayer.is_server():
+		_name_label.modulate = Player.CLASS_NAME_COLORS[skin]

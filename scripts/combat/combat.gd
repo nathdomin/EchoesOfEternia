@@ -417,6 +417,7 @@ func _request_attack(aim: Vector2, at: Vector2, target_path: NodePath) -> void:
 	p.combo = step
 	p.combo_until = now + int((st.attack_cooldown + BASE_STATS.combo_window) * 1000.0)
 	var heavy := step == 3
+	avatar.attack_aim = aim
 	avatar.attack_seq += 1  # os outros veem o golpe
 	var damage := roundi(st.damage * (BASE_STATS.combo_finisher_mult if heavy else 1.0))
 	for m: Monster in _monster_roots[zone].get_children():

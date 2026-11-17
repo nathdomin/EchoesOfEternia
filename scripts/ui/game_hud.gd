@@ -163,6 +163,7 @@ func _on_me_changed() -> void:
 	_level_badge.tooltip_text = "Nv %d  ·  %s" % [me.level, _xp_bar.tooltip_text]
 	if String(me.get("class", "")) != "":
 		_player_face.texture = Player.FACESETS.get(PlayerData.class_data(me["class"]).skin, _player_face.texture)
+	_player_face.material = Player.outfit_material(int(me.get("outfit", 0)))
 
 
 func setup_player(skin: String, display_name: String) -> void:
@@ -191,10 +192,17 @@ func set_target(node: Node2D) -> void:
 		_target_name.add_theme_color_override("font_color", Color(1, 0.45, 0.4) if gap >= 3 				else (Color(0.65, 0.65, 0.65) if gap <= -PlayerData.XP_GAP_HALF else Color(1, 0.96, 0.88)))
 		_target_face.texture = node.data.faceset
 	elif node is RemotePlayer:
-		_target_name.text = "%s  Nv %d  (G convida)" % [node.display_name, node.level]
+		_target_name.text = "%s  Nv %d  %s" % [node.display_name, node.level, _class_of_skin(node.skin)]
 		_target_name.remove_theme_color_override("font_color")
 		_target_face.texture = Player.FACESETS.get(node.skin, Player.FACESETS.knight)
 	_process(0.0)
+
+
+static func _class_of_skin(skin: String) -> String:
+	for cid: String in PlayerData.CLASS_IDS:
+		if PlayerData.class_data(cid).skin == skin:
+			return PlayerData.class_data(cid).display_name
+	return ""
 
 
 func _process(_delta: float) -> void:

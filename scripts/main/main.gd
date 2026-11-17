@@ -44,6 +44,8 @@ var _last_item_total := -1
 var _last_done_quests := -1
 var _last_ready_quests := -1
 var _player_light: PointLight2D
+## Pacote D: tela escura que clareia ao chegar numa zona nova.
+var _fade: ColorRect
 var _music_check := 0.0
 
 ## Mapa da zona atual (Village, Forest ou Dungeon; todas usam o script Village).
@@ -230,6 +232,23 @@ func _switch_map(zone: String) -> void:
 	_apply_zone_look(zone)
 
 
+## Chegada numa zona: comeca escuro e clareia (troca de mapa sem "pulo").
+func _fade_in() -> void:
+	if _fade == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 5  # acima do mapa, abaixo da HUD
+		add_child(layer)
+		_fade = ColorRect.new()
+		_fade.color = Color.BLACK
+		_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(_fade)
+	_fade.modulate.a = 1.0
+	var t := _fade.create_tween()
+	t.tween_interval(0.1)
+	t.tween_property(_fade, "modulate:a", 0.0, 0.45)
+
+
 ## Musica e clima da zona (cor, folhas, vaga-lumes, escuro com luz no jogador).
 func _apply_zone_look(zone: String) -> void:
 	_zone = zone
@@ -277,6 +296,7 @@ func _apply_zone_look(zone: String) -> void:
 
 
 func _on_zone_changed(zone: String, pos: Vector2) -> void:
+	_fade_in()
 	_game_hud.set_target(null)
 	_game_hud.dialogue.close()
 	_game_hud.shop.close()
@@ -339,6 +359,7 @@ func _on_own_health(hp: int, max_hp: int) -> void:
 		FloatingText.spawn(_map, _player.global_position, str(-delta), FloatingText.HURT)
 		GameAudio.play("hurt")
 		_player.shake(2.0)
+		_player.flash_hurt()
 	elif delta >= maxi(8, max_hp / 12):
 		FloatingText.spawn(_map, _player.global_position, "+%d" % delta, FloatingText.HEAL)
 
@@ -355,6 +376,7 @@ func _on_player_data_changed() -> void:
 		var who := NetworkManager.player_name(multiplayer.get_unique_id())
 		_player.setup_look(PlayerData.class_data(cid).skin, who)
 		_game_hud.setup_player(_player.skin, who)
+	_player.set_outfit(int(me.get("outfit", 0)))
 	var items := 0
 	for s in me.get("inventory", []):
 		if s is Dictionary:
