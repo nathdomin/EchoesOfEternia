@@ -21,7 +21,6 @@ extends Node2D
 
 const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
 const REPORT_INTERVAL := 0.1  ## segundos entre avisos de posicao ao servidor
-const BASE_STATS := preload("res://resources/combat/player_base.tres")
 const TARGET_PICK_RADIUS := 12.0  ## px em volta do clique
 const TARGET_TAB_RANGE := 160.0
 const NPC_RANGE := 30.0
@@ -75,6 +74,8 @@ func _ready() -> void:
 	_on_player_data_changed()
 	Combat.own_respawned.connect(_on_respawned)
 	Combat.own_hit.connect(_on_own_hit)
+	Combat.own_dodged.connect(func() -> void:
+		FloatingText.spawn(_map, _player.global_position, "esquivou", FloatingText.XP))
 	$NetHud/Log.visible = false  # o chat mostra as mensagens de sistema
 	_game_hud.hotbar.slot_clicked.connect(_use_slot)
 	_game_hud.pause_menu.help_requested.connect(func() -> void: _game_hud.controls.open())
@@ -356,17 +357,21 @@ func _on_player_data_changed() -> void:
 
 
 ## O servidor confirmou um acerto: sem alvo, o monstro atingido vira o alvo.
-func _on_own_hit(monster_path: NodePath) -> void:
+## `heavy` = 3o golpe do combo (pausa e tremor maiores).
+func _on_own_hit(monster_path: NodePath, heavy: bool) -> void:
 	var m := Combat.get_node_or_null(monster_path) as Node2D
 	if m and (_game_hud.target == null or not is_instance_valid(_game_hud.target)):
 		_game_hud.set_target(m)
 	if m is Monster:
 		(m as Monster).knockback(_player.global_position)
-		_hitstop()
+		_hitstop(HITSTOP_HEAVY_SEC if heavy else HITSTOP_SEC)
+		if heavy:
+			_player.shake(1.5, 0.12)
 
 
 ## Pausa curtissima no impacto (so o visual deste cliente): o golpe "pesa".
 const HITSTOP_SEC := 0.04
+const HITSTOP_HEAVY_SEC := 0.08
 var _hitstop_on := false
 
 
@@ -374,12 +379,12 @@ func _exit_tree() -> void:
 	Engine.time_scale = 1.0  # saiu no meio de uma pausa de impacto
 
 
-func _hitstop() -> void:
+func _hitstop(seconds: float) -> void:
 	if _hitstop_on:
 		return
 	_hitstop_on = true
 	Engine.time_scale = 0.05
-	await get_tree().create_timer(HITSTOP_SEC, true, false, true).timeout
+	await get_tree().create_timer(seconds, true, false, true).timeout
 	Engine.time_scale = 1.0
 	_hitstop_on = false
 
@@ -481,8 +486,17 @@ func _unhandled_input(event: InputEvent) -> void:
 			_game_hud.chat.add_line("sistema", "", "Selecione um jogador (clique nele) e aperte G para convidar.")
 		return
 	if event.is_action_pressed("attack") and _reconnect_attempt < 0:
-		if _player.try_attack(BASE_STATS.attack_cooldown):
-			Combat.request_attack(_player.facing)
+		var cls := PlayerData.class_data(String(PlayerData.me.get("class", "")))
+		var aim := _attack_aim(cls.reach)
+		if _player.try_attack(cls.attack_cooldown, aim, cls.reach) > 0:
+			Combat.request_attack(aim, _player.global_position)
+		get_viewport().set_input_as_handled()
+		return
+	if event.is_action_pressed("dodge") and _reconnect_attempt < 0:
+		if _player.try_dodge():
+			Combat.request_dodge()
+		elif not _player.is_dead:
+			GameAudio.play("error", 0.0)
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("target_next"):
@@ -492,6 +506,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_select_at(get_global_mouse_position())
 		return
+
+
+## Mira do golpe basico: o alvo selecionado, se estiver perto o bastante
+## para o corte encostar; senao, para onde o personagem olha.
+func _attack_aim(reach: float) -> Vector2:
+	var m := _game_hud.target as Monster
+	if m and is_instance_valid(m) and not m.is_dead():
+		var to := m.hitbox.center() - (_player.global_position + Combat.BODY)
+		if to.length() > 0.5 and to.length() <= reach * (HitboxComponent.ARC_FORWARD + HitboxComponent.ARC_RADIUS) + m.hitbox.radius + 6.0:
+			return to.normalized()
+	return Vector2(_player.facing)
 
 
 ## Barra: 0-2 habilidades da classe, 3 pocao.

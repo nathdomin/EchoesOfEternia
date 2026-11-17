@@ -19,7 +19,8 @@ const LEFT := [
 		[["setas"], "também andam"],
 	]],
 	["Combate", [
-		[["Espaço"], "atacar"],
+		[["Espaço"], "atacar (3 seguidos = combo)"],
+		[["Shift"], "esquivar"],
 		[["1", "2", "3"], "habilidades"],
 		[["4"], "poção de vida"],
 		[["Tab"], "trocar de alvo"],
@@ -42,7 +43,7 @@ const RIGHT := [
 ]
 const GUIDE := [
 	"Fale com o Ancião na praça (tecla E) e aceite a missão.",
-	"Derrote os monstros. O progresso aparece à direita da tela.",
+	"Derrote monstros. Piscou vermelho? Saia de perto ou esquive (Shift).",
 	"Volte ao NPC com \"?\" para ganhar XP e itens.",
 	"Equipe o que ganhar no inventário (tecla I).",
 	"A leste ficam a Floresta e a Caverna. Abra os baús!",

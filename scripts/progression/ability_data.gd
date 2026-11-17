@@ -26,3 +26,5 @@ enum Kind {
 @export var effect: PackedScene
 ## Projetil visual (textura que voa ate o alvo), opcional.
 @export var projectile: Texture2D
+## Para onde a imagem do projetil aponta (graus; 0 = direita, -90 = cima).
+@export var projectile_angle := 0.0

@@ -21,7 +21,8 @@ ATUALIZACOES
 
 CONTROLES (F1 mostra tudo dentro do jogo)
   WASD ou setas  andar
-  Espaco ou J    atacar
+  Espaco ou J    atacar (3 golpes seguidos = combo, o 3o empurra)
+  Shift ou K     esquivar (corrida curta sem levar dano)
   1 2 3          habilidades da classe      4  pocao
   Tab            escolher o proximo alvo (ou clique no monstro)
   E              falar com NPC / abrir bau
@@ -38,6 +39,8 @@ CHAT
   /convidar Nome   /aceitar   /recusar   /sair   (grupo, ate 4)
 
 DICAS
+  - Monstro piscando vermelho vai bater: saia de perto ou esquive (Shift).
+  - Circulo vermelho no chao (chefe): saia antes de encher.
   - Fale com o Anciao na praca da vila (o "!" sobre a cabeca).
   - Em grupo a XP e dividida com bonus, e a Cura do Mago cura o grupo todo.
   - A floresta fica a leste da vila; a caverna do Rei Slime, no extremo leste da floresta.

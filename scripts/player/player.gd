@@ -33,7 +33,11 @@ const FACESETS := {
 	"noble": preload("res://assets/characters/ninja/Noble/Faceset.png"),
 }
 const SLASH := preload("res://scenes/effects/slash.tscn")
+## O desenho do corte nao e centrado no quadro: este deslocamento poe o meio
+## do arco no ponto do golpe (medido no SpriteSheet do SlashCurved).
+const SLASH_OFFSET := Vector2(-6, -3)
 const ATTACK_TIME := 0.22  ## segundos parado na pose de ataque
+const BASE_STATS := preload("res://resources/combat/player_base.tres")
 
 @export var speed := SPEED
 @export var acceleration := 900.0
@@ -47,6 +51,13 @@ var is_dead := false
 var input_locked := false
 var _attack_left := 0.0
 var _next_attack_ms := 0
+## Combo (so o visual: o servidor conta o dele)
+var _combo := 0
+var _combo_until_ms := 0
+## Esquiva
+var _dodge_left := 0.0
+var _dodge_dir := Vector2.ZERO
+var _next_dodge_ms := 0
 
 @onready var _sprite: AnimatedSprite2D = $Sprite
 @onready var _camera: Camera2D = $Camera2D
@@ -93,20 +104,66 @@ func place(pos: Vector2, dir: Vector2i) -> void:
 	_camera.reset_smoothing()
 
 
-## Golpe (E12): pose de ataque + efeito. Retorna false se ainda em recarga
-## ou morto. Quem decide se acertou e o servidor (Combat.request_attack).
-func try_attack(cooldown: float) -> bool:
+## Golpe (E12): pose de ataque + efeito na direcao `aim` (normalizada).
+## Retorna o passo do combo (1-3) ou 0 se em recarga, morto ou esquivando.
+## Quem decide se acertou e o servidor (Combat.request_attack).
+func try_attack(cooldown: float, aim: Vector2, reach := 20.0) -> int:
 	var now := Time.get_ticks_msec()
-	if is_dead or now < _next_attack_ms:
-		return false
+	if is_dead or now < _next_attack_ms or _dodge_left > 0.0:
+		return 0
 	_next_attack_ms = now + int(cooldown * 1000.0)
+	_combo = (_combo % 3) + 1 if now <= _combo_until_ms else 1
+	_combo_until_ms = now + int((cooldown + BASE_STATS.combo_window) * 1000.0)
+	facing = _cardinal(aim)
 	_attack_left = ATTACK_TIME
 	anim_state = AnimState.ATTACK
 	velocity = Vector2.ZERO
 	_update_animation()
-	spawn_slash(get_parent(), global_position, facing)
-	GameAudio.play("swing")
+	spawn_slash(get_parent(), global_position, aim, reach, _combo == 3)
+	GameAudio.play("swing", 0.06 if _combo < 3 else 0.0, 1.0)
+	if _combo == 3:
+		# o golpe final "anda" um pouco para frente
+		var t := create_tween()
+		t.tween_property(_sprite, "offset", aim * 3.0, 0.05)
+		t.tween_property(_sprite, "offset", Vector2.ZERO, 0.12)
+	return _combo
+
+
+## Esquiva (Shift): corrida curta na direcao do input (ou para onde olha).
+## Retorna false se em recarga, morto ou travado.
+func try_dodge() -> bool:
+	var now := Time.get_ticks_msec()
+	if is_dead or input_locked or now < _next_dodge_ms or _dodge_left > 0.0:
+		return false
+	var dir := Input.get_vector("move_left", "move_right", "move_up", "move_down")
+	_dodge_dir = dir.normalized() if dir != Vector2.ZERO else Vector2(facing)
+	_next_dodge_ms = now + int(BASE_STATS.dodge_cooldown * 1000.0)
+	_dodge_left = BASE_STATS.dodge_time
+	_attack_left = 0.0
+	anim_state = AnimState.WALK
+	facing = _cardinal(_dodge_dir)
+	_update_animation()
+	_sprite.modulate.a = 0.55
+	GameAudio.play("dodge")
 	return true
+
+
+## Segundos que faltam para poder esquivar de novo (0 = pronta).
+func dodge_seconds_left() -> float:
+	return maxf((_next_dodge_ms - Time.get_ticks_msec()) / 1000.0, 0.0)
+
+
+## Rastro da esquiva: copia do sprite que some.
+func _ghost() -> void:
+	var g := Sprite2D.new()
+	g.texture = _sprite.sprite_frames.get_frame_texture(_sprite.animation, _sprite.frame)
+	g.global_position = _sprite.global_position
+	g.modulate = Color(0.7, 0.85, 1.0, 0.5)
+	g.z_index = -1
+	get_parent().add_child(g)
+	var t := g.create_tween()
+	t.tween_property(g, "modulate:a", 0.0, 0.2)
+	t.tween_callback(g.queue_free)
 
 
 ## Pose de lancar habilidade (sem o efeito de golpe; o servidor manda o efeito).
@@ -119,11 +176,17 @@ func play_cast() -> void:
 	_update_animation()
 
 
-## Efeito de golpe a frente de quem bate (usado tambem pelos RemotePlayer).
-static func spawn_slash(parent: Node, pos: Vector2, dir: Vector2i) -> void:
-	var fx := SLASH.instantiate() as Node2D
-	fx.position = pos + Vector2(0, -7) + Vector2(dir) * 10.0
-	fx.rotation = Vector2(dir).angle()
+## Efeito de golpe a frente de quem bate (usado tambem pelos RemotePlayer),
+## centrado no circulo que o servidor usa para acertar
+## (HitboxComponent.arc_center). `big` = 3o golpe do combo.
+static func spawn_slash(parent: Node, feet: Vector2, aim: Vector2, reach := 20.0, big := false) -> void:
+	var fx := SLASH.instantiate() as AnimatedSprite2D
+	fx.position = HitboxComponent.arc_center(feet + Combat.BODY, aim, reach)
+	fx.rotation = aim.angle()
+	fx.offset = SLASH_OFFSET
+	if big:
+		fx.scale = Vector2(1.35, 1.35)
+		fx.modulate = Color(1.4, 1.2, 0.8)
 	parent.add_child(fx)
 
 
@@ -140,12 +203,23 @@ func shake(strength: float, duration := 0.25) -> void:
 func set_dead(value: bool) -> void:
 	is_dead = value
 	velocity = Vector2.ZERO
+	_dodge_left = 0.0
+	_sprite.modulate.a = 1.0
 	anim_state = AnimState.DEAD if value else AnimState.IDLE
 	_update_animation()
 
 
 func _physics_process(delta: float) -> void:
 	if is_dead:
+		return
+	if _dodge_left > 0.0:
+		_dodge_left -= delta
+		velocity = _dodge_dir * BASE_STATS.dodge_distance / BASE_STATS.dodge_time
+		move_and_slide()
+		_ghost()
+		if _dodge_left <= 0.0:
+			velocity = _dodge_dir * speed * 0.5
+			_sprite.modulate.a = 1.0
 		return
 	if _attack_left > 0.0:
 		_attack_left -= delta
@@ -158,7 +232,7 @@ func _physics_process(delta: float) -> void:
 
 	if input != Vector2.ZERO:
 		velocity = velocity.move_toward(input * speed, acceleration * delta)
-		facing = _cardinal(input)
+		facing = _facing_for(input)
 	else:
 		velocity = velocity.move_toward(Vector2.ZERO, friction * delta)
 
@@ -183,8 +257,19 @@ func _footsteps(delta: float) -> void:
 		GameAudio.play("step%d" % (randi() % 5), 0.08)
 
 
-## Converte a direcao do input na direcao cardinal dominante.
-## Em diagonal exata, mantem o eixo horizontal (sprite de lado le melhor).
+## Direcao para onde olhar andando. Na diagonal mantem a direcao atual se
+## ela for uma das duas teclas apertadas (andar para cima e apertar a
+## esquerda continua olhando para cima); ao soltar uma, vale a que ficou.
+func _facing_for(input: Vector2) -> Vector2i:
+	if absf(input.x) > 0.3 and absf(input.y) > 0.3:
+		var fx := Vector2i.RIGHT if input.x > 0.0 else Vector2i.LEFT
+		var fy := Vector2i.DOWN if input.y > 0.0 else Vector2i.UP
+		if facing == fx or facing == fy:
+			return facing
+	return _cardinal(input)
+
+
+## Converte uma direcao na direcao cardinal dominante (horizontal no empate).
 func _cardinal(dir: Vector2) -> Vector2i:
 	if absf(dir.x) >= absf(dir.y):
 		return Vector2i.RIGHT if dir.x > 0.0 else Vector2i.LEFT
