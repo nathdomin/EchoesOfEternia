@@ -11,6 +11,7 @@ const SIZE := Vector2(232, 196)
 
 var _sliders: Array[HSlider] = []
 var _first: Button
+var _res_button: Button
 
 
 func _ready() -> void:
@@ -55,6 +56,20 @@ func _ready() -> void:
 		row.add_child(s)
 		box.add_child(row)
 		_sliders.append(s)
+	# Resolucao: clique troca entre 960x540, 1440x810 e 1920x1080
+	var res_row := HBoxContainer.new()
+	res_row.add_theme_constant_override("separation", 6)
+	var rl := UiKit.ink_text("Tela")
+	rl.custom_minimum_size.x = 46
+	res_row.add_child(rl)
+	_res_button = Button.new()
+	_res_button.theme_type_variation = &"InkFlatButton"
+	_res_button.focus_mode = Control.FOCUS_ALL
+	_res_button.custom_minimum_size.x = 110
+	_res_button.text = DisplaySettings.label(DisplaySettings.current_index())
+	_res_button.pressed.connect(_on_resolution_pressed)
+	res_row.add_child(_res_button)
+	box.add_child(res_row)
 
 
 func _button(parent: Control, text: String, action: Callable) -> Button:
@@ -73,6 +88,12 @@ func open() -> void:
 func _on_volume_changed(_v: float) -> void:
 	GameAudio.set_volumes(_sliders[0].value, _sliders[1].value)
 	GameAudio.play("click", 0.0)
+
+
+func _on_resolution_pressed() -> void:
+	var next := (DisplaySettings.current_index() + 1) % DisplaySettings.RESOLUTIONS.size()
+	DisplaySettings.set_index(next)
+	_res_button.text = DisplaySettings.label(next)
 
 
 func close() -> void:
