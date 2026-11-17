@@ -3,7 +3,7 @@ extends Node
 ## Atualizacao automatica do cliente (Fase 7).
 ##
 ## Ao abrir o menu, o .exe exportado le o `latest.json` da ultima versao
-## publicada no repositorio publico de downloads (so o jogo, sem codigo):
+## publicada no repositorio publico de downloads (so os binarios):
 ##   {"version": "0.6.0", "zip": "<url do zip do cliente>", "sha256": "...", "size": N}
 ## Se for mais nova: baixa o zip, confere o SHA-256, tira o .exe de dentro,
 ## troca pelo atual (o Windows deixa renomear um .exe em uso: o antigo vira

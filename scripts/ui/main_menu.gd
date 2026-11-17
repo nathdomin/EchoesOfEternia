@@ -234,6 +234,11 @@ func _on_login_failed(reason: String) -> void:
 	Session.reset()
 	_set_busy(false)
 	_set_error(_join_error, reason)
+	# Sem resposta de outro endereco (ex.: um IP antigo lembrado pelo menu):
+	# poe o servidor oficial no campo; a mensagem pede para clicar em Entrar.
+	if NetworkManager.last_end_was_unreachable and _join_ip.text.strip_edges() != Session.DEFAULT_HOST:
+		_join_ip.text = Session.DEFAULT_HOST
+		_join_port.text = str(NetUtils.DEFAULT_PORT)
 
 
 func _quit() -> void:

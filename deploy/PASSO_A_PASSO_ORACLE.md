@@ -27,6 +27,7 @@ Faça tudo no PC de onde você vai administrar o servidor. Ele precisa ter esta 
    - IP Protocol: **UDP**;
    - Destination Port Range: `7777`.
 3. **Add Ingress Rules** para salvar.
+4. Repita com a porta `443` (UDP). É a porta alternativa: redes de faculdade e empresa costumam bloquear a 7777, e o jogo tenta a 443 sozinho.
 
 ## 4. Instalar o servidor (um comando)
 Abra o **PowerShell** nesta pasta e rode, trocando o IP e o caminho da chave:

@@ -23,7 +23,7 @@ $bin = if ($arch -eq "aarch64") { "echoes_server.arm64" } else { "echoes_server.
 Write-Host "   $arch -> $bin"
 
 Write-Host ">> Enviando os arquivos"
-$arquivos = @($bin, "install_server.sh", "update_server.sh", "stop_server.sh", "echoes-server.service") |
+$arquivos = @($bin, "install_server.sh", "update_server.sh", "stop_server.sh", "echoes-server.service", "configurar_vm.sh") |
 	ForEach-Object { Join-Path $aqui $_ }
 scp @ssh @arquivos "${destino}:~/"
 

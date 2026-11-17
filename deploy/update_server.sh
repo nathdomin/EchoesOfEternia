@@ -24,6 +24,7 @@ if [[ -f "$HERE/echoes-server.service" ]]; then
   install -m 0644 "$HERE/echoes-server.service" /etc/systemd/system/echoes-server.service
   systemctl daemon-reload
 fi
+[[ -f "$HERE/configurar_vm.sh" ]] && bash "$HERE/configurar_vm.sh"
 systemctl start echoes-server
 sleep 2
 journalctl -u echoes-server -n 10 --no-pager

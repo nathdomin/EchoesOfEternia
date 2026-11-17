@@ -3,6 +3,10 @@ extends RefCounted
 ## Funcoes de rede reutilizadas pelo menu e pelo teste de rede.
 
 const DEFAULT_PORT := 7777
+## Porta alternativa do servidor oficial (a VM redireciona a UDP 443 para a
+## 7777). Redes de faculdade e empresa costumam bloquear a 7777, mas liberam a
+## 443, que e a do HTTP/3. O cliente tenta a outra sozinho se uma nao responder.
+const ALT_PORT := 443
 
 
 ## Lista os IPv4 desta maquina que outros PCs podem usar para conectar.

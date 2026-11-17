@@ -45,6 +45,8 @@ var is_online := false
 var max_players := DEFAULT_MAX_PLAYERS
 ## Cliente: o ultimo fim de conexao foi uma recusa do servidor (com motivo).
 var last_end_was_rejection := false
+## Cliente: a ultima tentativa terminou sem resposta do servidor.
+var last_end_was_unreachable := false
 
 # So no servidor:
 var _accounts: AccountStore
@@ -61,6 +63,8 @@ var _end_reason_from_server := false
 ## Versao enviada no aperto de mao. Em builds de debug pode ser trocada com
 ## --fake-version=X para testar a recusa por versao diferente.
 var _version := GameVersion.VERSION
+## Cliente: ja tentou a outra porta do servidor oficial nesta tentativa.
+var _fallback_tried := false
 
 
 func _ready() -> void:
@@ -79,6 +83,8 @@ func _ready() -> void:
 
 ## Conecta ao servidor escolhido no menu.
 func start_from_session() -> Error:
+	_fallback_tried = false
+	last_end_was_unreachable = false
 	if Session.mode == Session.Mode.JOIN:
 		return join(Session.host_ip, Session.port)
 	return OK
@@ -177,7 +183,12 @@ func player_name(id: int) -> String:
 func _on_peer_connected(id: int) -> void:
 	if not multiplayer.is_server():
 		return
-	_set_timeout(multiplayer.multiplayer_peer as ENetMultiplayerPeer, id)
+	var enet := multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	var packet_peer := enet.get_peer(id) if enet else null
+	# No log do servidor: mostra quem chegou ate aqui (ajuda a ver se a rede
+	# do jogador bloqueia a porta: sem esta linha, o pedido nem chegou).
+	_log("Conexao de %s (peer %d)" % [packet_peer.get_remote_address() if packet_peer else "?", id], false)
+	_set_timeout(enet, id)
 	# Quem nao fizer login a tempo e desconectado
 	get_tree().create_timer(LOGIN_TIMEOUT).timeout.connect(func() -> void:
 		if is_online and multiplayer.is_server() and not players.has(id) \
@@ -214,7 +225,22 @@ func _on_connected_to_server() -> void:
 
 
 func _on_connection_failed() -> void:
-	_finish("Não foi possível conectar em %s:%d. O servidor está ligado e o endereço está certo?" % [Session.host_ip, Session.port])
+	var official := Session.host_ip == Session.DEFAULT_HOST
+	# Servidor oficial: a porta pode estar bloqueada pela rede (faculdade,
+	# empresa). Antes de desistir, tenta a outra porta (7777 <-> 443).
+	if official and not _fallback_tried:
+		_fallback_tried = true
+		var other := NetUtils.ALT_PORT if Session.port != NetUtils.ALT_PORT else NetUtils.DEFAULT_PORT
+		_log("Sem resposta na porta %d; tentando a %d" % [Session.port, other], false)
+		Session.port = other
+		leave()  # fecha a tentativa atual: nenhum sinal dela chega depois
+		join.call_deferred(Session.host_ip, other)
+		return
+	var msg := "Sem resposta do servidor. A rede pode estar bloqueando o jogo (comum em faculdade e empresa): tente o 4G do celular." \
+			if official else \
+			"Não foi possível conectar em %s:%d. O servidor oficial foi colocado no campo: clique em Entrar para usá-lo." % [Session.host_ip, Session.port]
+	last_end_was_unreachable = true  # antes do _finish: o menu le no sinal
+	_finish(msg)
 
 
 func _on_server_disconnected() -> void:
@@ -242,6 +268,7 @@ func _login(version: String, username: String, secret: String, mode: int) -> voi
 		return  # uma tentativa por conexao
 	_login_tried[id] = true
 	if version != GameVersion.VERSION:
+		_log("Login recusado: versao %s (servidor %s)" % [version.left(16), GameVersion.VERSION], false)
 		# Cabe em 3 linhas no formulario do menu, inclusive nas versoes antigas
 		# (que nao podem ser corrigidas): o endereco quebra na barra.
 		_reject(id, "Versão diferente: servidor %s, você %s.\nBaixe a nova em github.com/%s/\n%s" % [
