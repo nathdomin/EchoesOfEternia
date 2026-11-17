@@ -19,11 +19,11 @@ const LEFT := [
 		[["setas"], "também andam"],
 	]],
 	["Combate", [
-		[["Espaço"], "atacar (3 seguidos = combo)"],
+		[["Espaço"], "atacar o alvo à frente"],
 		[["Shift"], "esquivar"],
 		[["1", "2", "3"], "habilidades"],
 		[["4"], "poção de vida"],
-		[["Tab"], "trocar de alvo"],
+		[["Tab"], "escolher outro alvo"],
 	]],
 ]
 const RIGHT := [
@@ -43,7 +43,7 @@ const RIGHT := [
 ]
 const GUIDE := [
 	"Fale com o Ancião na praça (tecla E) e aceite a missão.",
-	"Derrote monstros. Piscou vermelho? Saia de perto ou esquive (Shift).",
+	"Ataque o monstro à sua frente. Piscou vermelho? Esquive (Shift).",
 	"Volte ao NPC com \"?\" para ganhar XP e itens.",
 	"Equipe o que ganhar no inventário (tecla I).",
 	"A leste ficam a Floresta e a Caverna. Abra os baús!",

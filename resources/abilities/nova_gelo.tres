@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/ice_nova.tscn" id="1_r"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Meteo/Snow.png" id="2_r"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="9_s"]
+
+[resource]
+script = ExtResource("9_s")
+id = "nova_gelo"
+display_name = "Nova de Gelo"
+description = "Congela os monstros em volta por 1,5 s (o chefe não congela)."
+icon = ExtResource("2_r")
+kind = 0
+power = 0.8
+cooldown = 10.0
+range = 0.0
+radius = 36.0
+stun_seconds = 1.5
+effect = ExtResource("1_r")

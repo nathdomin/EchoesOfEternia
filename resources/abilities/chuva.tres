@@ -8,7 +8,7 @@
 script = ExtResource("3_nfy0f")
 id = "chuva"
 display_name = "Chuva de Flechas"
-description = "Flechas caem numa área no alvo."
+description = "Flechas caem numa área no alvo e deixam os monstros lentos por 3 s."
 icon = ExtResource("2_08k5a")
 kind = 3
 power = 1.1
@@ -16,3 +16,5 @@ cooldown = 8.0
 range = 120.0
 radius = 32.0
 effect = ExtResource("1_d5hjd")
+slow = 0.5
+slow_seconds = 3.0

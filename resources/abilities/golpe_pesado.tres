@@ -8,10 +8,12 @@
 script = ExtResource("3_6lu8w")
 id = "golpe_pesado"
 display_name = "Golpe Pesado"
-description = "Um golpe muito forte à frente."
+description = "Golpe muito forte à frente que empurra os monstros."
 icon = ExtResource("2_lb0qi")
 power = 2.4
 threat = 3.0
 cooldown = 4.0
 radius = 0.0
 effect = ExtResource("1_ne4yr")
+range = 26.0
+knockback = 14.0

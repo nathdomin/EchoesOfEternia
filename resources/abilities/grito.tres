@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AbilityData" format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/effects/shield.tscn" id="1_r"]
+[ext_resource type="Texture2D" path="res://assets/ui/ninja/Skill Icon/Items & Weapon/Guard.png" id="2_r"]
+[ext_resource type="Script" path="res://scripts/progression/ability_data.gd" id="9_s"]
+
+[resource]
+script = ExtResource("9_s")
+id = "grito"
+display_name = "Grito de Guerra"
+description = "Os monstros perto passam a atacar você, e você leva 30% menos dano por 5 s."
+icon = ExtResource("2_r")
+kind = 5
+power = 0.0
+cooldown = 14.0
+range = 0.0
+radius = 64.0
+guard = 0.7
+guard_seconds = 5.0
+effect = ExtResource("1_r")

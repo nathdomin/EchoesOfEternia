@@ -19,7 +19,7 @@ Só o que o jogo usa (Gate 5: tudo o que não tinha referência foi removido).
   As animações prontas ficam em `resources/characters/*_frames.tres`.
 - **Monstros** (`assets/enemies/ninja/`): Slime, Slime2, Mushroom, Skull, BlueBat e o chefe GiantSlime.
 - **Tilesets** (`assets/environments/ninja/tilesets/`): Floor, FloorDetail, Nature, House, Water, Relief. TileSet do jogo: `assets/environments/ninja/ninja_tileset.tres`.
-- **Efeitos** (`assets/effects/ninja/`): golpe, explosão, brilhos, fumaça, folhas/fogo das partículas e os projéteis das habilidades.
+- **Efeitos** (`assets/effects/ninja/`): golpe, explosão, brilhos, fumaça, folhas/fogo das partículas e os projéteis das habilidades (flecha, bola de fogo, orbe de energia), gelo da Nova de Gelo e escudo do Grito de Guerra. Ícones das habilidades em `assets/ui/ninja/Skill Icon/` (inclui Neve, Bota e Guarda, restaurados na revisão das classes).
 - **UI** (`assets/ui/ninja/`): Theme Wood (tema e moldura da barra), ícones das habilidades e itens, barra de vida dos monstros.
 - **Músicas** (`audio/music/`): Village, Dark Forest, Dungeon, Fight.
 

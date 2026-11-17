@@ -23,6 +23,10 @@ const MENU_SCENE := "res://scenes/ui/main_menu.tscn"
 const REPORT_INTERVAL := 0.1  ## segundos entre avisos de posicao ao servidor
 const TARGET_PICK_RADIUS := 12.0  ## px em volta do clique
 const TARGET_TAB_RANGE := 160.0
+## Alvo mais longe que isto deixa de ser o alvo (revisao das classes).
+const TARGET_DROP_RANGE := 220.0
+## Salto para Tras: foge do monstro a frente ate esta distancia.
+const LEAP_LOOK_RANGE := 80.0
 const NPC_RANGE := 30.0
 ## Espera antes de cada tentativa de reconexao (segundos).
 const RECONNECT_DELAYS := [1.0, 2.0, 3.0, 4.0, 5.0]
@@ -99,6 +103,10 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Alvo que ficou muito longe sai da selecao (o quadro do alvo some)
+	var t := _game_hud.target
+	if t and is_instance_valid(t) and t.global_position.distance_to(_player.global_position) > TARGET_DROP_RANGE:
+		_game_hud.set_target(null)
 	_music_check -= delta
 	if _music_check <= 0.0:
 		_music_check = 0.5
@@ -487,9 +495,16 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("attack") and _reconnect_attempt < 0:
 		var cls := PlayerData.class_data(String(PlayerData.me.get("class", "")))
-		var aim := _attack_aim(cls.reach)
-		if _player.try_attack(cls.attack_cooldown, aim, cls.reach) > 0:
-			Combat.request_attack(aim, _player.global_position)
+		# Corte: sempre para onde o personagem anda/olha (nunca desviado).
+		# De longe: no alvo (Targeting), senao na mesma direcao.
+		var aim := _player.aim_dir
+		var target: Monster = null
+		if cls.is_ranged():
+			target = _combat_target(cls.basic_range)
+			if target:
+				aim = _aim_at(target)
+		if _player.try_attack(cls.attack_cooldown, aim, cls.reach, not cls.is_ranged()) > 0:
+			Combat.request_attack(aim, _player.global_position, target)
 		get_viewport().set_input_as_handled()
 		return
 	if event.is_action_pressed("dodge") and _reconnect_attempt < 0:
@@ -508,15 +523,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 
-## Mira do golpe basico: o alvo selecionado, se estiver perto o bastante
-## para o corte encostar; senao, para onde o personagem olha.
-func _attack_aim(reach: float) -> Vector2:
-	var m := _game_hud.target as Monster
-	if m and is_instance_valid(m) and not m.is_dead():
-		var to := m.hitbox.center() - (_player.global_position + Combat.BODY)
-		if to.length() > 0.5 and to.length() <= reach * (HitboxComponent.ARC_FORWARD + HitboxComponent.ARC_RADIUS) + m.hitbox.radius + 6.0:
-			return to.normalized()
-	return Vector2(_player.facing)
+## Alvo de um golpe/habilidade de alcance `reach` (revisao das classes, estilo
+## MMO sem travar): o selecionado, se estiver ao alcance e nao atras do
+## personagem; senao o monstro mais perto a frente, que passa a ser o alvo.
+## null = nenhum: o golpe sai na direcao em que o personagem anda/olha.
+func _combat_target(reach: float) -> Monster:
+	var origin := _player.global_position + Combat.BODY
+	var cur := _game_hud.target as Monster
+	if cur and is_instance_valid(cur) and not cur.is_dead() and Targeting.keeps_target(
+			origin, _player.aim_dir, cur.hitbox.center(), cur.hitbox.radius, reach):
+		return cur
+	var alive: Array[Monster] = []
+	var boxes := []
+	for m in _map.get_node("Monsters").get_children():
+		if m is Monster and not m.is_dead():
+			alive.append(m)
+			boxes.append(m.hitbox)
+	var i := Targeting.best_in_front(origin, _player.aim_dir, boxes, reach)
+	if i < 0:
+		return null
+	_game_hud.set_target(alive[i])
+	return alive[i]
+
+
+## Direcao do corpo do personagem ate o monstro.
+func _aim_at(m: Monster) -> Vector2:
+	var to := m.hitbox.center() - (_player.global_position + Combat.BODY)
+	return to.normalized() if to.length() > 0.5 else _player.aim_dir
 
 
 ## Barra: 0-2 habilidades da classe, 3 pocao.
@@ -532,14 +565,20 @@ func _use_slot(i: int) -> void:
 	var ab := _game_hud.hotbar.ability(i)
 	if ab == null or not _game_hud.hotbar.try_use(i):
 		return
-	# Habilidade de alvo: vira o personagem para o alvo
-	var target := _game_hud.target as Monster
-	if target and ab.kind in [AbilityData.Kind.RANGED, AbilityData.Kind.AREA_TARGET]:
-		var d := target.global_position - _player.global_position
-		_player.facing = (Vector2i.RIGHT if d.x > 0 else Vector2i.LEFT) if absf(d.x) >= absf(d.y) \
-				else (Vector2i.DOWN if d.y > 0 else Vector2i.UP)
-	_player.play_cast()
-	Combat.request_ability(i, _player.facing, target)
+	# Mira: alvo ao alcance a frente (ou o selecionado), senao a direcao do
+	# personagem. O Salto para Tras vai para o lado contrario do alvo.
+	var aim := _player.aim_dir
+	var target: Monster = null
+	if ab.is_aimed():
+		target = _combat_target(ab.range if ab.kind != AbilityData.Kind.LEAP else LEAP_LOOK_RANGE)
+		if target:
+			aim = _aim_at(target)
+	_player.facing = Combat.cardinal(aim)
+	if ab.kind == AbilityData.Kind.LEAP:
+		_player.leap(-aim, ab.range)
+	else:
+		_player.play_cast()
+	Combat.request_ability(i, aim, target)
 
 
 func _talk_to_nearest_npc() -> void:
