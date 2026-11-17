@@ -21,6 +21,8 @@ func _ready() -> void:
 	await _test_class_chooser(layer)
 	await _test_pause(layer)
 	await _test_help(layer)
+	_test_fonts()
+	await _test_tracker(layer)
 	print("RESULTADO: ", "OK" if _fails == 0 else "%d FALHA(S)" % _fails)
 	get_tree().quit(1 if _fails else 0)
 
@@ -151,3 +153,32 @@ func _test_help(layer: CanvasLayer) -> void:
 	await _shot("ajuda_aba2")
 	_check(c._pages[1].visible and not c._pages[0].visible, "seta troca a aba")
 	c.queue_free()
+
+
+## Pacote A: caracteres usados nos textos existem na fonte padrao (Pixelify).
+func _test_fonts() -> void:
+	print("Fonte:")
+	var font := ThemeDB.get_project_theme().default_font
+	for ch in ["·", "…", "ã", "ç", "é", "í", "ó", "ú", "â", "ê", "ô", "à", "Á"]:
+		_check(font.has_char(ch.unicode_at(0)), "Pixelify tem \"%s\"" % ch)
+
+
+## Pacote A: rastreador com largura fixa e nome de quem recebe a missao.
+func _test_tracker(layer: CanvasLayer) -> void:
+	print("Rastreador:")
+	var t := QuestTracker.new()
+	t.position = Vector2(480 - 164, 22)
+	t.custom_minimum_size.x = 160
+	layer.add_child(t)
+	PlayerData.me.quests = {"o_rei_slime": {"state": "active"}, "gosma_na_horta": {"state": "active"}}
+	PlayerData.me.quest_progress = {"o_rei_slime": 1, "gosma_na_horta": 2}
+	PlayerData.changed.emit()
+	await _frames(3)
+	var texts: PackedStringArray = []
+	for c in t.get_children():
+		if c is Label and not c.is_queued_for_deletion():
+			texts.append(c.text)
+	_check("Volte ao Guarda Florestal" in texts, "missão pronta diz a quem voltar %s" % [texts])
+	_check(t.get_rect().end.x <= 480.0, "não sai da tela (termina em x %.0f)" % t.get_rect().end.x)
+	await _shot("rastreador")
+	t.queue_free()

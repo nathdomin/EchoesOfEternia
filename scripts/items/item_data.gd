@@ -12,6 +12,8 @@ enum Kind { CONSUMABLE, WEAPON, ARMOR, TRINKET, MATERIAL }
 @export var max_stack := 20
 ## Consumivel: vida recuperada.
 @export var heal := 0
+## Consumivel: recarga em segundos (conferida no servidor).
+@export var cooldown := 1.0
 ## Equipamento: bonus.
 @export var bonus_damage := 0
 @export var bonus_hp := 0

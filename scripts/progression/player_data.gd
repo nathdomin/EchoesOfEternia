@@ -598,6 +598,8 @@ func _use_slot(slot: int) -> void:
 		var avatar := Characters.avatar_of(id)
 		if avatar == null or avatar.health.hp >= avatar.health.max_hp:
 			return
+		if not Combat.use_cooldown(id, "item:" + it.id, it.cooldown):
+			return  # recarga da pocao (antes so existia no cliente)
 		avatar.health.heal(it.heal)
 		s.n -= 1
 		if s.n <= 0:

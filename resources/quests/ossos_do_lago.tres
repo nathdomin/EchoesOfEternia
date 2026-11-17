@@ -8,6 +8,7 @@ script = ExtResource("2_jfu66")
 id = "ossos_do_lago"
 title = "Ossos do lago"
 giver = "anciao"
+giver_name = "Ancião"
 requires = "esporos_raivosos"
 offer_text = "Caveiras rondam o lago. Traga-me 3 ossos velhos delas, preciso estudá-los."
 progress_text = "Preciso de 3 ossos velhos."

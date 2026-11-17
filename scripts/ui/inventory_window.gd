@@ -103,7 +103,7 @@ func refresh() -> void:
 		(_equip[slot].get_node("Icon") as TextureRect).texture = it.icon if it else null
 	var has_class := String(me["class"]) != ""
 	var cd := PlayerData.class_data(String(me["class"])) if has_class else null
-	_class_line.text = "%s  -  nível %d" % [cd.display_name if cd else "Sem classe", me.level]
+	_class_line.text = "%s  ·  Nv %d" % [cd.display_name if cd else "Sem classe", me.level]
 	_stats.text = "Ataque %d    Vida %d" % [me.damage, me.max_hp]
 	var skin := cd.skin if cd else String(me.get("skin", "knight"))
 	_face.texture = Player.FACESETS.get(skin, Player.FACESETS.knight)

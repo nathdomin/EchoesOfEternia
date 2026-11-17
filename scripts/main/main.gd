@@ -379,29 +379,30 @@ func _on_own_hit(monster_path: NodePath, heavy: bool) -> void:
 		_game_hud.set_target(m)
 	if m is Monster:
 		(m as Monster).knockback(_player.global_position)
-		_hitstop(HITSTOP_HEAVY_SEC if heavy else HITSTOP_SEC)
+		_hitstop(m, HITSTOP_HEAVY_SEC if heavy else HITSTOP_SEC)
 		if heavy:
 			_player.shake(1.5, 0.12)
 
 
 ## Pausa curtissima no impacto (so o visual deste cliente): o golpe "pesa".
-const HITSTOP_SEC := 0.04
-const HITSTOP_HEAVY_SEC := 0.08
-var _hitstop_on := false
+## Congela so a animacao de quem bateu e de quem apanhou; o resto do jogo
+## (movimento, rede, outros monstros) continua (antes era Engine.time_scale,
+## que deixava o cliente inteiro lento por um instante).
+const HITSTOP_SEC := 0.05
+const HITSTOP_HEAVY_SEC := 0.1
 
 
-func _exit_tree() -> void:
-	Engine.time_scale = 1.0  # saiu no meio de uma pausa de impacto
-
-
-func _hitstop(seconds: float) -> void:
-	if _hitstop_on:
-		return
-	_hitstop_on = true
-	Engine.time_scale = 0.05
-	await get_tree().create_timer(seconds, true, false, true).timeout
-	Engine.time_scale = 1.0
-	_hitstop_on = false
+func _hitstop(m: Node2D, seconds: float) -> void:
+	var frozen: Array[AnimatedSprite2D] = []
+	for node in [_player.get_node_or_null("Sprite"), m.get_node_or_null("Sprite")]:
+		var s := node as AnimatedSprite2D
+		if s and s.speed_scale > 0.0:
+			s.speed_scale = 0.0
+			frozen.append(s)
+	await get_tree().create_timer(seconds).timeout
+	for s in frozen:
+		if is_instance_valid(s):
+			s.speed_scale = 1.0
 
 
 func _targets() -> Array[Node2D]:

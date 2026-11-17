@@ -35,8 +35,13 @@ signal boss_slam_seen(pos: Vector2)
 const BASE_STATS := preload("res://resources/combat/player_base.tres")
 const MONSTER_SCENE := preload("res://scenes/combat/monster.tscn")
 const RESPAWN_SECONDS := 5.0
-## Folga na recarga do ataque (lag/quadros irregulares).
-const COOLDOWN_SLACK := 0.85
+## Recarga com orcamento (pacote A): o pedido vale ate esta folga antes da
+## hora (variacao da rede), mas a proxima hora conta da hora marcada, nao da
+## chegada. Na media ninguem passa da recarga real (antes: 15% a menos sempre).
+const COOLDOWN_TOLERANCE_MS := 150
+## Linha de visao: golpes e projeteis param na colisao do mapa (camada 1:
+## paredes, troncos, casas, baus).
+const WALL_MASK := 1
 ## Centro do corpo do personagem em relacao aos pes (de onde saem os golpes).
 const BODY := Vector2(0, -7)
 ## O cliente manda onde estava ao bater; vale se estiver ate aqui da posicao
@@ -239,6 +244,7 @@ func _on_player_died(id: int) -> void:
 	if not _players.has(id):
 		return
 	_players[id].dead = true
+	_players[id].guard_until = 0  # o Grito acaba com a morte
 	_players[id].respawn_at_ms = Time.get_ticks_msec() + int(RESPAWN_SECONDS * 1000.0)
 	Characters.avatar_of(id).dead = true
 	_own_died.rpc_id(id, RESPAWN_SECONDS)
@@ -300,19 +306,14 @@ func _request_attack(aim: Vector2, at: Vector2, target_path: NodePath) -> void:
 	aim = aim.normalized()
 	var p: Dictionary = _players[id]
 	var now := Time.get_ticks_msec()
-	if now < p.next_attack_ms:
+	if not cooldown_ready(int(p.next_attack_ms), now):
 		return  # rapido demais: ignora
-	var st := PlayerData.stats_of(id)
-	p.next_attack_ms = now + int(st.attack_cooldown * 1000.0 * COOLDOWN_SLACK)
 	var zone := Characters.zone_of(id)
 	var avatar := Characters.avatar_of(id)
 	if zone.is_empty() or avatar == null or not _monster_roots.has(zone):
 		return
-	# Combo: golpes seguidos dentro da janela contam 1, 2, 3, 1...
-	var step := (int(p.combo) % 3) + 1 if now <= int(p.combo_until) else 1
-	p.combo = step
-	p.combo_until = now + int((st.attack_cooldown + BASE_STATS.combo_window) * 1000.0)
-	var heavy := step == 3
+	var st := PlayerData.stats_of(id)
+	p.next_attack_ms = cooldown_next(int(p.next_attack_ms), now, st.attack_cooldown)
 	avatar.facing = cardinal(aim)
 	# Posicao do cliente se estiver perto da validada (a validada chega atrasada)
 	var feet := Characters.position_of(id)
@@ -322,8 +323,9 @@ func _request_attack(aim: Vector2, at: Vector2, target_path: NodePath) -> void:
 	var cls: ClassData = st["class"]
 	if cls.is_ranged():
 		# Golpe basico de longe: projetil no alvo ou no 1o monstro na linha
-		var hit := _projectile_target(zone, origin, aim, cls.basic_range, _valid_target(target_path, zone))
-		var to := origin + aim * cls.basic_range
+		var reach := _reach_until_wall(zone, origin, aim, cls.basic_range)
+		var hit := _projectile_target(zone, origin, aim, reach, _valid_target(target_path, zone))
+		var to := origin + aim * reach
 		if hit:
 			to = hit.hitbox.center()
 			hit.health.take_damage(roundi(st.damage * cls.basic_power), id)
@@ -331,10 +333,16 @@ func _request_attack(aim: Vector2, at: Vector2, target_path: NodePath) -> void:
 		for pid in Characters.players_in_zone(zone):
 			_shot_fx.rpc_id(pid, cls.id, origin, to, id)
 		return
+	# Combo (so corpo a corpo): golpes seguidos dentro da janela contam 1, 2, 3, 1...
+	var step := (int(p.combo) % 3) + 1 if now <= int(p.combo_until) else 1
+	p.combo = step
+	p.combo_until = now + int((st.attack_cooldown + BASE_STATS.combo_window) * 1000.0)
+	var heavy := step == 3
 	avatar.attack_seq += 1  # os outros veem o golpe
 	var damage := roundi(st.damage * (BASE_STATS.combo_finisher_mult if heavy else 1.0))
 	for m: Monster in _monster_roots[zone].get_children():
-		if not m.can_be_hit() or not m.hitbox.is_hit_by(origin, aim, st.reach):
+		if not m.can_be_hit() or not m.hitbox.is_hit_by(origin, aim, st.reach) \
+				or not _clear_line(zone, origin, m.hitbox.center(), m.hitbox.radius):
 			continue
 		m.health.take_damage(damage, id)
 		if heavy and m.can_be_hit():
@@ -350,9 +358,9 @@ func _request_dodge() -> void:
 	if not _players.has(id) or _players[id].dead:
 		return
 	var now := Time.get_ticks_msec()
-	if now < int(_players[id].next_dodge_ms):
+	if not cooldown_ready(int(_players[id].next_dodge_ms), now):
 		return
-	_players[id].next_dodge_ms = now + int(BASE_STATS.dodge_cooldown * 1000.0 * COOLDOWN_SLACK)
+	_players[id].next_dodge_ms = cooldown_next(int(_players[id].next_dodge_ms), now, BASE_STATS.dodge_cooldown)
 	_players[id].invuln_until = now + int(BASE_STATS.dodge_invuln * 1000.0)
 	Characters.grant_dash(id, BASE_STATS.dodge_distance + 8.0)
 
@@ -381,13 +389,13 @@ func _request_ability(index: int, aim: Vector2, target_path: NodePath) -> void:
 	var ab: AbilityData = cls.abilities[index]
 	var now := Time.get_ticks_msec()
 	var cds: Dictionary = _players[id].cooldowns
-	if now < int(cds.get(ab.id, 0)):
+	if not cooldown_ready(int(cds.get(ab.id, 0)), now):
 		return
-	cds[ab.id] = now + int(ab.cooldown * 1000.0 * COOLDOWN_SLACK)
 	var zone := Characters.zone_of(id)
 	var avatar := Characters.avatar_of(id)
-	if zone.is_empty() or avatar == null:
-		return
+	if zone.is_empty() or avatar == null or not _monster_roots.has(zone):
+		return  # sem gastar a recarga
+	cds[ab.id] = cooldown_next(int(cds.get(ab.id, 0)), now, ab.cooldown)
 	avatar.facing = cardinal(aim)  # os outros veem o lancamento pelo _ability_fx
 	var origin := Characters.position_of(id) + BODY
 	var damage := roundi(st.damage * ab.power)
@@ -397,34 +405,40 @@ func _request_ability(index: int, aim: Vector2, target_path: NodePath) -> void:
 	match ab.kind:
 		AbilityData.Kind.MELEE_AROUND, AbilityData.Kind.WARCRY, AbilityData.Kind.LEAP:
 			for m in _alive_monsters(zone):
-				if m.hitbox.overlaps(origin, ab.radius):
+				if m.hitbox.overlaps(origin, ab.radius) and _clear_line(zone, origin, m.hitbox.center(), m.hitbox.radius):
 					hits.append(m)
 		AbilityData.Kind.MELEE_CONE:
 			for m in _alive_monsters(zone):
-				if m.hitbox.is_hit_by(origin, aim, ab.range):
+				if m.hitbox.is_hit_by(origin, aim, ab.range) and _clear_line(zone, origin, m.hitbox.center(), m.hitbox.radius):
 					hits.append(m)
 			fx_at = HitboxComponent.arc_center(origin, aim, ab.range)
 		AbilityData.Kind.RANGED:
-			fx_at = origin + aim * ab.range
+			var reach := _reach_until_wall(zone, origin, aim, ab.range)
+			fx_at = origin + aim * reach
 			if ab.pierce:
 				var alive := _alive_monsters(zone)
-				for i in Targeting.ray_hits(origin, aim, ab.range, _hitboxes(alive)):
+				for i in Targeting.ray_hits(origin, aim, reach, _hitboxes(alive)):
 					hits.append(alive[i])
 			else:
-				var hit := _projectile_target(zone, origin, aim, ab.range, target)
+				var hit := _projectile_target(zone, origin, aim, reach, target)
 				if hit:
 					fx_at = hit.hitbox.center()
 					hits.append(hit)
 			if ab.splash > 0.0 and (not hits.is_empty() or not ab.pierce):
 				for m in _alive_monsters(zone):
-					if not m in hits and m.hitbox.overlaps(fx_at, ab.splash):
+					if not m in hits and m.hitbox.overlaps(fx_at, ab.splash) \
+						and _clear_line(zone, fx_at, m.hitbox.center(), m.hitbox.radius):
 						hits.append(m)
 		AbilityData.Kind.AREA_TARGET:
 			fx_at = origin + aim * ab.range * 0.6
 			if target and target.hitbox.center().distance_to(origin) <= ab.range + target.hitbox.radius:
 				fx_at = target.hitbox.center()
+			# A area cai do lado de ca da parede
+			var to_area := fx_at - origin
+			if to_area.length() > 0.5:
+				fx_at = origin + to_area.normalized() * _reach_until_wall(zone, origin, to_area.normalized(), to_area.length())
 			for m in _alive_monsters(zone):
-				if m.hitbox.overlaps(fx_at, ab.radius):
+				if m.hitbox.overlaps(fx_at, ab.radius) and _clear_line(zone, fx_at, m.hitbox.center(), m.hitbox.radius):
 					hits.append(m)
 		AbilityData.Kind.HEAL:
 			var healed: Array[int] = [id]
@@ -490,11 +504,65 @@ func _valid_target(path: NodePath, zone: String) -> Monster:
 func _projectile_target(zone: String, origin: Vector2, aim: Vector2, reach: float, target: Monster) -> Monster:
 	if target:
 		var to := target.hitbox.center() - origin
-		if to.length() <= reach + target.hitbox.radius and (to.length() < Targeting.CLOSE or aim.dot(to.normalized()) >= 0.8):
+		if to.length() <= reach + target.hitbox.radius and (to.length() < Targeting.CLOSE or aim.dot(to.normalized()) >= 0.8) \
+				and _clear_line(zone, origin, target.hitbox.center(), target.hitbox.radius):
 			return target
 	var alive := _alive_monsters(zone)
 	var on_line := Targeting.ray_hits(origin, aim, reach, _hitboxes(alive))
 	return alive[on_line[0]] if not on_line.is_empty() else null
+
+
+## Recarga com orcamento: pode usar? (`next_ms` = hora marcada da proxima)
+static func cooldown_ready(next_ms: int, now: int) -> bool:
+	return now >= next_ms - COOLDOWN_TOLERANCE_MS
+
+
+## Proxima hora marcada: conta da hora anterior se o pedido veio adiantado.
+static func cooldown_next(next_ms: int, now: int, seconds: float) -> int:
+	return maxi(now, next_ms) + int(seconds * 1000.0)
+
+
+## Servidor: recarga generica por jogador (ex.: "item:pocao"). Gasta e
+## devolve verdadeiro se ja pode.
+func use_cooldown(id: int, key: String, seconds: float) -> bool:
+	if not _players.has(id):
+		return false
+	var cds: Dictionary = _players[id].cooldowns
+	var now := Time.get_ticks_msec()
+	if not cooldown_ready(int(cds.get(key, 0)), now):
+		return false
+	cds[key] = cooldown_next(int(cds.get(key, 0)), now, seconds)
+	return true
+
+
+## Servidor: ate onde um golpe/projetil vai de `from` na direcao `dir` antes
+## de bater numa parede (posicoes locais da zona; no servidor as zonas ficam
+## afastadas, entao o raio e feito na posicao global do mapa).
+func _reach_until_wall(zone: String, from: Vector2, dir: Vector2, reach: float) -> float:
+	var map := _zone_map(zone)
+	if map == null or reach <= 0.0:
+		return reach
+	var offset := map.global_position
+	var q := PhysicsRayQueryParameters2D.create(offset + from, offset + from + dir * reach, WALL_MASK)
+	q.collide_with_areas = false
+	var hit := map.get_world_2d().direct_space_state.intersect_ray(q)
+	if hit.is_empty():
+		return reach
+	return maxf(0.0, (hit.position - offset).distance_to(from) - 1.0)
+
+
+## Servidor: nada solido entre `a` e `b`? `slack` = raio do alvo (um monstro
+## encostado na parede pode ter o centro "dentro" da colisao dela).
+func _clear_line(zone: String, a: Vector2, b: Vector2, slack := 2.0) -> bool:
+	var d := b - a
+	if d.length() <= slack:
+		return true
+	return _reach_until_wall(zone, a, d.normalized(), d.length()) >= d.length() - slack
+
+
+func _zone_map(zone: String) -> Node2D:
+	var root: Node = _monster_roots.get(zone)
+	return root.get_parent() as Node2D if root else null
 
 
 func _hitboxes(monsters: Array[Monster]) -> Array:

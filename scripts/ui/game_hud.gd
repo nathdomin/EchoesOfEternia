@@ -34,6 +34,10 @@ var _display_name := ""
 func _ready() -> void:
 	_xp_bar = UiKit.bar(78, 3, Color(0.95, 0.75, 0.25))
 	_xp_bar.tooltip_text = "Experiência"
+	_xp_bar.mouse_filter = Control.MOUSE_FILTER_PASS  # UiKit.bar ignora o mouse: sem isso a dica nunca aparecia
+	# Nome do alvo longo (jogador "Nome  Nv 10  (G convida)") nao alarga o quadro
+	_target_name.clip_text = true
+	_target_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_player_text.get_parent().add_child(_xp_bar)
 	var party := PartyFrames.new()
 	party.position = Vector2(4, 58)
@@ -72,7 +76,7 @@ func _ready() -> void:
 	badge.content_margin_bottom = -1
 	_level_badge.add_theme_stylebox_override("normal", badge)
 	_level_badge.position = Vector2(1, 22)
-	_level_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_level_badge.mouse_filter = Control.MOUSE_FILTER_PASS  # dica com nivel e XP
 	_player_face.add_child(_level_badge)
 	chat = ChatBox.new()
 	chat.bottom_left = Vector2(4, 240)  # acima da barra de habilidades
@@ -148,6 +152,7 @@ func _on_me_changed() -> void:
 	_xp_bar.max_value = maxi(int(me.xp_next), 1)
 	_xp_bar.value = int(me.xp) if int(me.xp_next) > 0 else _xp_bar.max_value
 	_xp_bar.tooltip_text = "XP %d/%d" % [me.xp, me.xp_next] if int(me.xp_next) > 0 else "Nível máximo"
+	_level_badge.tooltip_text = "Nv %d  ·  %s" % [me.level, _xp_bar.tooltip_text]
 	if String(me.get("class", "")) != "":
 		_player_face.texture = Player.FACESETS.get(PlayerData.class_data(me["class"]).skin, _player_face.texture)
 

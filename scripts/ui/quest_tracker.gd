@@ -38,7 +38,8 @@ func _rebuild() -> void:
 		var e: Dictionary = active[i]
 		var q: QuestData = e.q
 		_line(q.title, UiKit.GOLD if e.done else TEXT)
-		_line("Pronta: volte ao NPC" if e.done else "%s %d/%d" % [q.target_name, e.prog, q.count], DIM)
+		var back := "Volte ao %s" % (q.giver_name if q.giver_name != "" else "NPC")
+		_line(back if e.done else "%s %d/%d" % [q.target_name, e.prog, q.count], DIM)
 	if active.size() > MAX_SHOWN:
 		_line("+%d missões" % (active.size() - MAX_SHOWN), DIM)
 
@@ -46,6 +47,10 @@ func _rebuild() -> void:
 func _line(text: String, color: Color) -> void:
 	var l := UiKit.label(text, color)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	# Largura fixa: texto longo vira "..." em vez de sair da tela
+	l.clip_text = true
+	l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	l.custom_minimum_size.x = custom_minimum_size.x
 	l.add_theme_constant_override("outline_size", 4)
 	l.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.03))
 	add_child(l)

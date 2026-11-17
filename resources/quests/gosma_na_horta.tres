@@ -8,6 +8,7 @@ script = ExtResource("2_etygm")
 id = "gosma_na_horta"
 title = "Gosma na horta"
 giver = "anciao"
+giver_name = "Ancião"
 offer_text = "Os slimes do sudoeste estão comendo a horta! Derrote 5 deles para mim."
 progress_text = "Ainda tem slime na horta... continue!"
 done_text = "A horta agradece! Tome, para a próxima luta."
