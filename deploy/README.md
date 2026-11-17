@@ -21,7 +21,7 @@ Os jogadores só abrem o cliente e entram com o endereço da VM.
    - Image: **Ubuntu 22.04 ou 24.04**
    - Shape: **Ampere A1 (ARM)**, 1–2 OCPU e 6–12 GB (dentro do gratuito). Se aparecer "out of capacity", tente outro horário ou o shape **VM.Standard.E2.1.Micro** (x86_64).
    - Baixe a chave SSH.
-3. **Abrir a porta no painel:** Networking → Virtual Cloud Networks → sua VCN → Security Lists → Default → **Add Ingress Rule**: Source `0.0.0.0/0`, protocolo **UDP**, porta de destino **7777**.
+3. **Abrir a porta no painel:** Networking → Virtual Cloud Networks → sua VCN → Security Lists → Default → **Add Ingress Rule**: Source `0.0.0.0/0`, protocolo **UDP**, porta de destino **7777**. Repita para a **UDP 443** (porta alternativa para redes que bloqueiam a 7777; a VM redireciona a 443 para a 7777 via `configurar_vm.sh`).
 
 ### Azure for Students (sem cartão)
 1. Ative em azure.microsoft.com/free/students com o e-mail da faculdade.

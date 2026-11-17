@@ -44,7 +44,7 @@ $json = Join-Path $exp "latest.json"
 
 $ativos = @($zip, $json) + (@(
 	"server\echoes_server.x86_64", "server\echoes_server.arm64") | ForEach-Object { Join-Path $exp $_ }) + (@(
-	"update_server.sh", "stop_server.sh", "echoes-server.service") | ForEach-Object { Join-Path $raiz "deploy\$_" })
+	"update_server.sh", "stop_server.sh", "echoes-server.service", "configurar_vm.sh") | ForEach-Object { Join-Path $raiz "deploy\$_" })
 if ($Notas -eq "") { $Notas = "Echoes of Eternia $versao." }
 $Notas += "`n`n**Primeira vez:** baixe o EchoesOfEternia-cliente.zip, descompacte e abra o EchoesOfEternia.exe. Depois disso o jogo se atualiza sozinho."
 Write-Host ">> Publicando $tag em $repo"

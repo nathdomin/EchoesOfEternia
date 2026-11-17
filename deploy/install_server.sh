@@ -49,6 +49,8 @@ else
   fi
 fi
 
+[[ -f "$HERE/configurar_vm.sh" ]] && PORT="$PORT" bash "$HERE/configurar_vm.sh"
+
 echo ">> Instalando o servico systemd"
 install -m 0644 "$HERE/echoes-server.service" /etc/systemd/system/echoes-server.service
 systemctl daemon-reload
