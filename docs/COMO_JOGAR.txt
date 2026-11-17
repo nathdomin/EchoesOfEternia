@@ -1,5 +1,5 @@
-﻿ECHOES OF ETERNIA - como jogar
-==============================
+﻿ECHOES OF ETERNIA 1.0 - como jogar
+==================================
 
 1. Abra EchoesOfEternia.exe.
    Se o Windows mostrar "O Windows protegeu o computador", clique em
@@ -11,8 +11,8 @@
    SERVIDOR:  152.67.51.151      PORTA:  7777
    (já vem preenchido; se o campo estiver diferente, digite estes valores)
 
-3. Na primeira entrada você escolhe a classe (Guerreiro, Mago ou Arqueiro).
-   A escolha é definitiva: o jogo pede confirmação.
+3. Na primeira entrada você escolhe a classe (Guerreiro, Mago ou Arqueiro)
+   e a cor da roupa. A escolha é definitiva: o jogo pede confirmação.
 
 ATUALIZAÇÕES
   O jogo se atualiza sozinho: ao abrir, ele baixa a versão nova e reabre.
@@ -26,12 +26,27 @@ CONTROLES (F1 mostra tudo dentro do jogo)
   1 2 3          habilidades da classe      4  poção
   Tab / clique   escolher outro alvo (sem isso, vale o monstro à frente)
   E              falar com NPC / abrir baú
-  I              inventário (clique usa/equipa, botão direito 2x descarta)
-  Enter          chat     /  comando do chat
+  I              inventário (Enter ou clique usa/equipa; Delete 2x descarta)
+  L              diário de missões
+  Enter          chat (seta para cima repete)     /  comando do chat
   G              convidar o jogador selecionado para o grupo
   F3             painel técnico (FPS, ping)
-  Esc            pausa (volume, tela, ajuda, sair)
-  Nas janelas (conversa, pausa, classe): setas escolhem, Enter confirma.
+  Esc            pausa (volume, tela, tela cheia, números de dano, ajuda, sair)
+  Nas janelas (conversa, comércio, pausa, classe): setas escolhem, Enter confirma.
+
+O MUNDO
+  Vila de Eternia (níveis 1 a 3) -> Floresta Sombria (4 a 5, a leste)
+  -> Caverna do Rei Slime (6 a 10, no fim da trilha norte da floresta).
+  O nível de cada monstro aparece no quadro do alvo (vermelho = bem mais forte).
+  Monstro muito abaixo do seu nível dá pouca XP: siga em frente.
+
+MISSÕES E OURO
+  Siga a corrente: Ancião (vila) -> Guarda Florestal (floresta) -> Explorador
+  (entrada da caverna). Sem missão ativa, o canto direito mostra o próximo passo.
+  Monstros e missões dão ouro. O Mercador (praça da vila) vende poções e armas
+  da sua classe e compra gosma, esporo, osso e o que você não usa.
+  Armas de classe têm raridade: comum, rara (azul) e épica (roxa).
+  "O Rei voltou": depois de vencer o Rei Slime, dá para enfrentá-lo de novo a cada 20 h.
 
 CLASSES (habilidades 1, 2 e 3)
   Guerreiro  de perto. Golpe Pesado (empurra), Giro de Espada,
@@ -49,10 +64,11 @@ CHAT
 
 DICAS
   - Monstro piscando vermelho vai bater: saia de perto ou esquive (Shift).
-  - Círculo vermelho no chão (chefe): saia antes de encher.
-  - Fale com o Ancião na praça da vila (o "!" sobre a cabeça).
-  - Em grupo a XP é dividida com bônus, e a Cura do Mago cura o grupo todo.
-  - A floresta fica a leste da vila; a caverna do Rei Slime, no extremo leste da floresta.
+  - Slime Venenoso envenena (ícone embaixo do retrato): afaste-se e espere passar.
+  - O Rei Slime pisa (círculo no chão perto dele), cospe em quem fica longe
+    (círculo onde você está) e chama reforços. Vá em grupo: a vida dele cresce
+    com o grupo, mas a luta fica bem mais fácil.
   - Paredes e árvores bloqueiam flechas e magias: procure uma linha livre.
-  - Ao morrer, você renasce na praça da vila em 5 segundos.
+  - Ao morrer, você renasce na entrada da zona em 5 segundos e perde um pouco
+    da XP do nível (nunca desce de nível).
   - Seu personagem é salvo no servidor: entre de qualquer PC com a mesma conta.

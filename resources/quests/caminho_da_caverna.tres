@@ -18,6 +18,6 @@ kind = 2
 target_id = "explorador"
 target_name = "Mapa"
 count = 1
-reward_xp = 150
+reward_xp = 100
 turn_in_to = "explorador"
 turn_in_name = "Explorador"

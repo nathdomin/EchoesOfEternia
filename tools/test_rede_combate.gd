@@ -53,6 +53,8 @@ func _run() -> void:
 	while String(PlayerData.me.get("class", "")) != _cls:
 		await get_tree().process_frame
 	await _wait(1.0)
+	# A ajuda do 1o jogo e por conta (pacote F) e prende o teclado: fecha
+	(_main.get("_game_hud") as GameHud).controls.close()
 	var cls := PlayerData.class_data(_cls)
 	_check(_player.skin == cls.skin, "boneco com a aparencia da classe logo ao escolher (%s)" % _player.skin)
 	print("Classe %s (golpe basico %s):" % [cls.display_name, "de longe" if cls.is_ranged() else "de perto"])

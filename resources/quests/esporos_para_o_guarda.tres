@@ -18,5 +18,5 @@ kind = 1
 target_id = "esporo"
 target_name = "Esporos"
 count = 5
-reward_xp = 200
+reward_xp = 140
 reward_gold = 25

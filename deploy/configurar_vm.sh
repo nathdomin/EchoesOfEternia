@@ -7,6 +7,9 @@
 #     List tambem precisa liberar UDP 443.
 #  2. Atualizacoes automaticas do Ubuntu sempre as 04:00 de Brasilia: elas
 #     reiniciam o servidor (salva todos e volta em segundos).
+#  3. Backup diario dos dados (contas e personagens) as 03:30 de Brasilia em
+#     /var/backups/echoes/diario-AAAA-MM-DD.tgz; guarda os dos ultimos 7 dias
+#     (os de antes de cada atualizacao, "dados-*.tgz", ficam ate 30 dias).
 set -euo pipefail
 PORT="${ECHOES_PORT:-${PORT:-7777}}"
 [[ -f /etc/default/echoes-server ]] && . /etc/default/echoes-server && PORT="${ECHOES_PORT:-$PORT}"
@@ -33,3 +36,13 @@ RandomizedDelaySec=0
 CFG
 systemctl daemon-reload
 systemctl restart apt-daily-upgrade.timer
+
+echo ">> Backup diario: 03:30 de Brasilia (06:30 UTC) em /var/backups/echoes, 7 dias"
+mkdir -p /var/backups/echoes
+chmod 700 /var/backups/echoes
+cat > /etc/cron.d/echoes-backup <<CFG
+# Echoes of Eternia: backup diario dos dados do servidor (gerado por configurar_vm.sh)
+SHELL=/bin/bash
+30 6 * * * root [ -d /var/lib/echoes ] && tar czf /var/backups/echoes/diario-\$(date +\%F).tgz -C /var/lib echoes && find /var/backups/echoes -name 'diario-*.tgz' -mtime +7 -delete && find /var/backups/echoes -name 'dados-*.tgz' -mtime +30 -delete
+CFG
+chmod 644 /etc/cron.d/echoes-backup

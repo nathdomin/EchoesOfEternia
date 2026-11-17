@@ -18,5 +18,5 @@ kind = 1
 target_id = "gosma"
 target_name = "Gosmas"
 count = 6
-reward_xp = 80
+reward_xp = 60
 reward_gold = 40

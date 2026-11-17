@@ -21,6 +21,6 @@ kind = 0
 target_id = "cave_bat"
 target_name = "Morcegos da caverna"
 count = 8
-reward_xp = 450
+reward_xp = 320
 reward_gold = 50
 class_rewards = Array[ExtResource("2_item")]([ExtResource("it_espada_aco"), ExtResource("it_arco_longo"), ExtResource("it_cajado_runico")])
