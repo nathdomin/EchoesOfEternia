@@ -4,16 +4,19 @@
 [ext_resource type="TileSet" path="res://assets/environments/ninja/ninja_tileset.tres" id="2_ekyh1"]
 [ext_resource type="Script" path="res://scripts/combat/monster_spawn_point.gd" id="3_avx1f"]
 [ext_resource type="Resource" path="res://resources/monsters/skull.tres" id="4_t6pnr"]
-[ext_resource type="Resource" path="res://resources/monsters/bat.tres" id="5_3d868"]
+[ext_resource type="Resource" path="res://resources/monsters/cave_bat.tres" id="5_lqfp1"]
 [ext_resource type="Resource" path="res://resources/monsters/giant_slime.tres" id="6_p2euw"]
+[ext_resource type="Resource" path="res://resources/monsters/skull_ancient.tres" id="7_rppbc"]
 [ext_resource type="Script" path="res://scripts/maps/zone_exit.gd" id="7_y24ui"]
 [ext_resource type="PackedScene" path="res://scenes/maps/torch.tscn" id="8_avx1f"]
-[ext_resource type="Script" path="res://scripts/maps/torch.gd" id="9_t6pnr"]
-[ext_resource type="PackedScene" path="res://scenes/world/chest.tscn" id="chest_scene"]
+[ext_resource type="PackedScene" path="res://scenes/npc/npc.tscn" id="9_6j4wq"]
+[ext_resource type="SpriteFrames" path="res://resources/characters/knight_frames.tres" id="10_244j6"]
+[ext_resource type="Texture2D" path="res://assets/characters/ninja/Knight/Faceset.png" id="11_vuqmk"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="12_q7elr"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="13_su174"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="14_21kxr"]
 [ext_resource type="Resource" path="res://resources/loot/bau_caverna.tres" id="chest_loot"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_avx1f"]
-size = Vector2(16, 64)
+[ext_resource type="PackedScene" path="res://scenes/world/chest.tscn" id="chest_scene"]
 
 [node name="Dungeon" type="Node2D" unique_id=500675176]
 y_sort_enabled = true
@@ -71,7 +74,8 @@ radius = 36.0
 [node name="Bats" type="Marker2D" parent="MonsterSpawns" unique_id=2113848351]
 position = Vector2(336, 304)
 script = ExtResource("3_avx1f")
-monster = ExtResource("5_3d868")
+monster = ExtResource("5_lqfp1")
+count = 3
 
 [node name="Boss" type="Marker2D" parent="MonsterSpawns" unique_id=483679965]
 position = Vector2(560, 208)
@@ -79,6 +83,24 @@ script = ExtResource("3_avx1f")
 monster = ExtResource("6_p2euw")
 count = 1
 radius = 8.0
+
+[node name="CaveirasDoMeio" type="Marker2D" parent="MonsterSpawns" unique_id=116229252]
+position = Vector2(390, 172)
+script = ExtResource("3_avx1f")
+monster = ExtResource("4_t6pnr")
+radius = 24.0
+
+[node name="CaveirasAntigasNorte" type="Marker2D" parent="MonsterSpawns" unique_id=376122257]
+position = Vector2(520, 104)
+script = ExtResource("3_avx1f")
+monster = ExtResource("7_rppbc")
+radius = 22.0
+
+[node name="CaveirasAntigasSul" type="Marker2D" parent="MonsterSpawns" unique_id=1501436110]
+position = Vector2(510, 300)
+script = ExtResource("3_avx1f")
+monster = ExtResource("7_rppbc")
+radius = 22.0
 
 [node name="Exits" type="Node2D" parent="." unique_id=1585169988]
 
@@ -89,9 +111,6 @@ script = ExtResource("7_y24ui")
 target_entrance = "FromDungeon"
 size = Vector2(16, 64)
 
-[node name="Shape" type="CollisionShape2D" parent="Exits/ToForest" unique_id=96269934]
-shape = SubResource("RectangleShape2D_avx1f")
-
 [node name="Entrances" type="Node2D" parent="." unique_id=1623325891]
 
 [node name="FromForest" type="Marker2D" parent="Entrances" unique_id=2051357028]
@@ -100,56 +119,58 @@ position = Vector2(56, 232)
 [node name="Npcs" type="Node2D" parent="." unique_id=844718112]
 y_sort_enabled = true
 
+[node name="Explorador" parent="Npcs" unique_id=152528719 instance=ExtResource("9_6j4wq")]
+position = Vector2(120, 196)
+npc_id = "explorador"
+display_name = "Explorador"
+frames = ExtResource("10_244j6")
+faceset = ExtResource("11_vuqmk")
+greeting = "Cuidado onde pisa: esta caverna está viva."
+idle_lines = PackedStringArray("Mapeei metade da caverna. A outra metade tentou me comer.", "O Rei Slime se refaz da própria gosma. Fascinante e nojento.")
+tint = Color(1, 0.82, 0.62, 1)
+shop_items = Array[ExtResource("12_q7elr")]([ExtResource("13_su174"), ExtResource("14_21kxr")])
+
 [node name="Torches" type="Node2D" parent="." unique_id=1632402622]
 y_sort_enabled = true
 
-[node name="Torch" type="Node2D" parent="Torches" unique_id=507428106 instance=ExtResource("8_avx1f")]
+[node name="Torch" parent="Torches" unique_id=507428106 instance=ExtResource("8_avx1f")]
 position = Vector2(56, 170)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@2" type="Node2D" parent="Torches" unique_id=1229300785 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@2" parent="Torches" unique_id=1229300785 instance=ExtResource("8_avx1f")]
 position = Vector2(136, 170)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@3" type="Node2D" parent="Torches" unique_id=1581316483 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@3" parent="Torches" unique_id=1581316483 instance=ExtResource("8_avx1f")]
 position = Vector2(216, 202)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@4" type="Node2D" parent="Torches" unique_id=948518727 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@4" parent="Torches" unique_id=948518727 instance=ExtResource("8_avx1f")]
 position = Vector2(296, 74)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@5" type="Node2D" parent="Torches" unique_id=1256059164 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@5" parent="Torches" unique_id=1256059164 instance=ExtResource("8_avx1f")]
 position = Vector2(376, 74)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@6" type="Node2D" parent="Torches" unique_id=1228764144 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@6" parent="Torches" unique_id=1228764144 instance=ExtResource("8_avx1f")]
 position = Vector2(440, 186)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@7" type="Node2D" parent="Torches" unique_id=657568953 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@7" parent="Torches" unique_id=657568953 instance=ExtResource("8_avx1f")]
 position = Vector2(504, 58)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@8" type="Node2D" parent="Torches" unique_id=431238502 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@8" parent="Torches" unique_id=431238502 instance=ExtResource("8_avx1f")]
 position = Vector2(568, 58)
-script = ExtResource("9_t6pnr")
 
-[node name="@Node2D@9" type="Node2D" parent="Torches" unique_id=1221520786 instance=ExtResource("8_avx1f")]
+[node name="@Node2D@9" parent="Torches" unique_id=1221520786 instance=ExtResource("8_avx1f")]
 position = Vector2(632, 58)
-script = ExtResource("9_t6pnr")
 
-[node name="Chests" type="Node2D" parent="."]
+[node name="Chests" type="Node2D" parent="." unique_id=118720404]
 y_sort_enabled = true
 
-[node name="BauDaEntrada" parent="Chests" instance=ExtResource("chest_scene")]
-position = Vector2(40, 216)
+[node name="BauDaEntrada" parent="Chests" unique_id=640704445 instance=ExtResource("chest_scene")]
+position = Vector2(286, 316)
 loot = ExtResource("chest_loot")
 
-[node name="BauDoSalao" parent="Chests" instance=ExtResource("chest_scene")]
+[node name="BauDoSalao" parent="Chests" unique_id=485866421 instance=ExtResource("chest_scene")]
 position = Vector2(392, 120)
 loot = ExtResource("chest_loot")
 
-[node name="BauDoRei" parent="Chests" instance=ExtResource("chest_scene")]
+[node name="BauDoRei" parent="Chests" unique_id=735436959 instance=ExtResource("chest_scene")]
 position = Vector2(632, 360)
 loot = ExtResource("chest_loot")

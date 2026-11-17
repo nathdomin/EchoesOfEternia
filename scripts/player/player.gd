@@ -47,6 +47,15 @@ const WEAPON_HAND := {
 	Vector2i.RIGHT: Vector2(4, -6),
 }
 const SLASH := preload("res://scenes/effects/slash.tscn")
+## Pacote E: cor da roupa escolhida na criacao (giro do matiz das cores
+## fortes, shaders/outfit_tint.gdshader). 0 = desenho original.
+const OUTFIT_SHADER := preload("res://shaders/outfit_tint.gdshader")
+const OUTFIT_SHIFTS := [0.0, 0.25, 0.5, 0.75]
+## Cor do nome dos outros por classe (aparencia), para reconhecer de longe.
+const CLASS_NAME_COLORS := {
+	"knight": Color(1.0, 0.78, 0.72), "hunter": Color(0.78, 1.0, 0.7), "sorcerer": Color(0.75, 0.85, 1.0),
+}
+static var _outfit_mats: Dictionary = {}
 ## O desenho do corte nao e centrado no quadro: este deslocamento poe o meio
 ## do arco no ponto do golpe (medido no SpriteSheet do SlashCurved).
 const SLASH_OFFSET := Vector2(-6, -3)
@@ -98,6 +107,29 @@ func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_right = int(bounds.end.x)
 	_camera.limit_bottom = int(bounds.end.y)
 	_camera.reset_smoothing()
+
+
+## Material da cor de roupa `index` (null = original). Um por cor, dividido.
+static func outfit_material(index: int) -> ShaderMaterial:
+	if index <= 0 or index >= OUTFIT_SHIFTS.size():
+		return null
+	if not _outfit_mats.has(index):
+		var m := ShaderMaterial.new()
+		m.shader = OUTFIT_SHADER
+		m.set_shader_parameter("hue_shift", OUTFIT_SHIFTS[index])
+		_outfit_mats[index] = m
+	return _outfit_mats[index]
+
+
+func set_outfit(index: int) -> void:
+	_sprite.material = outfit_material(index)
+
+
+## Pacote E: pisca vermelho ao levar dano (mantem a transparencia da esquiva).
+func flash_hurt() -> void:
+	var a := _sprite.modulate.a
+	_sprite.modulate = Color(2.2, 0.55, 0.5, a)
+	create_tween().tween_property(_sprite, "modulate", Color(1, 1, 1, a), 0.2)
 
 
 static func frames_for(skin: String) -> SpriteFrames:
@@ -248,6 +280,8 @@ static func spawn_slash(parent: Node, feet: Vector2, aim: Vector2, reach := 20.0
 
 ## Tremor de camera (dano, pisao do chefe). `strength` em px.
 func shake(strength: float, duration := 0.25) -> void:
+	if not DisplaySettings.flag("screen_shake"):
+		return  # pacote F: opcao na pausa
 	var t := create_tween()
 	var steps := maxi(int(duration / 0.03), 2)
 	for i in steps:

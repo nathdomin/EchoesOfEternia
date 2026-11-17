@@ -4,7 +4,7 @@ extends Control
 ## "Controles": cada tecla desenhada como uma tecla, ao lado do que faz.
 ## "Como jogar": cinco passos curtos, numerados.
 ## F1 abre/fecha, tambem pelo menu de pausa. Abre sozinha no primeiro jogo
-## deste PC (user://client.cfg, secao "ui", chave "tutorial_seen").
+## da conta (pacote F: campo tutorial_seen do personagem, GameHud).
 
 const SIZE := Vector2(392, 236)
 const ROW := 19.0
@@ -30,21 +30,21 @@ const RIGHT := [
 	["Mundo", [
 		[["E"], "falar / abrir baú"],
 		[["I"], "inventário"],
+		[["L"], "diário de missões"],
 		[["G"], "convidar para o grupo"],
 	]],
 	["Chat", [
-		[["Enter"], "conversar"],
-		[["/"], "comandos (/w, /g, /z)"],
+		[["Enter", "/"], "conversar e comandos"],
 	]],
 	["Menus", [
-		[["Esc"], "pausa e volume"],
+		[["Esc"], "pausa e opções"],
 		[["F1"], "esta ajuda"],
 	]],
 ]
 const GUIDE := [
 	"Fale com o Ancião na praça (tecla E) e aceite a missão.",
 	"Ataque o monstro à sua frente. Piscou vermelho? Esquive (Shift).",
-	"Volte ao NPC com \"?\" para ganhar XP e itens.",
+	"Volte ao NPC com \"?\" para ganhar XP, ouro e itens (diário: L).",
 	"Equipe o que ganhar no inventário (tecla I).",
 	"A leste ficam a Floresta e a Caverna. Abra os baús!",
 	"Jogue junto: clique num jogador e aperte G.",

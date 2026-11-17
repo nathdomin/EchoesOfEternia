@@ -31,10 +31,16 @@ signal own_hit(monster_path: NodePath, heavy: bool)
 signal own_dodged
 ## Cliente: um chefe deu o pisao em `pos` (tremor de tela se perto).
 signal boss_slam_seen(pos: Vector2)
+## Cliente: efeitos no proprio personagem { "poison": s, "guard": s } (pacote B).
+signal own_status_changed(statuses: Dictionary)
+## Cliente: XP perdida ao morrer (pacote B).
+signal own_death_penalty(xp_lost: int)
 
 const BASE_STATS := preload("res://resources/combat/player_base.tres")
 const MONSTER_SCENE := preload("res://scenes/combat/monster.tscn")
 const RESPAWN_SECONDS := 5.0
+## Morrer custa esta fracao da XP que o nivel atual pede (nunca desce de nivel).
+const DEATH_XP_PENALTY := 0.05
 ## Recarga com orcamento (pacote A): o pedido vale ate esta folga antes da
 ## hora (variacao da rede), mas a proxima hora conta da hora marcada, nao da
 ## chegada. Na media ninguem passa da recarga real (antes: 15% a menos sempre).
@@ -53,6 +59,8 @@ const GROUND_WARNING := preload("res://scripts/effects/ground_warning.gd")
 var my_hp := 0
 var my_max_hp := 0
 var my_dead := false
+## Cliente: efeitos ativos no proprio personagem (nome -> segundos que faltam).
+var my_status: Dictionary = {}
 
 # ---------- so no servidor ----------
 ## peer -> { "next_attack_ms": int, "dead": bool, "respawn_at_ms": int }
@@ -91,18 +99,31 @@ func register_zone(zone: String, map: Node) -> void:
 		if point == null or point.monster == null:
 			continue
 		for i in point.count:
-			var m := MONSTER_SCENE.instantiate() as Monster
-			m.monster_id = point.monster.id
-			m.zone = zone
-			m.wander_radius = point.radius
 			var angle := TAU * i / point.count
-			m.position = point.position + Vector2.from_angle(angle) * point.radius * 0.5
-			m.name = "%s_%d" % [point.monster.id, n]
-			(m.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(
-					func(peer: int) -> bool: return Characters.zone_of(peer) == zone)
-			root.add_child(m, true)
+			spawn_monster(zone, point.monster.id, point.position + Vector2.from_angle(angle) * point.radius * 0.5,
+					point.radius, "%s_%d" % [point.monster.id, n])
 			n += 1
 	_log("%d monstros na zona %s" % [n, zone])
+
+
+## Servidor: cria um monstro na zona (visivel so para quem esta nela).
+## `temporary` = chamado pelo chefe: some ao morrer, sem renascer.
+func spawn_monster(zone: String, monster_id: String, pos: Vector2, wander := 24.0,
+		node_name := "", temporary := false) -> Monster:
+	if not _monster_roots.has(zone):
+		return null
+	var m := MONSTER_SCENE.instantiate() as Monster
+	m.monster_id = monster_id
+	m.zone = zone
+	m.wander_radius = wander
+	m.temporary = temporary
+	m.position = pos
+	if not node_name.is_empty():
+		m.name = node_name
+	(m.get_node("Sync") as MultiplayerSynchronizer).add_visibility_filter(
+			func(peer: int) -> bool: return Characters.zone_of(peer) == zone)
+	(_monster_roots[zone] as Node).add_child(m, true)
+	return m
 
 
 func is_dead(id: int) -> bool:
@@ -124,6 +145,45 @@ func monster_attack(monster: Monster, target_id: int, damage: int) -> void:
 		_dodged.rpc_id(target_id)
 		return
 	avatar.health.take_damage(_guarded(target_id, damage), 0)
+	if monster.data.poison_dps > 0 and can_be_attacked(target_id, monster.zone):
+		apply_poison(target_id, monster.data.poison_dps, monster.data.poison_seconds)
+
+
+## Servidor: veneno (pacote B): `dps` de dano por segundo por `secs`. Fica o
+## mais forte e renova a duracao.
+func apply_poison(id: int, dps: int, secs: float) -> void:
+	if not _players.has(id) or _players[id].dead or dps <= 0 or secs <= 0.0:
+		return
+	var p: Dictionary = _players[id]
+	var now := Time.get_ticks_msec()
+	p.poison_dps = maxi(int(p.get("poison_dps", 0)), dps) if now < int(p.get("poison_until", 0)) else dps
+	p.poison_until = maxi(int(p.get("poison_until", 0)), now + int(secs * 1000.0))
+	_push_status(id)
+
+
+## Servidor: dano em area em `pos` (cuspe do chefe), com esquiva e Grito.
+func area_damage(zone: String, pos: Vector2, radius: float, damage: int) -> void:
+	for pid in Characters.players_in_zone(zone):
+		if can_be_attacked(pid, zone) and Characters.position_of(pid).distance_to(pos) <= radius:
+			var avatar := Characters.avatar_of(pid)
+			if avatar and _dodging(pid):
+				_dodged.rpc_id(pid)
+			elif avatar:
+				avatar.health.take_damage(_guarded(pid, damage), 0)
+
+
+## Servidor: manda ao dono os efeitos ativos nele (barra de efeitos da HUD).
+func _push_status(id: int) -> void:
+	if not _players.has(id):
+		return
+	var p: Dictionary = _players[id]
+	var now := Time.get_ticks_msec()
+	var out := {}
+	if now < int(p.get("poison_until", 0)):
+		out["poison"] = (int(p.poison_until) - now) / 1000.0
+	if now < int(p.get("guard_until", 0)):
+		out["guard"] = (int(p.guard_until) - now) / 1000.0
+	_own_status.rpc_id(id, out)
 
 
 ## Servidor: dano reduzido pelo Grito de Guerra (AbilityData.guard).
@@ -244,7 +304,12 @@ func _on_player_died(id: int) -> void:
 	if not _players.has(id):
 		return
 	_players[id].dead = true
-	_players[id].guard_until = 0  # o Grito acaba com a morte
+	_players[id].guard_until = 0  # o Grito e o veneno acabam com a morte
+	_players[id].poison_until = 0
+	_push_status(id)
+	var lost := PlayerData.death_penalty(id, DEATH_XP_PENALTY)
+	if lost > 0:
+		_death_penalty.rpc_id(id, lost)
 	_players[id].respawn_at_ms = Time.get_ticks_msec() + int(RESPAWN_SECONDS * 1000.0)
 	Characters.avatar_of(id).dead = true
 	_own_died.rpc_id(id, RESPAWN_SECONDS)
@@ -256,11 +321,14 @@ func _respawn(id: int) -> void:
 	p.dead = false
 	if Characters.avatar_of(id) == null:
 		return
-	# Renasce sempre na praca da vila (o comeco do jogo); de outra zona, a
-	# troca de mapa vem antes do aviso de renascimento.
-	var pos := Characters.home_position()
-	if String(Characters.data_of(id).get("zone", "")) != Characters.home_zone():
-		Characters.move_to_zone(id, Characters.home_zone(), pos)
+	# Pacote B: renasce na entrada da zona onde morreu (na vila, a praca);
+	# antes era sempre a vila, e da caverna a volta era longa demais.
+	var zone := Characters.zone_of(id)
+	if zone.is_empty():
+		zone = Characters.home_zone()
+	var pos := Characters.spawn_of(zone)
+	if String(Characters.data_of(id).get("zone", "")) != zone:
+		Characters.move_to_zone(id, zone, pos)
 	else:
 		Characters.teleport(id, pos)
 	var avatar := Characters.avatar_of(id)
@@ -288,6 +356,17 @@ func _process(delta: float) -> void:
 		if avatar == null or _players[id].dead:
 			continue
 		var h: HealthComponent = avatar.health
+		# Envenenado: leva o dano 1x por segundo e nao regenera ate passar
+		var p: Dictionary = _players[id]
+		if int(p.get("poison_until", 0)) > 0:
+			if now < int(p.poison_until):
+				h.take_damage(int(p.poison_dps), 0)
+				if _players[id].dead:
+					continue
+			else:
+				p.poison_until = 0
+				_push_status(id)
+			continue
 		if h.hp < h.max_hp and h.seconds_since_damage() >= BASE_STATS.regen_delay:
 			h.heal(maxi(1, roundi(h.max_hp * BASE_STATS.regen_per_sec)))
 
@@ -338,6 +417,7 @@ func _request_attack(aim: Vector2, at: Vector2, target_path: NodePath) -> void:
 	p.combo = step
 	p.combo_until = now + int((st.attack_cooldown + BASE_STATS.combo_window) * 1000.0)
 	var heavy := step == 3
+	avatar.attack_aim = aim
 	avatar.attack_seq += 1  # os outros veem o golpe
 	var damage := roundi(st.damage * (BASE_STATS.combo_finisher_mult if heavy else 1.0))
 	for m: Monster in _monster_roots[zone].get_children():
@@ -462,6 +542,7 @@ func _request_ability(index: int, aim: Vector2, target_path: NodePath) -> void:
 	if ab.kind == AbilityData.Kind.WARCRY and ab.guard < 1.0:
 		_players[id].guard_until = now + int(ab.guard_seconds * 1000.0)
 		_players[id].guard_mult = ab.guard
+		_push_status(id)
 	if ab.kind == AbilityData.Kind.LEAP:
 		Characters.grant_dash(id, ab.range + 8.0)
 	for m in hits:
@@ -677,6 +758,8 @@ func _effect(effect_id: String, pos: Vector2) -> void:
 			boss_slam_seen.emit(pos)
 		"spark":
 			GameAudio.play_at("potion", pos)
+		"smoke":
+			GameAudio.play_at("slam", pos, 0.15)
 
 
 ## Onde os efeitos aparecem no cliente (o mundo da cena do jogo).
@@ -702,6 +785,17 @@ func _own_died(respawn_seconds: float) -> void:
 func _own_respawned(pos: Vector2) -> void:
 	my_dead = false
 	own_respawned.emit(pos)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _own_status(statuses: Dictionary) -> void:
+	my_status = statuses
+	own_status_changed.emit(statuses)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _death_penalty(xp_lost: int) -> void:
+	own_death_penalty.emit(xp_lost)
 
 
 @rpc("authority", "call_remote", "reliable")

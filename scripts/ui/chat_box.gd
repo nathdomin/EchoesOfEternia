@@ -14,6 +14,10 @@ const COLORS := {"global": Color(1, 0.96, 0.88), "grupo": Color(0.55, 0.85, 1.0)
 const PREFIX := {"grupo": "[Grupo] %s: ", "zona": "[Zona] %s: ", "de": "%s sussurra: ", "para": "Para %s: ", "global": "%s: "}
 
 var is_open := false
+## Pacote F: mensagens enviadas (seta para cima/baixo repete, como no terminal).
+const HISTORY_MAX := 20
+var _history: PackedStringArray = []
+var _history_pos := -1
 var _lines: VBoxContainer
 var _input: LineEdit
 
@@ -28,9 +32,10 @@ func _ready() -> void:
 	_input = LineEdit.new()
 	_input.custom_minimum_size = Vector2(220, 16)
 	_input.max_length = Social.MAX_CHAT
-	_input.placeholder_text = "Mensagem (/g grupo, /z zona, /w Nome, /quem, /ajuda)"
+	_input.placeholder_text = "Mensagem (/ajuda: comandos)"
 	_input.visible = false
 	_input.text_submitted.connect(_on_submit)
+	_input.gui_input.connect(_on_input_key)
 	add_child(_input)
 	Social.chat_received.connect(add_line)
 
@@ -64,8 +69,30 @@ func close() -> void:
 
 
 func _on_submit(text: String) -> void:
+	if not text.strip_edges().is_empty():
+		_history.append(text)
+		if _history.size() > HISTORY_MAX:
+			_history.remove_at(0)
+	_history_pos = -1
 	Social.send_chat(text)
 	close()
+
+
+func _on_input_key(event: InputEvent) -> void:
+	if _history.is_empty() or not (event is InputEventKey and event.pressed):
+		return
+	var k := (event as InputEventKey).keycode
+	if k != KEY_UP and k != KEY_DOWN:
+		return
+	if k == KEY_UP:
+		_history_pos = _history.size() - 1 if _history_pos < 0 else maxi(_history_pos - 1, 0)
+	elif _history_pos >= 0:
+		_history_pos += 1
+		if _history_pos >= _history.size():
+			_history_pos = -1
+	_input.text = _history[_history_pos] if _history_pos >= 0 else ""
+	_input.caret_column = _input.text.length()
+	_input.accept_event()
 
 
 ## Base do chat presa neste ponto da tela (o painel cresce para cima).

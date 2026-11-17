@@ -26,6 +26,11 @@ const PARTY_BONUS := 0.25
 const CREDIT_SHARE := 0.25
 ## Parte do dano para ganhar XP e saque de um chefe.
 const CREDIT_SHARE_BOSS := 0.05
+## Pacote C: o mercador compra de volta por esta fracao do preco.
+const SELL_FRACTION := 0.25
+## Pacote C: XP de monstro bem abaixo do nivel do jogador (diferenca -> fracao).
+const XP_GAP_HALF := 3
+const XP_GAP_TINY := 5
 
 ## Cliente: retrato do proprio personagem.
 var me: Dictionary = {}
@@ -34,6 +39,8 @@ var me: Dictionary = {}
 var _npcs: Dictionary = {}
 # servidor: zona -> no "Chests" da zona (baus)
 var _chest_roots: Dictionary = {}
+# servidor: zona -> { npc_id: [item_id que vende] } (pacote C)
+var _shops: Dictionary = {}
 # cliente: quando chegou o ultimo retrato (para a contagem dos baus)
 var _me_at_ms := 0
 
@@ -63,6 +70,29 @@ static func quest(qid: String) -> QuestData:
 	if not qid.is_valid_identifier() or not ResourceLoader.exists(path):
 		return null
 	return load(path)
+
+
+## Missoes que um NPC oferece ou recebe (pacote C: recado levado a outro NPC).
+static func quests_for(npc_id: String) -> Array[QuestData]:
+	var out: Array[QuestData] = []
+	for f in DirAccess.get_files_at("res://resources/quests"):
+		var fname := f.trim_suffix(".remap")
+		if fname.ends_with(".tres"):
+			var q := quest(fname.get_basename())
+			if q and (q.giver == npc_id or q.turn_in_npc() == npc_id):
+				out.append(q)
+	return _chain_order(out)
+
+
+## XP de um monstro conforme a diferenca de nivel (pacote C): bem abaixo do
+## jogador rende pouco, para ninguem subir ate o 10 so batendo em slime.
+static func xp_scale(player_level: int, monster_level: int) -> float:
+	var gap := player_level - monster_level
+	if gap >= XP_GAP_TINY:
+		return 0.1
+	if gap >= XP_GAP_HALF:
+		return 0.5
+	return 1.0
 
 
 ## Missoes que um NPC oferece (na ordem da corrente).
@@ -98,10 +128,19 @@ static func quest_state(quests: Dictionary, qid: String) -> String:
 
 
 ## O jogador pode aceitar `q`?
-static func can_accept(data: Dictionary, q: QuestData) -> bool:
+static func can_accept(data: Dictionary, q: QuestData, now := -1) -> bool:
 	var quests: Dictionary = data.get("quests", {})
-	if quest_state(quests, q.id) != "":
+	var st := quest_state(quests, q.id)
+	if st == "active":
 		return false
+	if st == "done":
+		# Pacote C: repetivel depois de `repeat_hours`
+		if q.repeat_hours <= 0.0:
+			return false
+		if now < 0:
+			now = int(Time.get_unix_time_from_system())
+		if now - int(quests[q.id].get("at", 0)) < q.repeat_hours * 3600.0:
+			return false
 	if q.requires != "" and quest_state(quests, q.requires) != "done":
 		return false
 	return int(data.get("level", 1)) >= q.min_level
@@ -117,6 +156,8 @@ static func count_in(inventory: Array, item_id: String) -> int:
 
 ## Progresso atual de uma missao ativa.
 static func quest_progress(data: Dictionary, q: QuestData) -> int:
+	if q.kind == QuestData.Kind.TALK:
+		return q.count  # recado: pronto assim que aceita; e so levar
 	if q.kind == QuestData.Kind.COLLECT:
 		return mini(count_in(data.get("inventory", []), q.target_id), q.count)
 	return mini(int(data.get("quests", {}).get(q.id, {}).get("progress", 0)), q.count)
@@ -131,6 +172,14 @@ func register_zone(zone: String, map: Node) -> void:
 		for n in root.get_children():
 			if "npc_id" in n:
 				npcs[n.npc_id] = n.position
+				var sells: Array[String] = []
+				for it: ItemData in n.get("shop_items"):
+					if it:
+						sells.append(it.id)
+				if not sells.is_empty():
+					if not _shops.has(zone):
+						_shops[zone] = {}
+					_shops[zone][n.npc_id] = sells
 	_npcs[zone] = npcs
 	var chests := map.get_node_or_null("Chests")
 	if chests:
@@ -171,6 +220,7 @@ func _normalize(data: Dictionary) -> void:
 	data.equipment = eq
 	if not data.get("quests") is Dictionary:
 		data.quests = {}
+	data.gold = maxi(int(data.get("gold", 0)), 0)
 
 
 ## Atributos finais: classe + nivel + equipamento.
@@ -199,6 +249,7 @@ func refresh_stats(id: int, notify := true) -> void:
 	avatar.health.hp = mini(avatar.health.hp, st.max_hp)
 	avatar.level = int(data.level)
 	avatar.skin = st["class"].skin if String(data.get("class", "")) != "" else String(data.skin)
+	avatar.outfit = int(data.get("outfit", 0))
 	avatar.sync_health()
 	if notify:
 		Combat.push_health(id)
@@ -220,6 +271,8 @@ func push(id: int) -> void:
 		"max_level": XP.max_level(), "inventory": data.inventory, "equipment": data.equipment,
 		"quests": data.quests, "quest_progress": progress, "max_hp": st.max_hp, "damage": st.damage,
 		"name": data.name, "skin": data.skin, "chests": _chest_timers(data),
+		"gold": int(data.get("gold", 0)), "now": int(Time.get_unix_time_from_system()),
+		"outfit": int(data.get("outfit", 0)), "tutorial_seen": bool(data.get("tutorial_seen", false)),
 	})
 
 
@@ -286,12 +339,16 @@ func award_kill(killer_id: int, monster: Monster, damage_by: Dictionary = {}) ->
 	for t: Dictionary in credited:
 		var sharers := _sharers(t, monster)
 		var xp_total := monster.data.xp_reward * (1.0 + PARTY_BONUS * (sharers.size() - 1))
-		var each := maxi(1, roundi(xp_total / sharers.size()))
+		var each := float(xp_total) / sharers.size()
 		for pid in sharers:
 			rewarded[pid] = true
 			_count_kill(pid, monster.monster_id)
-			add_xp(pid, each, false)
-			_changed(pid)  # um retrato so com XP e missao
+			var lvl := int(Characters.data_of(pid).get("level", 1))
+			add_xp(pid, maxi(1, roundi(each * xp_scale(lvl, monster.data.level))), false)
+			if monster.data.gold_max > 0:
+				var gold := randi_range(monster.data.gold_min, monster.data.gold_max)
+				add_gold(pid, ceili(float(gold) / sharers.size()), false)
+			_changed(pid)  # um retrato so com XP, ouro e missao
 		if monster.data.is_boss:
 			for pid in sharers:
 				_roll_loot(pid, monster.data)
@@ -356,6 +413,20 @@ func add_xp(id: int, amount: int, notify := true) -> void:
 		_changed(id)
 
 
+## Pacote B: morrer custa `frac` da XP que o nivel pede (sem descer de
+## nivel; no nivel maximo nao ha o que perder). Retorna quanto perdeu.
+func death_penalty(id: int, frac: float) -> int:
+	var data := Characters.data_of(id)
+	if data.is_empty() or int(data.level) >= XP.max_level():
+		return 0
+	var lost := mini(int(data.xp), roundi(XP.needed(int(data.level)) * frac))
+	if lost <= 0:
+		return 0
+	data.xp = int(data.xp) - lost
+	_changed(id)
+	return lost
+
+
 ## Nivel maximo: aviso para todos. Os outros: so o grupo e quem esta na zona
 ## (com 16 jogadores o chat virava uma lista de "subiu de nivel").
 func _announce_level(id: int, data: Dictionary) -> void:
@@ -371,9 +442,12 @@ func _announce_level(id: int, data: Dictionary) -> void:
 
 
 func _roll_loot(id: int, md: MonsterData) -> void:
+	var cls := String(Characters.data_of(id).get("class", ""))
 	for i in md.loot_items.size():
+		var it: ItemData = md.loot_items[i]
+		if it == null or not it.usable_by(cls):
+			continue  # arma de outra classe: so cai para quem pode usar
 		if i < md.loot_chances.size() and randf() < md.loot_chances[i]:
-			var it: ItemData = md.loot_items[i]
 			if add_item(id, it.id, 1) == 0:
 				NetworkManager.send_system_message(id, "Você recebeu: %s" % it.display_name)
 			else:
@@ -446,6 +520,21 @@ func remove_item(id: int, item_id: String, n: int) -> bool:
 	return true
 
 
+## Pacote C: ouro (cai dos monstros, recompensa de missao, venda).
+func add_gold(id: int, n: int, notify := true) -> void:
+	var data := Characters.data_of(id)
+	if data.is_empty() or n <= 0:
+		return
+	data.gold = int(data.get("gold", 0)) + n
+	if notify:
+		_changed(id)
+
+
+## Preco que o mercador paga por um item.
+static func sell_price(it: ItemData) -> int:
+	return floori(it.price * SELL_FRACTION) if it else 0
+
+
 func _near_npc(id: int, npc_id: String) -> bool:
 	var zone := Characters.zone_of(id)
 	var npcs: Dictionary = _npcs.get(zone, {})
@@ -453,6 +542,12 @@ func _near_npc(id: int, npc_id: String) -> bool:
 
 
 # ---------- baus (revisao do cenario) ----------
+
+## Cliente: hora unix do servidor agora (o retrato traz a hora; soma o que
+## passou desde entao). Para missoes repetiveis.
+func server_now() -> int:
+	return int(me.get("now", Time.get_unix_time_from_system())) + int((Time.get_ticks_msec() - _me_at_ms) / 1000.0)
+
 
 ## Cliente: segundos ate o bau encher de novo para mim (0 = cheio).
 func chest_seconds_left(zone: String, chest_name: String) -> float:
@@ -493,6 +588,10 @@ func _open_chest(chest_name: String) -> void:
 	var got: Array[String] = []
 	var lost: Array[String] = []
 	var drops := chest.loot.roll()
+	var cls := String(data.get("class", ""))
+	drops = drops.filter(func(d: Dictionary) -> bool: return (d.item as ItemData).usable_by(cls))
+	if drops.is_empty() and chest.loot.guaranteed:
+		drops = [{"item": chest.loot.guaranteed, "n": 1}]
 	for drop: Dictionary in drops:
 		var it: ItemData = drop.item
 		var left := add_item(id, it.id, int(drop.n))
@@ -513,10 +612,88 @@ func _open_chest(chest_name: String) -> void:
 	_changed(id)
 
 
+# ---------- mercador (pacote C) ----------
+
+func buy(npc_id: String, item_id: String) -> void:
+	_buy.rpc_id(1, npc_id, item_id)
+
+
+func sell(slot: int) -> void:
+	_sell.rpc_id(1, slot)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _buy(npc_id: String, item_id: String) -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	var zone := Characters.zone_of(id)
+	if data.is_empty() or Combat.is_dead(id) or not _near_npc(id, npc_id):
+		return
+	if not item_id in _shops.get(zone, {}).get(npc_id, []):
+		return
+	var it := item(item_id)
+	if it == null or it.price <= 0:
+		return
+	if int(data.gold) < it.price:
+		NetworkManager.send_system_message(id, "Ouro insuficiente para %s." % it.display_name)
+		return
+	if room_for(data.inventory, it) < 1:
+		NetworkManager.send_system_message(id, "Inventário cheio.")
+		return
+	data.gold = int(data.gold) - it.price
+	add_item(id, it.id, 1)  # ja manda o retrato
+
+
+## Vende 1 unidade do item no espaco `slot` (perto de um mercador).
+@rpc("any_peer", "call_remote", "reliable")
+func _sell(slot: int) -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	var zone := Characters.zone_of(id)
+	if data.is_empty() or Combat.is_dead(id) or slot < 0 or slot >= INVENTORY_SLOTS:
+		return
+	var near_shop := false
+	for npc_id: String in _shops.get(zone, {}):
+		if _near_npc(id, npc_id):
+			near_shop = true
+	var s: Variant = data.inventory[slot]
+	if not near_shop or not s is Dictionary:
+		return
+	var it := item(s.id)
+	if it == null or sell_price(it) <= 0:
+		return
+	s.n = int(s.n) - 1
+	if s.n <= 0:
+		data.inventory[slot] = null
+	data.gold = int(data.gold) + sell_price(it)
+	_changed(id)
+
+
 # ---------- API do cliente ----------
 
-func choose_class(cid: String) -> void:
-	_choose_class.rpc_id(1, cid)
+## Pacote F: a ajuda do primeiro jogo ja foi mostrada para esta conta.
+func mark_tutorial_seen() -> void:
+	_mark_tutorial_seen.rpc_id(1)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _mark_tutorial_seen() -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	if not data.is_empty() and not bool(data.get("tutorial_seen", false)):
+		data.tutorial_seen = true
+		_changed(id)
+
+
+## `outfit` = cor da roupa (pacote E, Player.OUTFIT_SHIFTS).
+func choose_class(cid: String, outfit := 0) -> void:
+	_choose_class.rpc_id(1, cid, outfit)
 
 
 func use_slot(slot: int) -> void:
@@ -565,12 +742,13 @@ func _level_up(level: int) -> void:
 
 
 @rpc("any_peer", "call_remote", "reliable")
-func _choose_class(cid: String) -> void:
+func _choose_class(cid: String, outfit: int) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	var data := Characters.data_of(id)
 	if data.is_empty() or data["class"] != "" or not cid in CLASS_IDS:
 		return
 	data["class"] = cid
+	data.outfit = clampi(outfit, 0, Player.OUTFIT_SHIFTS.size() - 1)
 	data.skin = class_data(cid).skin
 	refresh_stats(id)
 	var avatar := Characters.avatar_of(id)
@@ -607,6 +785,10 @@ func _use_slot(slot: int) -> void:
 		Combat.play_effect_in_zone(Characters.zone_of(id), "spark", Characters.position_of(id) + Vector2(0, -8))
 		_changed(id)
 	elif it.equip_slot() != "":
+		if not it.usable_by(String(data.get("class", ""))):
+			NetworkManager.send_system_message(id, "Só %s pode usar %s." % [
+					class_data(it.class_only).display_name, it.display_name])
+			return
 		# troca com o que estava equipado
 		var eslot := it.equip_slot()
 		var old := String(data.equipment[eslot])
@@ -650,6 +832,8 @@ func _accept_quest(qid: String) -> void:
 	if data.is_empty() or q == null or not can_accept(data, q) or not _near_npc(id, q.giver):
 		return
 	data.quests[qid] = {"state": "active", "progress": 0}
+	if q.kind == QuestData.Kind.TALK:
+		NetworkManager.send_system_message(id, "Leve o recado a %s." % q.turn_in_npc_name())
 	NetworkManager.send_system_message(id, "Nova missão: %s" % q.title)
 	_changed(id)
 
@@ -659,20 +843,28 @@ func _turn_in_quest(qid: String) -> void:
 	var id := multiplayer.get_remote_sender_id()
 	var data := Characters.data_of(id)
 	var q := quest(qid)
-	if data.is_empty() or q == null or quest_state(data.quests, qid) != "active" or not _near_npc(id, q.giver):
+	if data.is_empty() or q == null or quest_state(data.quests, qid) != "active" or not _near_npc(id, q.turn_in_npc()):
 		return
 	if quest_progress(data, q) < q.count:
 		return
 	# Recompensa que nao cabe se perderia: pede espaco antes de entregar
-	if q.reward_item and room_for(data.inventory, q.reward_item) < q.reward_count:
+	var class_item := q.class_reward(String(data.get("class", "")))
+	var free_slots: int = data.inventory.count(null)
+	if (q.reward_item and room_for(data.inventory, q.reward_item) < q.reward_count) \
+			or (class_item and free_slots < (2 if q.reward_item else 1)):
 		NetworkManager.send_system_message(id, "Inventário cheio: libere espaço para receber a recompensa.")
 		return
 	if q.kind == QuestData.Kind.COLLECT and not remove_item(id, q.target_id, q.count):
 		return
-	data.quests[qid] = {"state": "done", "progress": q.count}
+	data.quests[qid] = {"state": "done", "progress": q.count, "at": int(Time.get_unix_time_from_system())}
 	NetworkManager.send_system_message(id, "Missão concluída: %s" % q.title)
 	if q.reward_item:
 		if add_item(id, q.reward_item.id, q.reward_count) == 0:
 			NetworkManager.send_system_message(id, "Você recebeu: %s x%d" % [q.reward_item.display_name, q.reward_count])
+	if class_item and add_item(id, class_item.id, 1) == 0:
+		NetworkManager.send_system_message(id, "Você recebeu: %s" % class_item.display_name)
+	if q.reward_gold > 0:
+		add_gold(id, q.reward_gold, false)
+		NetworkManager.send_system_message(id, "Você recebeu %d de ouro." % q.reward_gold)
 	add_xp(id, q.reward_xp, false)
 	_changed(id)

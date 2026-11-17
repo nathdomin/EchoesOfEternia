@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="ItemData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/ui/custom/item_sword.png" id="1_icon"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_script"]
+
+[resource]
+script = ExtResource("2_script")
+id = "espada_aco"
+display_name = "Espada de Aço"
+description = "Forjada na vila, pesa na mão certa."
+icon = ExtResource("1_icon")
+kind = 1
+max_stack = 1
+bonus_damage = 8
+bonus_hp = 15
+rarity = 1
+class_only = "guerreiro"
+price = 220
+tint = Color(0.75, 0.9, 1.35, 1)

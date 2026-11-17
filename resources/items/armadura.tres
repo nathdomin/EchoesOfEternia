@@ -12,3 +12,4 @@ icon = ExtResource("1_ykfgb")
 kind = 2
 max_stack = 1
 bonus_hp = 25
+price = 70

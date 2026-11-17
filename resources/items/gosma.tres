@@ -13,3 +13,4 @@ id = "gosma"
 display_name = "Gosma"
 description = "Grudenta. Alguém pode querer."
 icon = SubResource("AtlasTexture_ta1n8")
+price = 8

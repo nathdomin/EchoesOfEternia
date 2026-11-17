@@ -1,21 +1,24 @@
 [gd_resource type="Resource" script_class="MonsterData" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/enemies/ninja/GiantSlime/Faceset.png" id="1_jfjb4"]
-[ext_resource type="SpriteFrames" path="res://resources/monsters/giant_slime_frames.tres" id="2_mshlx"]
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="3_fos0p"]
-[ext_resource type="Resource" path="res://resources/items/amuleto.tres" id="4_60cp1"]
-[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="5_wnme1"]
-[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="6_4jtbw"]
-[ext_resource type="Resource" path="res://resources/items/shuriken.tres" id="7_fdglw"]
-[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="8_wee0d"]
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/giant_slime_frames.tres" id="2_frames"]
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/GiantSlime/Faceset.png" id="3_face"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="4_item"]
+[ext_resource type="Resource" path="res://resources/items/amuleto.tres" id="it_amuleto"]
+[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="it_elmo"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
+[ext_resource type="Resource" path="res://resources/items/lamina_do_rei.tres" id="it_lamina_do_rei"]
+[ext_resource type="Resource" path="res://resources/items/arco_do_rei.tres" id="it_arco_do_rei"]
+[ext_resource type="Resource" path="res://resources/items/cetro_do_rei.tres" id="it_cetro_do_rei"]
 
 [resource]
-script = ExtResource("8_wee0d")
+script = ExtResource("1_script")
 id = "giant_slime"
+frames = ExtResource("2_frames")
+faceset = ExtResource("3_face")
 display_name = "Rei Slime"
-frames = ExtResource("2_mshlx")
-faceset = ExtResource("1_jfjb4")
-max_hp = 1500
+level = 10
+max_hp = 3000
 damage = 20
 speed = 26.0
 wander_speed = 0.0
@@ -27,6 +30,17 @@ hitbox_radius = 22.0
 windup = 0.6
 xp_reward = 400
 respawn_time = 120.0
-loot_items = Array[ExtResource("3_fos0p")]([ExtResource("4_60cp1"), ExtResource("5_wnme1"), ExtResource("6_4jtbw"), ExtResource("7_fdglw")])
-loot_chances = PackedFloat32Array(1, 0.6, 1, 0.5)
+gold_min = 80
+gold_max = 120
 is_boss = true
+slow_immune = true
+spit_every = 4.5
+spit_range = 170.0
+spit_radius = 22.0
+spit_damage_mult = 0.8
+summon_id = "slime2"
+summon_count = 3
+summon_at = PackedFloat32Array(0.66, 0.33)
+hp_per_extra_player = 0.6
+loot_items = Array[ExtResource("4_item")]([ExtResource("it_amuleto"), ExtResource("it_elmo"), ExtResource("it_pocao_grande"), ExtResource("it_lamina_do_rei"), ExtResource("it_arco_do_rei"), ExtResource("it_cetro_do_rei")])
+loot_chances = PackedFloat32Array(1, 0.6, 1, 0.35, 0.35, 0.35)

@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
+
+[resource]
+script = ExtResource("1_script")
+id = "cogumelos_sombrios"
+title = "Cogumelos sombrios"
+giver = "guarda"
+giver_name = "Guarda Florestal"
+requires = "morcegos_da_mata"
+min_level = 4
+offer_text = "No cruzamento leste brotam cogumelos sombrios, mais fortes que os da vila. Derrote 6."
+progress_text = "O cruzamento ainda está tomado."
+done_text = "Bom trabalho. Estas poções grandes valem ouro."
+kind = 0
+target_id = "mushroom_dark"
+target_name = "Cogumelos sombrios"
+count = 6
+reward_xp = 180
+reward_item = ExtResource("it_pocao_grande")
+reward_count = 2
+reward_gold = 30

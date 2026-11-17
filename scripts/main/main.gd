@@ -44,6 +44,8 @@ var _last_item_total := -1
 var _last_done_quests := -1
 var _last_ready_quests := -1
 var _player_light: PointLight2D
+## Pacote D: tela escura que clareia ao chegar numa zona nova.
+var _fade: ColorRect
 var _music_check := 0.0
 
 ## Mapa da zona atual (Village, Forest ou Dungeon; todas usam o script Village).
@@ -77,6 +79,11 @@ func _ready() -> void:
 	PlayerData.changed.connect(_on_player_data_changed)
 	_on_player_data_changed()
 	Combat.own_respawned.connect(_on_respawned)
+	Combat.own_death_penalty.connect(func(xp: int) -> void:
+		_game_hud.chat.add_line("sistema", "", "A morte custou %d de XP." % xp))
+	Combat.own_status_changed.connect(func(st: Dictionary) -> void:
+		# Envenenado: o boneco fica esverdeado
+		_player.get_node("Sprite").self_modulate = Color(0.7, 1.25, 0.6) if st.has("poison") else Color.WHITE)
 	Combat.own_hit.connect(_on_own_hit)
 	Combat.own_dodged.connect(func() -> void:
 		FloatingText.spawn(_map, _player.global_position, "esquivou", FloatingText.XP))
@@ -225,6 +232,23 @@ func _switch_map(zone: String) -> void:
 	_apply_zone_look(zone)
 
 
+## Chegada numa zona: comeca escuro e clareia (troca de mapa sem "pulo").
+func _fade_in() -> void:
+	if _fade == null:
+		var layer := CanvasLayer.new()
+		layer.layer = 5  # acima do mapa, abaixo da HUD
+		add_child(layer)
+		_fade = ColorRect.new()
+		_fade.color = Color.BLACK
+		_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		layer.add_child(_fade)
+	_fade.modulate.a = 1.0
+	var t := _fade.create_tween()
+	t.tween_interval(0.1)
+	t.tween_property(_fade, "modulate:a", 0.0, 0.45)
+
+
 ## Musica e clima da zona (cor, folhas, vaga-lumes, escuro com luz no jogador).
 func _apply_zone_look(zone: String) -> void:
 	_zone = zone
@@ -272,8 +296,10 @@ func _apply_zone_look(zone: String) -> void:
 
 
 func _on_zone_changed(zone: String, pos: Vector2) -> void:
+	_fade_in()
 	_game_hud.set_target(null)
 	_game_hud.dialogue.close()
+	_game_hud.shop.close()
 	_switch_map(zone)
 	_player.place(pos, _player.facing)
 	_last_sent_pos = pos
@@ -302,8 +328,9 @@ func _on_respawned(pos: Vector2) -> void:
 	_player.set_dead(false)
 	_player.place(pos, Vector2i.DOWN)
 	_last_sent_pos = pos
-	_hud.show_banner("Você renasceu na %s." % Zones.display_name(_zone))
-	_game_hud.chat.add_line("sistema", "", "Você renasceu na praça da %s com a vida cheia." % Zones.display_name(_zone))
+	var where := "na praça da %s" if _zone == "village" else "na entrada da %s"
+	_hud.show_banner(("Você renasceu " + where + ".") % Zones.display_name(_zone))
+	_game_hud.chat.add_line("sistema", "", ("Você renasceu " + where + " com a vida cheia.") % Zones.display_name(_zone))
 	get_tree().create_timer(3.0).timeout.connect(func() -> void:
 		if _respawn_left <= 0.0 and _reconnect_attempt < 0:
 			_hud.show_banner(""))
@@ -332,6 +359,7 @@ func _on_own_health(hp: int, max_hp: int) -> void:
 		FloatingText.spawn(_map, _player.global_position, str(-delta), FloatingText.HURT)
 		GameAudio.play("hurt")
 		_player.shake(2.0)
+		_player.flash_hurt()
 	elif delta >= maxi(8, max_hp / 12):
 		FloatingText.spawn(_map, _player.global_position, "+%d" % delta, FloatingText.HEAL)
 
@@ -348,6 +376,7 @@ func _on_player_data_changed() -> void:
 		var who := NetworkManager.player_name(multiplayer.get_unique_id())
 		_player.setup_look(PlayerData.class_data(cid).skin, who)
 		_game_hud.setup_player(_player.skin, who)
+	_player.set_outfit(int(me.get("outfit", 0)))
 	var items := 0
 	for s in me.get("inventory", []):
 		if s is Dictionary:
@@ -461,14 +490,25 @@ func _input(event: InputEvent) -> void:
 			_game_hud.controls.close()
 		elif _game_hud.pause_menu.visible:
 			_game_hud.pause_menu.close()
+		elif _game_hud.shop.visible:
+			_game_hud.shop.close()
 		elif _game_hud.dialogue.visible:
 			_game_hud.dialogue.close()
 		elif _game_hud.inventory.visible:
 			_game_hud.inventory.toggle()
+		elif _game_hud.quest_log.visible:
+			_game_hud.quest_log.toggle()
 		elif _game_hud.target != null:
 			_game_hud.set_target(null)
 		elif not _game_hud.class_chooser.visible:
 			_game_hud.pause_menu.open()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("inventory") and (_game_hud.inventory.visible or not _game_hud.blocks_input()):
+		# Pacote F: o inventario pega o teclado (setas); I abre e fecha
+		_game_hud.inventory.toggle()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("quest_log") and (_game_hud.quest_log.visible or not _game_hud.blocks_input()):
+		_game_hud.quest_log.toggle()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("chat") and not _game_hud.blocks_input():
 		_game_hud.chat.open.call_deferred()
@@ -489,9 +529,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_use_slot(i)
 			get_viewport().set_input_as_handled()
 			return
-	if event.is_action_pressed("inventory"):
-		_game_hud.inventory.toggle()
-		return
 	if event.is_action_pressed("interact"):
 		_talk_to_nearest_npc()
 		return

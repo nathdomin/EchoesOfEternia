@@ -2,12 +2,14 @@
 
 [ext_resource type="Script" path="res://scripts/world/loot_table.gd" id="1_loot"]
 [ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/anel.tres" id="it_anel"]
+[ext_resource type="Resource" path="res://resources/items/kunai.tres" id="it_kunai"]
 [ext_resource type="Resource" path="res://resources/items/pocao.tres" id="it_pocao"]
 
 [resource]
 script = ExtResource("1_loot")
-items = Array[ExtResource("2_item")]([ExtResource("it_pocao")])
-chances = Array[float]([1.0])
-amounts = Array[int]([1])
+items = Array[ExtResource("2_item")]([ExtResource("it_pocao"), ExtResource("it_kunai"), ExtResource("it_anel")])
+chances = Array[float]([1, 0.15, 0.05])
+amounts = Array[int]([1, 1, 1])
 guaranteed = ExtResource("it_pocao")
 respawn_seconds = 1800

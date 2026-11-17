@@ -21,8 +21,12 @@ func _ready() -> void:
 	await _test_class_chooser(layer)
 	await _test_pause(layer)
 	await _test_help(layer)
+	_test_scripts_compile()
 	_test_fonts()
 	await _test_tracker(layer)
+	await _test_inventory(layer)
+	await _test_shop(layer)
+	await _test_quest_log(layer)
 	print("RESULTADO: ", "OK" if _fails == 0 else "%d FALHA(S)" % _fails)
 	get_tree().quit(1 if _fails else 0)
 
@@ -178,7 +182,102 @@ func _test_tracker(layer: CanvasLayer) -> void:
 	for c in t.get_children():
 		if c is Label and not c.is_queued_for_deletion():
 			texts.append(c.text)
-	_check("Volte ao Guarda Florestal" in texts, "missão pronta diz a quem voltar %s" % [texts])
+	_check("Volte ao Explorador" in texts, "missão pronta diz a quem voltar %s" % [texts])
 	_check(t.get_rect().end.x <= 480.0, "não sai da tela (termina em x %.0f)" % t.get_rect().end.x)
 	await _shot("rastreador")
 	t.queue_free()
+
+
+## Todos os scripts do jogo compilam (pega erro em main.gd, HUD etc., que os
+## outros testes nao carregam).
+func _test_scripts_compile() -> void:
+	print("Scripts:")
+	var bad: PackedStringArray = []
+	var n := 0
+	for path in _gd_files("res://scripts"):
+		var sc := load(path) as GDScript
+		n += 1
+		if sc == null or not sc.can_instantiate():
+			bad.append(path)
+	_check(bad.is_empty(), "%d scripts compilam %s" % [n, bad])
+
+
+func _gd_files(dir: String) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for f in DirAccess.get_files_at(dir):
+		if f.ends_with(".gd"):
+			out.append(dir.path_join(f))
+	for d in DirAccess.get_directories_at(dir):
+		out.append_array(_gd_files(dir.path_join(d)))
+	return out
+
+
+func _test_inventory(layer: CanvasLayer) -> void:
+	print("Inventário (pacote F):")
+	PlayerData.me.inventory = [{"id": "pocao", "n": 3}, {"id": "espada_aco", "n": 1}, {"id": "arco_longo", "n": 1}]
+	PlayerData.me.inventory.resize(PlayerData.INVENTORY_SLOTS)
+	PlayerData.me.equipment = {"weapon": "espada_ferro", "armor": "", "trinket": ""}
+	PlayerData.me["class"] = "guerreiro"
+	PlayerData.me.merge({"damage": 20, "max_hp": 160, "gold": 37}, true)
+	var inv := InventoryWindow.new()
+	inv.position = (Vector2(480, 270) - InventoryWindow.SIZE) / 2.0
+	layer.add_child(inv)
+	await _frames()
+	inv.toggle()
+	await _frames(3)
+	var f := _focus()
+	_check(f != null and f.get_index() == 0, "abre com o primeiro espaço marcado")
+	await _press(&"ui_right")
+	f = _focus()
+	_check(f != null and f.get_index() == 1, "seta anda para o lado")
+	var info: String = inv._info.text
+	_check("Raro" in info and "vs. equipado: +4 ataque" in info, "mostra raridade e comparação: %s" % info)
+	await _shot("inventario")
+	await _press(&"ui_right")
+	_check("Não serve" in String(inv._info.text), "arma de outra classe avisa que não serve")
+	_check("Ouro 37" in String(inv._stats.text), "mostra o ouro")
+	inv.queue_free()
+
+
+func _test_shop(layer: CanvasLayer) -> void:
+	print("Comércio (pacote C):")
+	var npc: Npc = NPC_SCENE.instantiate()
+	npc.npc_id = "mercador"
+	npc.shop_items.assign([PlayerData.item("pocao"), PlayerData.item("espada_ferro")])
+	add_child(npc)
+	PlayerData.me.inventory = [{"id": "gosma", "n": 4}]
+	PlayerData.me.inventory.resize(PlayerData.INVENTORY_SLOTS)
+	var shop := ShopWindow.new()
+	layer.add_child(shop)
+	await _frames()
+	shop.open(npc)
+	await _frames(3)
+	var f := _focus() as Button
+	_check(f != null and f.text.begins_with("Poção de Vida ·"), "abre marcando o primeiro item à venda (%s)" % (f.text if f else "nada"))
+	var sold := false
+	for c in shop._sell_list.get_children():
+		if c is Button and "Gosma x4" in (c as Button).text:
+			sold = true
+	_check(sold, "lista o que dá para vender")
+	await _shot("comercio")
+	shop.close()
+	shop.queue_free()
+	npc.queue_free()
+
+
+func _test_quest_log(layer: CanvasLayer) -> void:
+	print("Diário (pacote F):")
+	PlayerData.me.quests = {"carta_ao_guarda": {"state": "active"}, "gosma_na_horta": {"state": "done"}}
+	PlayerData.me.quest_progress = {"carta_ao_guarda": 1}
+	var ql := QuestLog.new()
+	layer.add_child(ql)
+	await _frames()
+	ql.toggle()
+	await _frames(3)
+	var f := _focus() as Button
+	_check(f != null and f.text == "Carta ao Guarda", "abre na missão ativa")
+	_check("falar com o Guarda Florestal" in String(ql._body.text), "recado diz com quem falar")
+	_check("Concluídas: 1" in String(ql._done.text), "conta as concluídas")
+	await _shot("diario")
+	ql.toggle()
+	ql.queue_free()

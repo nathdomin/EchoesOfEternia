@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="MonsterData" format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/bat_frames.tres" id="2_frames"]
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/BlueBat/Faceset.png" id="3_face"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="4_item"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="it_pocao"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
+[ext_resource type="Resource" path="res://resources/items/shuriken.tres" id="it_shuriken"]
+[ext_resource type="Resource" path="res://resources/items/espada_aco.tres" id="it_espada_aco"]
+[ext_resource type="Resource" path="res://resources/items/arco_longo.tres" id="it_arco_longo"]
+[ext_resource type="Resource" path="res://resources/items/cajado_runico.tres" id="it_cajado_runico"]
+
+[resource]
+script = ExtResource("1_script")
+id = "cave_bat"
+frames = ExtResource("2_frames")
+faceset = ExtResource("3_face")
+display_name = "Morcego da Caverna"
+level = 6
+max_hp = 90
+damage = 13
+speed = 60.0
+aggro_range = 70.0
+attack_cooldown = 1.1
+xp_reward = 44
+respawn_time = 14.0
+gold_min = 5
+gold_max = 9
+tint = Color(1.2, 0.62, 0.62, 1)
+loot_items = Array[ExtResource("4_item")]([ExtResource("it_pocao"), ExtResource("it_pocao_grande"), ExtResource("it_shuriken"), ExtResource("it_espada_aco"), ExtResource("it_arco_longo"), ExtResource("it_cajado_runico")])
+loot_chances = PackedFloat32Array(0.25, 0.08, 0.05, 0.03, 0.03, 0.03)

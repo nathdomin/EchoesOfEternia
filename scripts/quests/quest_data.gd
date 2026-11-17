@@ -3,7 +3,7 @@ extends Resource
 ## Missao (E21). Dada por um NPC (`giver`), com um objetivo de derrotar
 ## monstros (KILL) ou juntar itens (COLLECT, os itens sao entregues).
 
-enum Kind { KILL, COLLECT }
+enum Kind { KILL, COLLECT, TALK }
 
 @export var id := ""
 @export var title := ""
@@ -21,3 +21,30 @@ enum Kind { KILL, COLLECT }
 @export var reward_xp := 50
 @export var reward_item: ItemData
 @export var reward_count := 1
+## Pacote C: ouro de recompensa.
+@export var reward_gold := 0
+## Pacote C: recompensa conforme a classe (o item com `class_only` igual a
+## classe do jogador). Vem alem de `reward_item`.
+@export var class_rewards: Array[ItemData] = []
+## Pacote C: quem recebe a entrega, se nao for quem deu (TALK: levar um
+## recado). Vazio = o proprio `giver`.
+@export var turn_in_to := ""
+@export var turn_in_name := ""
+## Pacote C: pode ser feita de novo depois de tantas horas (0 = uma vez so).
+@export var repeat_hours := 0.0
+
+
+func turn_in_npc() -> String:
+	return turn_in_to if turn_in_to != "" else giver
+
+
+func turn_in_npc_name() -> String:
+	return turn_in_name if turn_in_to != "" else giver_name
+
+
+## Item de classe da recompensa para `class_id` (ou null).
+func class_reward(class_id: String) -> ItemData:
+	for it in class_rewards:
+		if it and it.class_only == class_id:
+			return it
+	return null

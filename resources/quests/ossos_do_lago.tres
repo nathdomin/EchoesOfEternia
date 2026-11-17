@@ -1,16 +1,18 @@
 [gd_resource type="Resource" script_class="QuestData" format=3]
 
-[ext_resource type="Resource" path="res://resources/items/armadura.tres" id="1_uuibt"]
-[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="2_jfu66"]
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/armadura.tres" id="it_armadura"]
 
 [resource]
-script = ExtResource("2_jfu66")
+script = ExtResource("1_script")
 id = "ossos_do_lago"
 title = "Ossos do lago"
 giver = "anciao"
 giver_name = "Ancião"
 requires = "esporos_raivosos"
-offer_text = "Caveiras rondam o lago. Traga-me 3 ossos velhos delas, preciso estudá-los."
+min_level = 1
+offer_text = "Caveiras rondam o lago ao sul. Traga-me 3 ossos velhos delas, preciso estudá-los."
 progress_text = "Preciso de 3 ossos velhos."
 done_text = "Fascinante... Leve esta armadura, vai precisar na floresta."
 kind = 1
@@ -18,4 +20,5 @@ target_id = "osso"
 target_name = "Ossos velhos"
 count = 3
 reward_xp = 150
-reward_item = ExtResource("1_uuibt")
+reward_item = ExtResource("it_armadura")
+reward_count = 1

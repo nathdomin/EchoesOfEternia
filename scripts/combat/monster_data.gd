@@ -33,3 +33,29 @@ extends Resource
 ## Chefe: circulo de aviso no chao por este tempo (s) antes do pisao.
 @export var slam_telegraph := 1.1
 @export var scale := 1.0
+## Pacote C: nivel (aparece no nome; XP menor para quem esta bem acima).
+@export var level := 1
+## Variante de cor do mesmo desenho (ex.: caveira antiga). Branco = original.
+@export var tint := Color.WHITE
+## Pacote C: ouro que cai ao derrotar (para o time que levou o abate).
+@export var gold_min := 0
+@export var gold_max := 0
+## Pacote B: o golpe envenena (dano por segundo por `poison_seconds`).
+@export var poison_dps := 0
+@export var poison_seconds := 0.0
+## Pacote B: imune a lentidao (chefe).
+@export var slow_immune := false
+## Chefe (pacote B): cuspe em quem esta longe. Circulo no chao no alvo por
+## `spit_telegraph` s e dano em area (dano = damage x mult). 0 = nao cospe.
+@export var spit_every := 0.0
+@export var spit_range := 150.0
+@export var spit_radius := 22.0
+@export var spit_damage_mult := 0.8
+@export var spit_telegraph := 1.0
+## Chefe (pacote B): chama `summon_count` monstros `summon_id` quando a vida
+## passa de cada fracao de `summon_at` (ex.: 0.66 e 0.33). Somem ao morrer.
+@export var summon_id := ""
+@export var summon_count := 0
+@export var summon_at: PackedFloat32Array = PackedFloat32Array()
+## Chefe (pacote B): vida extra por jogador a mais perto (0.6 = +60% cada).
+@export var hp_per_extra_player := 0.0

@@ -22,6 +22,9 @@ var dialogue: DialogueBox
 var class_chooser: ClassChooser
 var pause_menu: PauseMenu
 var debug_panel: DebugPanel
+var status_bar: StatusBar
+var shop: ShopWindow
+var quest_log: QuestLog
 var controls: ControlsWindow
 var _tutorial_pending := false
 var _level_badge: Label
@@ -39,8 +42,11 @@ func _ready() -> void:
 	_target_name.clip_text = true
 	_target_name.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	_player_text.get_parent().add_child(_xp_bar)
+	status_bar = StatusBar.new()
+	status_bar.position = Vector2(4, 52)  # efeitos (veneno, Grito) embaixo do retrato
+	add_child(status_bar)
 	var party := PartyFrames.new()
-	party.position = Vector2(4, 58)
+	party.position = Vector2(4, 70)
 	add_child(party)
 	var tracker := QuestTracker.new()
 	tracker.position = Vector2(480 - 164, 22)
@@ -83,6 +89,11 @@ func _ready() -> void:
 	add_child(chat)
 	dialogue = DialogueBox.new()
 	add_child(dialogue)
+	shop = ShopWindow.new()
+	add_child(shop)
+	quest_log = QuestLog.new()
+	add_child(quest_log)
+	dialogue.shop_requested.connect(shop.open)
 	inventory = InventoryWindow.new()
 	inventory.position = (Vector2(480, 270) - InventoryWindow.SIZE) / 2.0 - Vector2(0, 8)
 	add_child(inventory)
@@ -93,7 +104,7 @@ func _ready() -> void:
 	_build_death_screen()
 	controls = ControlsWindow.new()
 	add_child(controls)
-	_tutorial_pending = ControlsWindow.first_time()
+	_tutorial_pending = true  # pacote F: decide pela conta (PlayerData.me.tutorial_seen)
 	pause_menu = PauseMenu.new()
 	add_child(pause_menu)
 	PlayerData.changed.connect(_on_me_changed)
@@ -132,12 +143,12 @@ func _build_death_screen() -> void:
 func show_death(seconds: float) -> void:
 	_death.visible = seconds >= 0.0
 	if _death.visible:
-		_death_count.text = "Renascendo na praça da vila em %d s..." % ceili(seconds)
+		_death_count.text = "Renascendo na entrada da zona em %d s..." % ceili(seconds)
 
 
 ## Alguma janela que pega o teclado esta aberta? (o personagem nao anda)
 func blocks_input() -> bool:
-	return chat.is_open or dialogue.visible or class_chooser.visible or pause_menu.visible or controls.visible
+	return chat.is_open or dialogue.visible or class_chooser.visible or pause_menu.visible or controls.visible 			or shop.visible or inventory.visible or quest_log.visible
 
 
 
@@ -155,6 +166,7 @@ func _on_me_changed() -> void:
 	_level_badge.tooltip_text = "Nv %d  ·  %s" % [me.level, _xp_bar.tooltip_text]
 	if String(me.get("class", "")) != "":
 		_player_face.texture = Player.FACESETS.get(PlayerData.class_data(me["class"]).skin, _player_face.texture)
+	_player_face.material = Player.outfit_material(int(me.get("outfit", 0)))
 
 
 func setup_player(skin: String, display_name: String) -> void:
@@ -177,19 +189,35 @@ func set_target(node: Node2D) -> void:
 	if node == null:
 		return
 	if node is Monster:
-		_target_name.text = node.display_name() + ("  (chefe)" if node.data.is_boss else "")
+		# Pacote C: nivel do monstro (vermelho se for bem mais forte que eu)
+		_target_name.text = "%s  Nv %d%s" % [node.display_name(), node.data.level, "  (chefe)" if node.data.is_boss else ""]
+		var gap: int = node.data.level - int(PlayerData.me.get("level", 1))
+		_target_name.add_theme_color_override("font_color", Color(1, 0.45, 0.4) if gap >= 3 				else (Color(0.65, 0.65, 0.65) if gap <= -PlayerData.XP_GAP_HALF else Color(1, 0.96, 0.88)))
 		_target_face.texture = node.data.faceset
 	elif node is RemotePlayer:
-		_target_name.text = "%s  Nv %d  (G convida)" % [node.display_name, node.level]
+		_target_name.text = "%s  Nv %d  %s" % [node.display_name, node.level, _class_of_skin(node.skin)]
+		_target_name.remove_theme_color_override("font_color")
 		_target_face.texture = Player.FACESETS.get(node.skin, Player.FACESETS.knight)
 	_process(0.0)
 
 
+static func _class_of_skin(skin: String) -> String:
+	for cid: String in PlayerData.CLASS_IDS:
+		if PlayerData.class_data(cid).skin == skin:
+			return PlayerData.class_data(cid).display_name
+	return ""
+
+
 func _process(_delta: float) -> void:
-	# Primeiro jogo neste PC: abre a ajuda depois da escolha de classe
-	if _tutorial_pending and not class_chooser.visible and String(PlayerData.me.get("class", "")) != "":
-		_tutorial_pending = false
-		controls.open(1)
+	# Primeiro jogo desta CONTA (pacote F; antes era deste PC): abre a ajuda
+	# depois da escolha de classe e avisa o servidor que ja viu
+	if _tutorial_pending and not PlayerData.me.is_empty():
+		if bool(PlayerData.me.get("tutorial_seen", false)):
+			_tutorial_pending = false
+		elif not class_chooser.visible and String(PlayerData.me.get("class", "")) != "":
+			_tutorial_pending = false
+			controls.open(1)
+			PlayerData.mark_tutorial_seen()
 	if target == null:
 		return
 	if not is_instance_valid(target):

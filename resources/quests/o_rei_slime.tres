@@ -1,21 +1,26 @@
 [gd_resource type="Resource" script_class="QuestData" format=3]
 
-[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="1_4h05p"]
-[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="2_fugnf"]
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/lamina_do_rei.tres" id="it_lamina_do_rei"]
+[ext_resource type="Resource" path="res://resources/items/arco_do_rei.tres" id="it_arco_do_rei"]
+[ext_resource type="Resource" path="res://resources/items/cetro_do_rei.tres" id="it_cetro_do_rei"]
 
 [resource]
-script = ExtResource("2_fugnf")
+script = ExtResource("1_script")
 id = "o_rei_slime"
 title = "O Rei Slime"
-giver = "guarda"
-giver_name = "Guarda Florestal"
-requires = "morcegos_da_mata"
-min_level = 3
-offer_text = "No fundo da caverna a leste vive o Rei Slime. Junte um grupo e acabe com ele."
-progress_text = "O Rei Slime ainda reina na caverna."
-done_text = "Você derrotou o Rei Slime! A floresta respira aliviada."
+giver = "explorador"
+giver_name = "Explorador"
+requires = "caveiras_antigas"
+min_level = 9
+offer_text = "No fundo da caverna vive o Rei Slime. Junte um grupo e acabe com ele."
+progress_text = "O Rei Slime ainda reina."
+done_text = "O Rei caiu! Tome a arma feita da coroa dele."
+kind = 0
 target_id = "giant_slime"
 target_name = "Rei Slime"
 count = 1
-reward_xp = 500
-reward_item = ExtResource("1_4h05p")
+reward_xp = 600
+reward_gold = 150
+class_rewards = Array[ExtResource("2_item")]([ExtResource("it_lamina_do_rei"), ExtResource("it_arco_do_rei"), ExtResource("it_cetro_do_rei")])

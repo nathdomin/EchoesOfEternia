@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
+
+[resource]
+script = ExtResource("1_script")
+id = "rei_slime_diario"
+title = "O Rei voltou"
+giver = "explorador"
+giver_name = "Explorador"
+requires = "o_rei_slime"
+min_level = 9
+offer_text = "O Rei Slime se refaz da gosma toda vez! Derrote-o de novo."
+progress_text = "O Rei ainda reina."
+done_text = "De novo! Tome sua recompensa. Volte amanhã."
+kind = 0
+target_id = "giant_slime"
+target_name = "Rei Slime"
+count = 1
+reward_xp = 300
+reward_item = ExtResource("it_pocao_grande")
+reward_count = 3
+reward_gold = 120
+repeat_hours = 20

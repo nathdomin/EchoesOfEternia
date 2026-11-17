@@ -13,3 +13,4 @@ id = "osso"
 display_name = "Osso Velho"
 description = "Ainda está frio."
 icon = SubResource("AtlasTexture_e0tkv")
+price = 20

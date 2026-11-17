@@ -12,6 +12,9 @@ static var _settings: Dictionary = {}
 
 
 static func spawn(parent: Node, pos: Vector2, text: String, color: Color, big := false) -> void:
+	# Pacote F: opcao na pausa (os avisos em texto, como "esquivou", continuam)
+	if color in [DAMAGE, HURT, HEAL] and not DisplaySettings.flag("damage_numbers"):
+		return
 	if parent == null or not is_instance_valid(parent):
 		return
 	var l := FloatingText.new()

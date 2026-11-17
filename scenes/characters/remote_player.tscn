@@ -35,6 +35,12 @@ properties/7/replication_mode = 2
 properties/8/path = NodePath(".:level")
 properties/8/spawn = true
 properties/8/replication_mode = 1
+properties/9/path = NodePath(".:attack_aim")
+properties/9/spawn = false
+properties/9/replication_mode = 2
+properties/10/path = NodePath(".:outfit")
+properties/10/spawn = true
+properties/10/replication_mode = 2
 
 [node name="RemotePlayer" type="Node2D"]
 script = ExtResource("1_remote")

@@ -81,6 +81,9 @@ func _defaults(account_key: String, display_name: String, zone: String, pos: Vec
 		"last_seen": now,
 		"play_time": 0,
 		"chests": {},  # bau -> hora (unix) em que enche de novo
+		"gold": 0,  # pacote C
+		"outfit": 0,  # pacote E: cor da roupa
+		"tutorial_seen": false,  # pacote F: ajuda do 1o jogo, por conta
 	}
 
 

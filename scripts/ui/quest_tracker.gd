@@ -31,6 +31,11 @@ func _rebuild() -> void:
 			var prog := int(me.quest_progress.get(qid, 0))
 			active.append({"q": q, "prog": prog, "done": prog >= q.count})
 	if active.is_empty():
+		# Pacote F: sem missao ativa, aponta a proxima (comeco do jogo: Anciao)
+		var next := _next_offer(me)
+		if next:
+			_line("Próximo passo", UiKit.GOLD)
+			_line("Fale com o %s" % next.giver_name, TEXT)
 		return
 	active.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.done and not b.done)
 	_line("Missões", UiKit.GOLD)
@@ -38,10 +43,26 @@ func _rebuild() -> void:
 		var e: Dictionary = active[i]
 		var q: QuestData = e.q
 		_line(q.title, UiKit.GOLD if e.done else TEXT)
-		var back := "Volte ao %s" % (q.giver_name if q.giver_name != "" else "NPC")
-		_line(back if e.done else "%s %d/%d" % [q.target_name, e.prog, q.count], DIM)
+		var who := q.turn_in_npc_name() if q.turn_in_npc_name() != "" else "NPC"
+		if q.kind == QuestData.Kind.TALK:
+			_line("Fale com o %s" % who, DIM)
+		else:
+			_line("Volte ao %s" % who if e.done else "%s %d/%d" % [q.target_name, e.prog, q.count], DIM)
 	if active.size() > MAX_SHOWN:
 		_line("+%d missões" % (active.size() - MAX_SHOWN), DIM)
+
+
+## Primeira missao que da para aceitar agora (a de menor nivel minimo).
+static func _next_offer(me: Dictionary) -> QuestData:
+	var best: QuestData = null
+	for f in DirAccess.get_files_at("res://resources/quests"):
+		var fname := f.trim_suffix(".remap")
+		if not fname.ends_with(".tres"):
+			continue
+		var q := PlayerData.quest(fname.get_basename())
+		if q and q.repeat_hours <= 0.0 and PlayerData.can_accept(me, q) and (best == null or q.min_level < best.min_level):
+			best = q
+	return best
 
 
 func _line(text: String, color: Color) -> void:

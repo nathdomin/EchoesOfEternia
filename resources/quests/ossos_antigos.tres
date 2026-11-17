@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+[ext_resource type="Resource" path="res://resources/items/pocao_grande.tres" id="it_pocao_grande"]
+
+[resource]
+script = ExtResource("1_script")
+id = "ossos_antigos"
+title = "Ossos antigos"
+giver = "explorador"
+giver_name = "Explorador"
+requires = "morcegos_da_caverna"
+min_level = 7
+offer_text = "Estes ossos guardam a história da caverna. Traga 6 das caveiras."
+progress_text = "Faltam ossos."
+done_text = "Que achado! Leve estas poções para o fundo da caverna."
+kind = 1
+target_id = "osso"
+target_name = "Ossos"
+count = 6
+reward_xp = 350
+reward_item = ExtResource("it_pocao_grande")
+reward_count = 3
+reward_gold = 60

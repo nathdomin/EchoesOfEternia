@@ -1,27 +1,32 @@
 [gd_resource type="Resource" script_class="MonsterData" format=3]
 
-[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1"]
-[ext_resource type="SpriteFrames" path="res://resources/monsters/skull_frames.tres" id="2"]
-[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Skull/Faceset.png" id="3"]
-[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="3_ex0sj"]
-[ext_resource type="Resource" path="res://resources/items/osso.tres" id="4_qonku"]
-[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="5_0d3xr"]
-[ext_resource type="Resource" path="res://resources/items/shuriken.tres" id="6_rsx0u"]
-[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="7_xhpn0"]
-[ext_resource type="Resource" path="res://resources/items/amuleto.tres" id="8_gd1w2"]
+[ext_resource type="Script" path="res://scripts/combat/monster_data.gd" id="1_script"]
+[ext_resource type="SpriteFrames" path="res://resources/monsters/skull_frames.tres" id="2_frames"]
+[ext_resource type="Texture2D" path="res://assets/enemies/ninja/Skull/Faceset.png" id="3_face"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="4_item"]
+[ext_resource type="Resource" path="res://resources/items/osso.tres" id="it_osso"]
+[ext_resource type="Resource" path="res://resources/items/pocao.tres" id="it_pocao"]
+[ext_resource type="Resource" path="res://resources/items/elmo.tres" id="it_elmo"]
+[ext_resource type="Resource" path="res://resources/items/amuleto.tres" id="it_amuleto"]
+[ext_resource type="Resource" path="res://resources/items/espada_aco.tres" id="it_espada_aco"]
+[ext_resource type="Resource" path="res://resources/items/arco_longo.tres" id="it_arco_longo"]
+[ext_resource type="Resource" path="res://resources/items/cajado_runico.tres" id="it_cajado_runico"]
 
 [resource]
-script = ExtResource("1")
+script = ExtResource("1_script")
 id = "skull"
+frames = ExtResource("2_frames")
+faceset = ExtResource("3_face")
 display_name = "Caveira"
-frames = ExtResource("2")
-faceset = ExtResource("3")
-max_hp = 70
-damage = 12
+level = 7
+max_hp = 120
+damage = 15
 speed = 40.0
 aggro_range = 68.0
 attack_cooldown = 1.0
-xp_reward = 30
+xp_reward = 52
 respawn_time = 20.0
-loot_items = Array[ExtResource("3_ex0sj")]([ExtResource("4_qonku"), ExtResource("5_0d3xr"), ExtResource("6_rsx0u"), ExtResource("7_xhpn0"), ExtResource("8_gd1w2")])
-loot_chances = PackedFloat32Array(0.75, 0.25, 0.06, 0.05, 0.04)
+gold_min = 6
+gold_max = 11
+loot_items = Array[ExtResource("4_item")]([ExtResource("it_osso"), ExtResource("it_pocao"), ExtResource("it_elmo"), ExtResource("it_amuleto"), ExtResource("it_espada_aco"), ExtResource("it_arco_longo"), ExtResource("it_cajado_runico")])
+loot_chances = PackedFloat32Array(0.75, 0.25, 0.05, 0.03, 0.04, 0.04, 0.04)

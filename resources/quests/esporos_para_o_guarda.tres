@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="QuestData" format=3]
+
+[ext_resource type="Script" path="res://scripts/quests/quest_data.gd" id="1_script"]
+[ext_resource type="Script" path="res://scripts/items/item_data.gd" id="2_item"]
+
+[resource]
+script = ExtResource("1_script")
+id = "esporos_para_o_guarda"
+title = "Remédio de esporo"
+giver = "guarda"
+giver_name = "Guarda Florestal"
+requires = ""
+min_level = 4
+offer_text = "Esporo de cogumelo vira remédio contra veneno de slime. Me traga 5."
+progress_text = "Preciso de 5 esporos."
+done_text = "Com isto faço remédio para a semana toda. Obrigado!"
+kind = 1
+target_id = "esporo"
+target_name = "Esporos"
+count = 5
+reward_xp = 140
+reward_gold = 25
