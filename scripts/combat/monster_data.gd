@@ -37,6 +37,9 @@ extends Resource
 @export var level := 1
 ## Variante de cor do mesmo desenho (ex.: caveira antiga). Branco = original.
 @export var tint := Color.WHITE
+## 1.0.2: monstro base desta variante (Cogumelo Sombrio -> "mushroom"). Missao
+## de matar o base conta a variante tambem; missao da variante so conta ela.
+@export var family := ""
 ## Pacote C: ouro que cai ao derrotar (para o time que levou o abate).
 @export var gold_min := 0
 @export var gold_max := 0
@@ -59,3 +62,8 @@ extends Resource
 @export var summon_at: PackedFloat32Array = PackedFloat32Array()
 ## Chefe (pacote B): vida extra por jogador a mais perto (0.6 = +60% cada).
 @export var hp_per_extra_player := 0.0
+
+
+## Derrotar este monstro conta para uma missao de matar `target_id`?
+func counts_for(target_id: String) -> bool:
+	return target_id == id or (family != "" and target_id == family)

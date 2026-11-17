@@ -30,3 +30,4 @@ gold_max = 4
 tint = Color(0.75, 0.95, 1.15, 1)
 loot_items = Array[ExtResource("4_item")]([ExtResource("it_osso"), ExtResource("it_pocao"), ExtResource("it_kunai"), ExtResource("it_espada_ferro"), ExtResource("it_arco_curto"), ExtResource("it_cajado_aprendiz")])
 loot_chances = PackedFloat32Array(0.6, 0.15, 0.05, 0.04, 0.04, 0.04)
+family = "skull"

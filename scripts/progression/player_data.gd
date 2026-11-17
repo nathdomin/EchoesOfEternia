@@ -342,7 +342,7 @@ func award_kill(killer_id: int, monster: Monster, damage_by: Dictionary = {}) ->
 		var each := float(xp_total) / sharers.size()
 		for pid in sharers:
 			rewarded[pid] = true
-			_count_kill(pid, monster.monster_id)
+			_count_kill(pid, monster.data)
 			var lvl := int(Characters.data_of(pid).get("level", 1))
 			add_xp(pid, maxi(1, roundi(each * xp_scale(lvl, monster.data.level))), false)
 			if monster.data.gold_max > 0:
@@ -358,7 +358,7 @@ func award_kill(killer_id: int, monster: Monster, damage_by: Dictionary = {}) ->
 	for pid: int in damage_by:
 		if not rewarded.has(pid) and not Characters.data_of(pid).is_empty() \
 				and float(damage_by[pid]) / total >= CREDIT_SHARE:
-			_count_kill(pid, monster.monster_id)
+			_count_kill(pid, monster.data)
 			_changed(pid)
 
 
@@ -454,12 +454,14 @@ func _roll_loot(id: int, md: MonsterData) -> void:
 				NetworkManager.send_system_message(id, "Inventário cheio: %s ficou para trás." % it.display_name)
 
 
-func _count_kill(id: int, monster_id: String) -> void:
+## Conta o abate nas missoes de matar ativas. 1.0.2: a variante conta para a
+## missao do monstro base (Cogumelo Sombrio vale para "Esporos raivosos").
+func _count_kill(id: int, md: MonsterData) -> void:
 	var data := Characters.data_of(id)
 	for qid: String in data.quests:
 		var st: Dictionary = data.quests[qid]
 		var q := quest(qid)
-		if q and st.state == "active" and q.kind == QuestData.Kind.KILL and q.target_id == monster_id \
+		if q and st.state == "active" and q.kind == QuestData.Kind.KILL and md.counts_for(q.target_id) \
 				and int(st.get("progress", 0)) < q.count:
 			st.progress = int(st.get("progress", 0)) + 1
 			if st.progress >= q.count:
