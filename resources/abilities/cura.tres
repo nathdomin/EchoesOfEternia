@@ -8,7 +8,7 @@
 script = ExtResource("3_c88gb")
 id = "cura"
 display_name = "Cura"
-description = "Cura 25% da vida de você e do grupo por perto."
+description = "Recupera 25% da vida (a sua e a do grupo por perto)."
 icon = ExtResource("2_moirr")
 kind = 4
 power = 0.25

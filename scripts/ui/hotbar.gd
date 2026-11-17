@@ -8,18 +8,22 @@ signal slot_clicked(index: int)
 
 const SLOT := 24.0
 const KEY_FONT := preload("res://resources/ui/name_label.tres")
-const POTION_COOLDOWN := 1.0
+## Pocao da barra (a recarga vem do item, a mesma que o servidor confere).
+const POTION_ID := "pocao"
 const POTION_ICON := preload("res://assets/ui/ninja/Skill Icon/Job & Action/Potion.png")
 
 var _slots: Array[Panel] = []
 var _shades: Array[ColorRect] = []
 var _ready_at: Array[int] = [0, 0, 0, 0]
-var _durations: Array[float] = [1.0, 1.0, 1.0, POTION_COOLDOWN]
+var _durations: Array[float] = [1.0, 1.0, 1.0, 1.0]
 var _abilities: Array[AbilityData] = []
 
 
 func _ready() -> void:
 	add_theme_constant_override("separation", 3)
+	var potion := PlayerData.item(POTION_ID)
+	if potion:
+		_durations[3] = potion.cooldown
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for i in 4:
 		var s := UiKit.slot(SLOT)

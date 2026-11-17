@@ -8,6 +8,7 @@ script = ExtResource("2_gsdqg")
 id = "esporos_raivosos"
 title = "Esporos raivosos"
 giver = "anciao"
+giver_name = "Ancião"
 requires = "gosma_na_horta"
 offer_text = "Cogumelos bravos apareceram no nordeste. Acalme 4 deles... do jeito que der."
 progress_text = "Os cogumelos ainda estão bravos."

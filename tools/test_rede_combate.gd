@@ -111,7 +111,8 @@ func _approach(cls: ClassData, ab: AbilityData = null) -> void:
 			t += 0.5
 			continue
 		var to := m.global_position - _player.global_position
-		if to.length() <= stop:
+		# Pacote A: paredes/arvores bloqueiam; so para com a linha livre
+		if to.length() <= stop and _clear_line_to(m):
 			break
 		var dir := to.normalized() if side == Vector2.ZERO else side
 		_steer(dir)
@@ -137,6 +138,15 @@ func _approach(cls: ClassData, ab: AbilityData = null) -> void:
 		await get_tree().physics_frame
 	_release()
 	await _wait(0.1)
+
+
+## Linha livre do corpo do bot ate o monstro (mesma regra do servidor).
+func _clear_line_to(m: Monster) -> bool:
+	var from := _player.global_position + Combat.BODY
+	var to := m.hitbox.global_position
+	var q := PhysicsRayQueryParameters2D.create(from, to, Combat.WALL_MASK)
+	var hit := _player.get_world_2d().direct_space_state.intersect_ray(q)
+	return hit.is_empty() or (hit.position as Vector2).distance_to(to) <= m.hitbox.radius
 
 
 func _nearest() -> Monster:

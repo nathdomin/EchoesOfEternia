@@ -8,6 +8,7 @@ script = ExtResource("2_fugnf")
 id = "o_rei_slime"
 title = "O Rei Slime"
 giver = "guarda"
+giver_name = "Guarda Florestal"
 requires = "morcegos_da_mata"
 min_level = 3
 offer_text = "No fundo da caverna a leste vive o Rei Slime. Junte um grupo e acabe com ele."

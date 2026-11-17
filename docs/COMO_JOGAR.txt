@@ -1,56 +1,58 @@
-ECHOES OF ETERNIA - como jogar
+﻿ECHOES OF ETERNIA - como jogar
 ==============================
 
 1. Abra EchoesOfEternia.exe.
    Se o Windows mostrar "O Windows protegeu o computador", clique em
-   "Mais informacoes" e depois em "Executar assim mesmo" (o jogo nao e
+   "Mais informações" e depois em "Executar assim mesmo" (o jogo não é
    assinado digitalmente). Se o firewall perguntar, clique em Permitir.
 2. No menu, clique em "Criar conta": escolha um nome e uma senha.
-   Nas proximas vezes, use "Entrar no mundo".
+   Nas próximas vezes, use "Entrar no mundo".
 
    SERVIDOR:  152.67.51.151      PORTA:  7777
-   (ja vem preenchido; se o campo estiver diferente, digite estes valores)
+   (já vem preenchido; se o campo estiver diferente, digite estes valores)
 
-3. Na primeira entrada voce escolhe a classe (Guerreiro, Mago ou Arqueiro).
-   A escolha e definitiva.
+3. Na primeira entrada você escolhe a classe (Guerreiro, Mago ou Arqueiro).
+   A escolha é definitiva: o jogo pede confirmação.
 
-ATUALIZACOES
-  O jogo se atualiza sozinho: ao abrir, ele baixa a versao nova e reabre.
-  Deixe a pasta do jogo num lugar seu (Documentos, Area de Trabalho), nao em
-  "Arquivos de Programas". Ultima versao: github.com/nathdomin/EchoesOfEternia-releases
+ATUALIZAÇÕES
+  O jogo se atualiza sozinho: ao abrir, ele baixa a versão nova e reabre.
+  Deixe a pasta do jogo num lugar seu (Documentos, Área de Trabalho), não em
+  "Arquivos de Programas". Última versão: github.com/nathdomin/EchoesOfEternia-releases
 
 CONTROLES (F1 mostra tudo dentro do jogo)
   WASD ou setas  andar
-  Espaco ou J    atacar o alvo a frente (Guerreiro: 3 seguidos = combo)
+  Espaço ou J    atacar o alvo à frente (Guerreiro: 3 seguidos = combo)
   Shift ou K     esquivar (corrida curta sem levar dano)
-  1 2 3          habilidades da classe      4  pocao
-  Tab / clique   escolher outro alvo (sem isso, vale o monstro a frente)
-  E              falar com NPC / abrir bau
-  I              inventario (clique usa/equipa, botao direito 2x descarta)
+  1 2 3          habilidades da classe      4  poção
+  Tab / clique   escolher outro alvo (sem isso, vale o monstro à frente)
+  E              falar com NPC / abrir baú
+  I              inventário (clique usa/equipa, botão direito 2x descarta)
   Enter          chat     /  comando do chat
   G              convidar o jogador selecionado para o grupo
-  F3             painel tecnico (FPS, ping)
-  Esc            pausa (volume, ajuda, sair)
+  F3             painel técnico (FPS, ping)
+  Esc            pausa (volume, tela, ajuda, sair)
+  Nas janelas (conversa, pausa, classe): setas escolhem, Enter confirma.
 
 CLASSES (habilidades 1, 2 e 3)
   Guerreiro  de perto. Golpe Pesado (empurra), Giro de Espada,
-             Grito de Guerra (os monstros vem para voce; -30% de dano por 5 s)
+             Grito de Guerra (os monstros vêm para você; -30% de dano por 5 s)
   Arqueiro   flechas de longe. Tiro Perfurante (atravessa a fila),
-             Chuva de Flechas (deixa lento), Salto para Tras
+             Chuva de Flechas (deixa lento), Salto para Trás
   Mago       orbes de longe. Bola de Fogo (explode), Nova de Gelo
-             (congela 1,5 s), Cura (voce e o grupo)
+             (congela 1,5 s), Cura (você e o grupo)
 
 CHAT
   /g texto       grupo            /z texto     zona
-  /w Nome texto  cochicho         /r texto     responde o ultimo cochicho
-  /quem          quem esta online
-  /convidar Nome   /aceitar   /recusar   /sair   (grupo, ate 4)
+  /w Nome texto  cochicho         /r texto     responde o último cochicho
+  /quem          quem está online
+  /convidar Nome   /aceitar   /recusar   /sair   (grupo, até 4)
 
 DICAS
   - Monstro piscando vermelho vai bater: saia de perto ou esquive (Shift).
-  - Circulo vermelho no chao (chefe): saia antes de encher.
-  - Fale com o Anciao na praca da vila (o "!" sobre a cabeca).
-  - Em grupo a XP e dividida com bonus, e a Cura do Mago cura o grupo todo.
+  - Círculo vermelho no chão (chefe): saia antes de encher.
+  - Fale com o Ancião na praça da vila (o "!" sobre a cabeça).
+  - Em grupo a XP é dividida com bônus, e a Cura do Mago cura o grupo todo.
   - A floresta fica a leste da vila; a caverna do Rei Slime, no extremo leste da floresta.
-  - Ao morrer, voce renasce na praca da vila em 5 segundos.
-  - Seu personagem e salvo no servidor: entre de qualquer PC com a mesma conta.
+  - Paredes e árvores bloqueiam flechas e magias: procure uma linha livre.
+  - Ao morrer, você renasce na praça da vila em 5 segundos.
+  - Seu personagem é salvo no servidor: entre de qualquer PC com a mesma conta.

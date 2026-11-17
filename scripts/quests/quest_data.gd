@@ -8,6 +8,7 @@ enum Kind { KILL, COLLECT }
 @export var id := ""
 @export var title := ""
 @export var giver := ""              ## npc_id de quem da e recebe a missao
+@export var giver_name := ""         ## nome dele no rastreador ("volte ao Ancião")
 @export var requires := ""           ## missao que precisa estar concluida antes
 @export var min_level := 1
 @export_multiline var offer_text := ""

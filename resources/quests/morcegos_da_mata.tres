@@ -8,6 +8,7 @@ script = ExtResource("2_hekpw")
 id = "morcegos_da_mata"
 title = "Morcegos da mata"
 giver = "guarda"
+giver_name = "Guarda Florestal"
 min_level = 2
 offer_text = "Os morcegos azuis estão atacando quem passa pela trilha. Derrube 6 deles."
 progress_text = "Ainda tem morcego na trilha."

@@ -18,6 +18,9 @@ func _ready() -> void:
 	_test_targeting()
 	await _test_monster_status()
 	_test_class_kits()
+	_test_cooldown_budget()
+	await _test_line_of_sight()
+	_test_potion_cooldown()
 	print("RESULTADO: %s" % ("OK" if _fails == 0 else "%d FALHA(S)" % _fails))
 	get_tree().quit(1 if _fails > 0 else 0)
 
@@ -197,3 +200,69 @@ func _test_class_kits() -> void:
 	rp.call("_update_animation", false)
 	_check(not w.visible, "outro jogador: arma some depois do golpe")
 	rp.queue_free()
+
+
+## Pacote A: recarga com orcamento (sem os 15% de folga de antes).
+func _test_cooldown_budget() -> void:
+	print("Recarga no servidor (orcamento):")
+	var cd := 0.5
+	# Cliente trapaceiro manda o ataque o mais rapido que o servidor aceitar
+	var next := 0
+	var accepted := 0
+	for now in range(0, 10001, 10):
+		if Combat.cooldown_ready(next, now):
+			next = Combat.cooldown_next(next, now, cd)
+			accepted += 1
+	_check(accepted <= 21, "em 10 s com recarga 0,5 s: no maximo 21 golpes (aceitou %d; antes ~24)" % accepted)
+	# Cliente honesto com rede variando +-60 ms nunca perde golpe
+	next = 0
+	var lost := 0
+	var t := 0
+	for i in 40:
+		var arrive := t + (60 if i % 2 == 0 else -60) + 100
+		if Combat.cooldown_ready(next, arrive):
+			next = Combat.cooldown_next(next, arrive, cd)
+		else:
+			lost += 1
+		t += 500
+	_check(lost == 0, "cliente honesto com variacao de rede nao perde golpes (perdeu %d)" % lost)
+	_check(Combat.cooldown_ready(0, 0), "parado ha tempo: pode usar na hora")
+
+
+## Pacote A: golpes e projeteis param na parede.
+func _test_line_of_sight() -> void:
+	print("Linha de visao:")
+	var map := Node2D.new()
+	map.position = Vector2(20000, 0)  # como no servidor: zonas afastadas
+	var monsters := Node2D.new()
+	monsters.name = "Monsters"
+	map.add_child(monsters)
+	var wall := StaticBody2D.new()
+	var shape := CollisionShape2D.new()
+	var rect := RectangleShape2D.new()
+	rect.size = Vector2(16, 64)
+	shape.shape = rect
+	wall.add_child(shape)
+	wall.position = Vector2(50, 0)  # parede entre x 42 e 58
+	map.add_child(wall)
+	add_child(map)
+	Combat._monster_roots["teste_los"] = monsters
+	await get_tree().physics_frame
+	await get_tree().physics_frame
+	var reach := Combat._reach_until_wall("teste_los", Vector2.ZERO, Vector2.RIGHT, 120.0)
+	_check(reach > 38.0 and reach < 43.0, "projetil para na parede (alcance %.1f, parede em 42)" % reach)
+	_check(is_equal_approx(Combat._reach_until_wall("teste_los", Vector2.ZERO, Vector2.LEFT, 120.0), 120.0),
+			"sem parede: alcance inteiro")
+	_check(not Combat._clear_line("teste_los", Vector2.ZERO, Vector2(90, 0)), "monstro atras da parede: bloqueado")
+	_check(Combat._clear_line("teste_los", Vector2.ZERO, Vector2(30, 0)), "monstro antes da parede: livre")
+	_check(Combat._clear_line("teste_los", Vector2.ZERO, Vector2(44, 0), 8.0),
+			"monstro encostado na parede (centro dentro dela) ainda leva")
+	_check(Combat._clear_line("teste_los", Vector2(0, 50), Vector2(90, 50)), "passando por baixo da parede: livre")
+	Combat._monster_roots.erase("teste_los")
+	map.queue_free()
+
+
+func _test_potion_cooldown() -> void:
+	print("Pocao:")
+	var potion := PlayerData.item("pocao")
+	_check(potion != null and potion.cooldown > 0.0, "pocao tem recarga no item (servidor confere)")
