@@ -373,6 +373,11 @@ func home_position() -> Vector2:
 	return _zones[_default_zone].spawn
 
 
+## Ponto de partida (local) de uma zona: a entrada, onde se renasce nela.
+func spawn_of(zone: String) -> Vector2:
+	return _zones[zone].spawn if _zones.has(zone) else home_position()
+
+
 ## Servidor: leva o jogador para `zone` em `pos` (viagem ou renascimento):
 ## recria o avatar na zona nova e avisa o cliente para trocar o mapa.
 func move_to_zone(id: int, zone: String, pos: Vector2) -> void:

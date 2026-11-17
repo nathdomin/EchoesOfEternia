@@ -77,6 +77,11 @@ func _ready() -> void:
 	PlayerData.changed.connect(_on_player_data_changed)
 	_on_player_data_changed()
 	Combat.own_respawned.connect(_on_respawned)
+	Combat.own_death_penalty.connect(func(xp: int) -> void:
+		_game_hud.chat.add_line("sistema", "", "A morte custou %d de XP." % xp))
+	Combat.own_status_changed.connect(func(st: Dictionary) -> void:
+		# Envenenado: o boneco fica esverdeado
+		_player.get_node("Sprite").self_modulate = Color(0.7, 1.25, 0.6) if st.has("poison") else Color.WHITE)
 	Combat.own_hit.connect(_on_own_hit)
 	Combat.own_dodged.connect(func() -> void:
 		FloatingText.spawn(_map, _player.global_position, "esquivou", FloatingText.XP))
@@ -302,8 +307,9 @@ func _on_respawned(pos: Vector2) -> void:
 	_player.set_dead(false)
 	_player.place(pos, Vector2i.DOWN)
 	_last_sent_pos = pos
-	_hud.show_banner("Você renasceu na %s." % Zones.display_name(_zone))
-	_game_hud.chat.add_line("sistema", "", "Você renasceu na praça da %s com a vida cheia." % Zones.display_name(_zone))
+	var where := "na praça da %s" if _zone == "village" else "na entrada da %s"
+	_hud.show_banner(("Você renasceu " + where + ".") % Zones.display_name(_zone))
+	_game_hud.chat.add_line("sistema", "", ("Você renasceu " + where + " com a vida cheia.") % Zones.display_name(_zone))
 	get_tree().create_timer(3.0).timeout.connect(func() -> void:
 		if _respawn_left <= 0.0 and _reconnect_attempt < 0:
 			_hud.show_banner(""))

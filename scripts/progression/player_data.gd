@@ -356,6 +356,20 @@ func add_xp(id: int, amount: int, notify := true) -> void:
 		_changed(id)
 
 
+## Pacote B: morrer custa `frac` da XP que o nivel pede (sem descer de
+## nivel; no nivel maximo nao ha o que perder). Retorna quanto perdeu.
+func death_penalty(id: int, frac: float) -> int:
+	var data := Characters.data_of(id)
+	if data.is_empty() or int(data.level) >= XP.max_level():
+		return 0
+	var lost := mini(int(data.xp), roundi(XP.needed(int(data.level)) * frac))
+	if lost <= 0:
+		return 0
+	data.xp = int(data.xp) - lost
+	_changed(id)
+	return lost
+
+
 ## Nivel maximo: aviso para todos. Os outros: so o grupo e quem esta na zona
 ## (com 16 jogadores o chat virava uma lista de "subiu de nivel").
 func _announce_level(id: int, data: Dictionary) -> void:

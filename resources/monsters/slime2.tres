@@ -22,3 +22,5 @@ xp_reward = 26
 respawn_time = 14.0
 loot_items = Array[ExtResource("3_xuv2o")]([ExtResource("4_nbl46"), ExtResource("5_tra5d"), ExtResource("6_kg66p")])
 loot_chances = PackedFloat32Array(0.8, 0.25, 0.06)
+poison_dps = 2
+poison_seconds = 4.0

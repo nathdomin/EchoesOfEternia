@@ -8,7 +8,9 @@
 
 [resource]
 script = ExtResource("5_jc81e")
-base_hp = 130
-hp_per_level = 20
+base_hp = 140
+hp_per_level = 22
 abilities = Array[ExtResource("1_at1co")]([ExtResource("2_mjkw8"), ExtResource("3_hpyip"), ExtResource("4_savmu")])
 description = "Tanque: muita vida, golpes pesados de perto e segura os monstros."
+base_damage = 10
+attack_cooldown = 0.55

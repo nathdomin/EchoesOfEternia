@@ -69,6 +69,15 @@ var _windup_tween: Tween
 var _slow_until_ms := 0
 var _slow_mult := 1.0
 var _stun_until_ms := 0
+## Pacote B: chamado pelo chefe (some ao morrer, nao renasce).
+var temporary := false
+## Chefe: cuspes marcados no chao ({pos, at}), reforcos ja chamados e os
+## monstros chamados (somem quando o chefe morre ou volta para casa).
+var _spits: Array[Dictionary] = []
+var _next_spit_ms := 0
+var _summons_done := 0
+var _summoned: Array[Monster] = []
+var _next_scale_ms := 0
 
 @onready var health: HealthComponent = $Health
 @onready var hitbox: HitboxComponent = $Hitbox
@@ -91,6 +100,7 @@ func _ready() -> void:
 		return
 	_sprite.sprite_frames = data.frames
 	_sprite.play("idle_down")
+	_sprite.modulate = data.tint
 	# Sprite e barra de vida conforme o tamanho do quadro (chefe e maior)
 	var tex := data.frames.get_frame_texture("idle_down", 0)
 	var h := tex.get_height() if tex else 16
@@ -151,6 +161,9 @@ func _physics_process(delta: float) -> void:
 		velocity = Vector2.ZERO
 		return
 
+	if data.is_boss:
+		_boss_tick(now)
+
 	if state == State.WINDUP:
 		# Parado preparando o golpe, virado para o alvo
 		velocity = Vector2.ZERO
@@ -166,6 +179,7 @@ func _physics_process(delta: float) -> void:
 			health.reset()
 			hp = health.hp
 			state = State.IDLE
+			_reset_boss()
 	else:
 		_pick_target()
 		if _target != 0:
@@ -275,7 +289,7 @@ func _separation() -> Vector2:
 
 ## Servidor: lentidao (velocidade x `mult`) por `secs`. Fica a mais forte.
 func apply_slow(mult: float, secs: float) -> void:
-	if state == State.DEAD or mult <= 0.0 or mult >= 1.0 or secs <= 0.0:
+	if state == State.DEAD or data.slow_immune or mult <= 0.0 or mult >= 1.0 or secs <= 0.0:
 		return
 	var now := Time.get_ticks_msec()
 	_slow_mult = minf(_slow_mult, mult) if now < _slow_until_ms else mult
@@ -365,6 +379,10 @@ func _face(dir: Vector2) -> void:
 
 func _on_damaged(amount: int, source_id: int) -> void:
 	hp = health.hp
+	if data.summon_count > 0 and _summons_done < data.summon_at.size() and health.hp > 0 \
+			and float(health.hp) / health.max_hp <= data.summon_at[_summons_done]:
+		_summons_done += 1
+		_summon()
 	if source_id != 0 and state != State.RETURN:
 		_damage_by[source_id] = int(_damage_by.get(source_id, 0)) + amount
 		add_threat(source_id, float(amount))
@@ -382,15 +400,108 @@ func _on_died(killer_id: int) -> void:
 	var damage_by := _damage_by.duplicate()
 	_forget()
 	Combat.monster_killed(self, killer_id, damage_by)
+	if data.is_boss:
+		_reset_boss()
+	if temporary:
+		# Chamado pelo chefe: a fumaca aparece e ele some (o spawner tira dos clientes)
+		get_tree().create_timer(1.5).timeout.connect(queue_free)
 
 
 func _respawn() -> void:
 	position = home
 	net_position = home
+	if data.hp_per_extra_player > 0.0:
+		health.max_hp = data.max_hp
+		max_hp = data.max_hp
 	health.reset()
 	hp = health.hp
 	_forget()
 	state = State.IDLE
+
+
+# ---------- servidor: chefe (pacote B) ----------
+
+## Vida conforme quantos jogadores estao na luta, cuspe em quem fica longe e
+## os cuspes marcados que ja devem cair.
+func _boss_tick(now: int) -> void:
+	for i in range(_spits.size() - 1, -1, -1):
+		if now >= int(_spits[i].at):
+			var pos: Vector2 = _spits[i].pos
+			_spits.remove_at(i)
+			Combat.play_effect_in_zone(zone, "smoke", pos)
+			Combat.area_damage(zone, pos, data.spit_radius, roundi(data.damage * data.spit_damage_mult))
+	if state == State.DEAD or state == State.RETURN:
+		return
+	if data.hp_per_extra_player > 0.0 and now >= _next_scale_ms:
+		_next_scale_ms = now + 1000
+		_scale_health()
+	if data.spit_every > 0.0 and state == State.CHASE and now >= _next_spit_ms:
+		var far := _spit_target()
+		if far != 0:
+			_next_spit_ms = now + int(data.spit_every * 1000.0)
+			var pos := Characters.position_of(far)
+			_spits.append({"pos": pos, "at": now + int(data.spit_telegraph * 1000.0)})
+			Combat.warn_area(zone, pos, data.spit_radius, data.spit_telegraph)
+			attack_seq += 1  # o "bote" do cuspe
+
+
+## Quem esta mais longe (fora do pisao, dentro do alcance do cuspe).
+func _spit_target() -> int:
+	var best := 0
+	var best_d := data.slam_radius
+	for id: int in _threat:
+		if not Combat.can_be_attacked(id, zone):
+			continue
+		var d := position.distance_to(Characters.position_of(id))
+		if d > best_d and d <= data.spit_range:
+			best_d = d
+			best = id
+	return best
+
+
+## Vida maxima = base x (1 + extra x (jogadores - 1)), mantendo a fracao.
+func _scale_health() -> void:
+	var n := 0
+	for id in Characters.players_in_zone(zone):
+		if Combat.can_be_attacked(id, zone) and Characters.position_of(id).distance_to(home) <= data.leash_range + 60.0:
+			n += 1
+	var target := roundi(data.max_hp * (1.0 + data.hp_per_extra_player * maxi(n - 1, 0)))
+	if target == health.max_hp or health.hp <= 0:
+		return
+	var frac := float(health.hp) / health.max_hp
+	health.max_hp = target
+	health.hp = clampi(roundi(frac * target), 1, target)
+	max_hp = target
+	hp = health.hp
+
+
+func _summon() -> void:
+	var m_data := data_for(data.summon_id)
+	if m_data == null:
+		return
+	for i in data.summon_count:
+		var pos := position + Vector2.from_angle(TAU * i / data.summon_count) * (data.hitbox_radius + 14.0)
+		var m := Combat.spawn_monster(zone, data.summon_id, pos, 20.0, "", true)
+		if m:
+			_summoned.append(m)
+			m.taunt(_target)  # ja vem lutando
+	for pid in Characters.players_in_zone(zone):
+		NetworkManager.send_system_message(pid, "%s chama reforços!" % data.display_name)
+
+
+## Chefe voltou para casa ou morreu: limpa cuspes, reforcos e a vida extra.
+func _reset_boss() -> void:
+	_spits.clear()
+	_summons_done = 0
+	for m in _summoned:
+		if is_instance_valid(m) and not m.is_queued_for_deletion():
+			m.queue_free()
+	_summoned.clear()
+	if data.hp_per_extra_player > 0.0 and state != State.DEAD:
+		health.max_hp = data.max_hp
+		health.reset()
+		max_hp = data.max_hp
+		hp = health.hp
 
 
 # ---------- cliente: visual ----------
@@ -416,7 +527,7 @@ func _set_hp(value: int) -> void:
 	_refresh_visuals()
 	if lost > 0 and not multiplayer.is_server() and state != State.DEAD:
 		_sprite.modulate = Color(3, 3, 3)
-		create_tween().tween_property(_sprite, "modulate", STATUS_TINT[status], 0.18)
+		create_tween().tween_property(_sprite, "modulate", _tint(), 0.18)
 		FloatingText.spawn(get_parent().get_parent(), position + Vector2(0, _sprite.position.y * 2.0 + 18.0), str(lost), FloatingText.DAMAGE, data.is_boss)
 		GameAudio.play_at("hit", position)
 
@@ -443,7 +554,7 @@ func _set_status(value: Status) -> void:
 	status = value
 	if not is_node_ready() or multiplayer.is_server():
 		return
-	_sprite.modulate = STATUS_TINT[value]
+	_sprite.modulate = _tint()
 	if value == Status.FROZEN:
 		_sprite.pause()
 	else:
@@ -463,6 +574,11 @@ func _windup_visual(on: bool) -> void:
 	_windup_tween.tween_property(_sprite, "self_modulate", Color.WHITE, 0.09)
 	var back := create_tween()
 	back.tween_property(_sprite, "offset", -Vector2(facing) * 2.0, 0.12)
+
+
+## Cor do desenho: variante do monstro x efeito (lento/congelado).
+func _tint() -> Color:
+	return (data.tint if data else Color.WHITE) * STATUS_TINT[status]
 
 
 func _set_attack_seq(value: int) -> void:

@@ -60,7 +60,10 @@ func _card(c: ClassData) -> Control:
 	top.add_child(class_name_label)
 	_names.append(class_name_label)
 	v.add_child(top)
-	v.add_child(UiKit.ink_text("%s\nVida %d  Ataque %d" % [c.description, c.base_hp, c.base_damage], 124))
+	# Pacote B: alcance junto (o dano por golpe sozinho enganava: o Guerreiro
+	# bate menos por golpe, mas em combo; os de longe batem de longe)
+	var reach := "Longe" if c.is_ranged() else "Perto"
+	v.add_child(UiKit.ink_text("%s\nVida %d · Atq %d · %s" % [c.description, c.base_hp, c.base_damage, reach], 124))
 	var icons := HBoxContainer.new()
 	for ab in c.abilities:
 		var t := TextureRect.new()
