@@ -8,7 +8,10 @@ signal closed
 ## Pacote C: o jogador escolheu "Comércio" com este NPC.
 signal shop_requested(npc: Npc)
 
-const SIZE := Vector2(340, 118)
+## 1.0.1: mais largo e com a fileira de botoes na largura toda (com Aceitar,
+## Comercio e Ate logo juntos, os botoes passavam da borda da pagina).
+const SIZE := Vector2(400, 118)
+const BUTTONS_MARGIN := 16.0
 
 var _page: ColorRect
 var _face: TextureRect
@@ -36,8 +39,10 @@ func _ready() -> void:
 	_text.position = Vector2(60, 28)
 	add_child(_text)
 	_buttons = HBoxContainer.new()
-	_buttons.add_theme_constant_override("separation", 14)
-	_buttons.position = Vector2(60, SIZE.y - 34)
+	_buttons.add_theme_constant_override("separation", 10)
+	_buttons.alignment = BoxContainer.ALIGNMENT_END
+	_buttons.position = Vector2(BUTTONS_MARGIN, SIZE.y - 34)
+	_buttons.size = Vector2(SIZE.x - 2.0 * BUTTONS_MARGIN, 26)
 	add_child(_buttons)
 	PlayerData.changed.connect(func() -> void:
 		if visible and _npc:
