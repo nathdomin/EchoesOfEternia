@@ -50,6 +50,7 @@ func open(npc: Npc) -> void:
 	_face.texture = npc.faceset
 	_name.text = npc.display_name
 	for b in _buttons.get_children():
+		_buttons.remove_child(b)
 		b.queue_free()
 	var me := PlayerData.me
 	var text := npc.greeting
@@ -75,14 +76,19 @@ func open(npc: Npc) -> void:
 			action_label = "Aceitar"
 			break
 	_text.text = text
+	# Opcoes: setas escolhem, Enter confirma (UiKit.choices); a primeira ja
+	# vem marcada, com ou sem missao.
+	var options: Array[Button] = []
 	if action.is_valid():
 		var b := UiKit.ink_button(action_label)
 		b.pressed.connect(action)
-		_buttons.add_child(b)
-		b.grab_focus.call_deferred()
+		options.append(b)
 	var bye := UiKit.ink_button("Até logo")
 	bye.pressed.connect(close)
-	_buttons.add_child(bye)
+	options.append(bye)
+	for b in options:
+		_buttons.add_child(b)
+	UiKit.choices(options)
 
 
 func close() -> void:

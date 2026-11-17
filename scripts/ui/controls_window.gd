@@ -76,6 +76,7 @@ func _ready() -> void:
 		b.focus_mode = Control.FOCUS_ALL
 		b.custom_minimum_size = Vector2(72, 15)
 		b.pressed.connect(show_tab.bind(i))
+		b.focus_entered.connect(show_tab.bind(i))  # setas ja trocam a pagina
 		tabs.add_child(b)
 		_tabs.append(b)
 	var esc := UiKit.ink_text("Esc fecha")
