@@ -16,6 +16,7 @@ func _ready() -> void:
 	_test_quests(npcs)
 	_test_shops()
 	_test_rules()
+	_test_kill_counting()
 	_balance()
 	print("RESULTADO: %s" % ("OK" if _fails == 0 else "%d FALHA(S)" % _fails))
 	get_tree().quit(1 if _fails > 0 else 0)
@@ -196,3 +197,31 @@ func _balance() -> void:
 		need += PlayerData.XP.needed(lvl)
 	print("        missoes %d XP de %d (%.0f%%); o resto vem dos monstros" % [quest_xp, need, 100.0 * quest_xp / need])
 	_check(float(quest_xp) / need >= 0.6, "missoes levam boa parte do caminho ate o nivel maximo")
+
+
+## 1.0.2: abate de variante conta para a missao do monstro base (o Cogumelo
+## Sombrio da floresta nao contava para "Esporos raivosos"). Usa a funcao do
+## servidor com um personagem de mentira.
+func _test_kill_counting() -> void:
+	print("Abates nas missoes:")
+	const FAKE := 987654
+	var data := {"quests": {
+		"esporos_raivosos": {"state": "active", "progress": 0},
+		"cogumelos_sombrios": {"state": "active", "progress": 0},
+		"morcegos_da_mata": {"state": "active", "progress": 0},
+	}}
+	Characters._online[FAKE] = {"data": data, "dirty": false}
+	PlayerData._count_kill(FAKE, Monster.data_for("mushroom"))
+	_check(int(data.quests.esporos_raivosos.progress) == 1, "Cogumelo Bravo conta para Esporos raivosos")
+	_check(int(data.quests.cogumelos_sombrios.progress) == 0, "Cogumelo Bravo NAO conta para Cogumelos sombrios")
+	PlayerData._count_kill(FAKE, Monster.data_for("mushroom_dark"))
+	_check(int(data.quests.esporos_raivosos.progress) == 2, "Cogumelo Sombrio tambem conta para Esporos raivosos")
+	_check(int(data.quests.cogumelos_sombrios.progress) == 1, "Cogumelo Sombrio conta para Cogumelos sombrios")
+	PlayerData._count_kill(FAKE, Monster.data_for("cave_bat"))
+	_check(int(data.quests.morcegos_da_mata.progress) == 1, "Morcego da Caverna conta para Morcegos da mata")
+	Characters._online.erase(FAKE)
+	# Toda variante (com cor) aponta para um monstro base que existe
+	for id in _ids("res://resources/monsters"):
+		var md := Monster.data_for(id)
+		if md and md.tint != Color.WHITE:
+			_check(md.family != "" and Monster.data_for(md.family) != null, "%s e variante de %s" % [id, md.family])
