@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d23ms104xmch8"
-path="res://.godot/imported/Faceset.png-dcc7a70ceefa22d912990cf08a14cdff.ctex"
+uid="uid://dirxyk2sumkhu"
+path="res://.godot/imported/Walk.png-d8ec6797f855092ca5512bb394aec31a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/ninja/Hunter/Faceset.png"
-dest_files=["res://.godot/imported/Faceset.png-dcc7a70ceefa22d912990cf08a14cdff.ctex"]
+source_file="res://assets/characters/ninja/NinjaMageOrange/Walk.png"
+dest_files=["res://.godot/imported/Walk.png-d8ec6797f855092ca5512bb394aec31a.ctex"]
 
 [params]
 

@@ -171,3 +171,29 @@ func _test_class_kits() -> void:
 		if c.is_ranged():
 			_check(c.basic_projectile != null and c.basic_range >= 80.0, "%s: golpe basico de longe (%d px)" % [c.display_name, c.basic_range])
 	_check(not PlayerData.class_data("guerreiro").is_ranged(), "Guerreiro: golpe basico de perto")
+	print("Modelos:")
+	for skin: String in Player.SKINS:
+		var frames := Player.frames_for(skin)
+		var missing: Array[String] = []
+		for kind in ["idle_", "walk_", "attack_"]:
+			for d: String in Player.DIR_NAMES.values():
+				if not frames.has_animation(kind + d):
+					missing.append(kind + d)
+		if not frames.has_animation("dead"):
+			missing.append("dead")
+		_check(missing.is_empty() and Player.FACESETS.has(skin), "aparencia %s: animacoes e retrato %s" % [skin, missing])
+	for cid in PlayerData.CLASS_IDS:
+		var c := PlayerData.class_data(cid)
+		_check(Player.WEAPONS.has(c.skin) and Player.SKINS.has(c.skin), "%s: aparencia %s com arma na mao" % [c.display_name, c.skin])
+	# Outro jogador visto por este cliente: arma aparece no lancamento e some depois
+	var rp: RemotePlayer = (load("res://scenes/characters/remote_player.tscn") as PackedScene).instantiate()
+	rp.skin = "sorcerer"
+	rp.facing = Vector2i.LEFT
+	add_child(rp)
+	rp.play_cast()
+	var w: Sprite2D = rp.get("_weapon")
+	_check(w.visible and w.texture == Player.WEAPONS.sorcerer and w.position.x < 0.0, "outro jogador: varinha na mao, do lado para onde olha")
+	rp.set("_attack_until_ms", 0)
+	rp.call("_update_animation", false)
+	_check(not w.visible, "outro jogador: arma some depois do golpe")
+	rp.queue_free()

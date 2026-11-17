@@ -54,6 +54,7 @@ func _run() -> void:
 		await get_tree().process_frame
 	await _wait(1.0)
 	var cls := PlayerData.class_data(_cls)
+	_check(_player.skin == cls.skin, "boneco com a aparencia da classe logo ao escolher (%s)" % _player.skin)
 	print("Classe %s (golpe basico %s):" % [cls.display_name, "de longe" if cls.is_ranged() else "de perto"])
 
 	# Golpe basico: 3 vezes

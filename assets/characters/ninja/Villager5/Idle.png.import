@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c3bqtbd5ywtet"
-path="res://.godot/imported/Attack.png-fbe3acf49b5f51ab9e06307da13e957b.ctex"
+uid="uid://cd48727pe4pse"
+path="res://.godot/imported/Idle.png-bb8351de4c8272d5c1dd359c351a6eeb.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/ninja/Hunter/Attack.png"
-dest_files=["res://.godot/imported/Attack.png-fbe3acf49b5f51ab9e06307da13e957b.ctex"]
+source_file="res://assets/characters/ninja/Villager5/Idle.png"
+dest_files=["res://.godot/imported/Idle.png-bb8351de4c8272d5c1dd359c351a6eeb.ctex"]
 
 [params]
 

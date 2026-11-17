@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dsy2e5t8tgyte"
-path="res://.godot/imported/Idle.png-b856db4d864531e14c856ed3c093d967.ctex"
+uid="uid://bmre6d3r5ilbs"
+path="res://.godot/imported/MagicWand.png-774bd44998d170d976fc6b1dcad8811b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/ninja/SorcererBlack/Idle.png"
-dest_files=["res://.godot/imported/Idle.png-b856db4d864531e14c856ed3c093d967.ctex"]
+source_file="res://assets/characters/ninja/Weapons/MagicWand.png"
+dest_files=["res://.godot/imported/MagicWand.png-774bd44998d170d976fc6b1dcad8811b.ctex"]
 
 [params]
 
