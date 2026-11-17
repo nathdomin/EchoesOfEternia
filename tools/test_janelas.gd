@@ -100,6 +100,23 @@ func _test_dialogue(layer: CanvasLayer) -> void:
 	await _press(&"ui_accept")
 	_check(not box.visible, "Enter em Até logo fecha")
 	PlayerData.me.quests = {}
+	# 1.0.1: Mercador com missao e comercio = 3 botoes; todos dentro da pagina
+	var merchant: Npc = NPC_SCENE.instantiate()
+	merchant.npc_id = "mercador"
+	merchant.display_name = "Mercador"
+	merchant.shop_items.assign([PlayerData.item("pocao")])
+	add_child(merchant)
+	box.open(merchant)
+	await _frames(3)
+	var page := box.get_global_rect()
+	var inside := box._buttons.get_child_count() == 3
+	for b: Control in box._buttons.get_children():
+		var r := b.get_global_rect()
+		inside = inside and r.position.x >= page.position.x + 8.0 and r.end.x <= page.end.x - 8.0
+	_check(inside, "Mercador: Aceitar, Comércio e Até logo cabem na página")
+	await _shot("dialogo_mercador")
+	box.close()
+	merchant.queue_free()
 	box.queue_free()
 	npc.queue_free()
 
