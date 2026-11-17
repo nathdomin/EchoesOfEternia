@@ -31,10 +31,12 @@ func _ready() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(title)
 	_first = _button(v, "Continuar", close)
-	_button(v, "Ajuda", func() -> void:
+	var help := _button(v, "Ajuda", func() -> void:
 		close()
 		help_requested.emit())
-	_button(v, "Sair para o menu", func() -> void: leave_requested.emit())
+	var leave := _button(v, "Sair para o menu", func() -> void: leave_requested.emit())
+	# Seta no focado e mouse = foco; sem laco aqui, as setas descem ate o volume
+	UiKit.choices([_first, help, leave], false, false)
 	# Volume: duas linhas em tinta, alinhadas
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 0)
@@ -53,6 +55,7 @@ func _ready() -> void:
 		s.value = GameAudio.get(spec[1])
 		s.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		s.value_changed.connect(_on_volume_changed)
+		_mark_focus(s, l)
 		row.add_child(s)
 		box.add_child(row)
 		_sliders.append(s)
@@ -68,6 +71,7 @@ func _ready() -> void:
 	_res_button.custom_minimum_size.x = 110
 	_res_button.text = DisplaySettings.label(DisplaySettings.current_index())
 	_res_button.pressed.connect(_on_resolution_pressed)
+	_mark_focus(_res_button, rl)
 	res_row.add_child(_res_button)
 	box.add_child(res_row)
 
@@ -78,6 +82,16 @@ func _button(parent: Control, text: String, action: Callable) -> Button:
 	b.pressed.connect(action)
 	parent.add_child(b)
 	return b
+
+
+## O rotulo da linha fica vermelho enquanto o controle dela tem o foco
+## (o deslizante e o botao de tela nao mostram o foco sozinhos).
+func _mark_focus(control: Control, label: Label) -> void:
+	control.focus_entered.connect(func() -> void:
+		label.add_theme_color_override("font_color", UiKit.RUBRIC))
+	control.focus_exited.connect(func() -> void:
+		label.remove_theme_color_override("font_color"))
+	control.mouse_entered.connect(control.grab_focus)
 
 
 func open() -> void:

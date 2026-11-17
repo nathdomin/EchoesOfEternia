@@ -64,6 +64,53 @@ static func ink_button(text: String) -> Button:
 	return b
 
 
+const ARROW := preload("res://assets/ui/ninja/Theme/Theme Wood/arrow_right.png")
+static var _no_arrow: Texture2D
+
+
+## Opcoes de escolha (dialogo, classe, pausa) que funcionam com mouse e
+## teclado do mesmo jeito: a seta aparece so no botao focado, passar o mouse
+## move o foco (o Enter aperta o que se ve marcado) e as setas dao a volta.
+## `wrap` = falso deixa o Godot achar os vizinhos (janela com outros controles).
+static func choices(buttons: Array, focus_first := true, wrap := true) -> void:
+	if buttons.is_empty():
+		return
+	if _no_arrow == null:
+		_no_arrow = ImageTexture.create_from_image(
+				Image.create(ARROW.get_width(), ARROW.get_height(), false, Image.FORMAT_RGBA8))
+	var n := buttons.size()
+	for i in n:
+		var b: Button = buttons[i]
+		var prev: Button = buttons[(i - 1 + n) % n]
+		var next: Button = buttons[(i + 1) % n]
+		b.icon = _no_arrow
+		b.focus_mode = Control.FOCUS_ALL
+		b.focus_entered.connect(func() -> void:
+			b.icon = ARROW
+			GameAudio.play("click", 0.0, 0.35))
+		b.focus_exited.connect(func() -> void: b.icon = _no_arrow)
+		b.mouse_entered.connect(b.grab_focus)
+		# Vizinhos em laco: so depois que todos estao na arvore
+		var link := func() -> void:
+			for x: Variant in [b, prev, next]:
+				if not is_instance_valid(x) or not (x as Node).is_inside_tree() \
+						or (x as Node).is_queued_for_deletion():
+					return
+			for side in [SIDE_LEFT, SIDE_TOP]:
+				b.set_focus_neighbor(side, b.get_path_to(prev))
+			for side in [SIDE_RIGHT, SIDE_BOTTOM]:
+				b.set_focus_neighbor(side, b.get_path_to(next))
+			b.focus_previous = b.get_path_to(prev)
+			b.focus_next = b.get_path_to(next)
+		if wrap:
+			link.call_deferred()
+	if focus_first:
+		var first: Button = buttons[0]
+		(func() -> void:
+			if is_instance_valid(first) and first.is_visible_in_tree() and not first.is_queued_for_deletion():
+				first.grab_focus()).call_deferred()
+
+
 ## Controle deslizante em tinta (volume na pausa): linha marrom, marcador vermelho.
 static func ink_slider(width := 90.0) -> HSlider:
 	var s := HSlider.new()
