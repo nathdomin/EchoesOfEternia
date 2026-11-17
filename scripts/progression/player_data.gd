@@ -675,6 +675,22 @@ func _sell(slot: int) -> void:
 
 # ---------- API do cliente ----------
 
+## Pacote F: a ajuda do primeiro jogo ja foi mostrada para esta conta.
+func mark_tutorial_seen() -> void:
+	_mark_tutorial_seen.rpc_id(1)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _mark_tutorial_seen() -> void:
+	if not multiplayer.is_server():
+		return
+	var id := multiplayer.get_remote_sender_id()
+	var data := Characters.data_of(id)
+	if not data.is_empty() and not bool(data.get("tutorial_seen", false)):
+		data.tutorial_seen = true
+		_changed(id)
+
+
 ## `outfit` = cor da roupa (pacote E, Player.OUTFIT_SHIFTS).
 func choose_class(cid: String, outfit := 0) -> void:
 	_choose_class.rpc_id(1, cid, outfit)

@@ -7,7 +7,7 @@ extends Control
 signal leave_requested
 signal help_requested
 
-const SIZE := Vector2(232, 196)
+const SIZE := Vector2(232, 224)
 
 var _sliders: Array[HSlider] = []
 var _first: Button
@@ -74,6 +74,25 @@ func _ready() -> void:
 	_mark_focus(_res_button, rl)
 	res_row.add_child(_res_button)
 	box.add_child(res_row)
+	# Pacote F: liga/desliga numeros de dano e tremor da tela
+	for spec in [["Números", "damage_numbers"], ["Tremor", "screen_shake"]]:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		var l := UiKit.ink_text(spec[0])
+		l.custom_minimum_size.x = 46
+		row.add_child(l)
+		var b := Button.new()
+		b.theme_type_variation = &"InkFlatButton"
+		b.focus_mode = Control.FOCUS_ALL
+		b.custom_minimum_size.x = 110
+		var key: String = spec[1]
+		b.text = "Ligado" if DisplaySettings.flag(key) else "Desligado"
+		b.pressed.connect(func() -> void:
+			DisplaySettings.set_flag(key, not DisplaySettings.flag(key))
+			b.text = "Ligado" if DisplaySettings.flag(key) else "Desligado")
+		_mark_focus(b, l)
+		row.add_child(b)
+		box.add_child(row)
 
 
 func _button(parent: Control, text: String, action: Callable) -> Button:
@@ -105,7 +124,7 @@ func _on_volume_changed(_v: float) -> void:
 
 
 func _on_resolution_pressed() -> void:
-	var next := (DisplaySettings.current_index() + 1) % DisplaySettings.RESOLUTIONS.size()
+	var next := (DisplaySettings.current_index() + 1) % DisplaySettings.option_count()
 	DisplaySettings.set_index(next)
 	_res_button.text = DisplaySettings.label(next)
 

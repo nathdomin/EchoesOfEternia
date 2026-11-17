@@ -85,6 +85,8 @@ static func choices(buttons: Array, focus_first := true, wrap := true) -> void:
 		var next: Button = buttons[(i + 1) % n]
 		b.icon = _no_arrow
 		b.focus_mode = Control.FOCUS_ALL
+		for c in ["icon_normal_color", "icon_focus_color", "icon_hover_color", "icon_pressed_color", "icon_disabled_color"]:
+			b.add_theme_color_override(c, RUBRIC)  # seta vermelha (rubrica) em qualquer botao
 		b.focus_entered.connect(func() -> void:
 			b.icon = ARROW
 			GameAudio.play("click", 0.0, 0.35))

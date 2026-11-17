@@ -496,10 +496,19 @@ func _input(event: InputEvent) -> void:
 			_game_hud.dialogue.close()
 		elif _game_hud.inventory.visible:
 			_game_hud.inventory.toggle()
+		elif _game_hud.quest_log.visible:
+			_game_hud.quest_log.toggle()
 		elif _game_hud.target != null:
 			_game_hud.set_target(null)
 		elif not _game_hud.class_chooser.visible:
 			_game_hud.pause_menu.open()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("inventory") and (_game_hud.inventory.visible or not _game_hud.blocks_input()):
+		# Pacote F: o inventario pega o teclado (setas); I abre e fecha
+		_game_hud.inventory.toggle()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("quest_log") and (_game_hud.quest_log.visible or not _game_hud.blocks_input()):
+		_game_hud.quest_log.toggle()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("chat") and not _game_hud.blocks_input():
 		_game_hud.chat.open.call_deferred()
@@ -520,9 +529,6 @@ func _unhandled_input(event: InputEvent) -> void:
 			_use_slot(i)
 			get_viewport().set_input_as_handled()
 			return
-	if event.is_action_pressed("inventory"):
-		_game_hud.inventory.toggle()
-		return
 	if event.is_action_pressed("interact"):
 		_talk_to_nearest_npc()
 		return

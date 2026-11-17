@@ -280,6 +280,8 @@ static func spawn_slash(parent: Node, feet: Vector2, aim: Vector2, reach := 20.0
 
 ## Tremor de camera (dano, pisao do chefe). `strength` em px.
 func shake(strength: float, duration := 0.25) -> void:
+	if not DisplaySettings.flag("screen_shake"):
+		return  # pacote F: opcao na pausa
 	var t := create_tween()
 	var steps := maxi(int(duration / 0.03), 2)
 	for i in steps:

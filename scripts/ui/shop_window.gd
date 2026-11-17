@@ -100,7 +100,7 @@ func _refresh(focus_first := false) -> void:
 	for it in _npc.shop_items:
 		if it == null:
 			continue
-		var b := _row(_buy_list, "%s — %d" % [it.display_name, it.price], it)
+		var b := _row(_buy_list, "%s · %d" % [it.display_name, it.price], it)
 		b.disabled = int(me.get("gold", 0)) < it.price
 		b.pressed.connect(func() -> void:
 			GameAudio.play("pickup")
@@ -114,7 +114,7 @@ func _refresh(focus_first := false) -> void:
 		var it := PlayerData.item(s.id)
 		if it == null or PlayerData.sell_price(it) <= 0:
 			continue
-		var label := "%s%s — %d" % [it.display_name, " x%d" % int(s.n) if int(s.n) > 1 else "", PlayerData.sell_price(it)]
+		var label := "%s%s · %d" % [it.display_name, " x%d" % int(s.n) if int(s.n) > 1 else "", PlayerData.sell_price(it)]
 		var b := _row(_sell_list, label, it)
 		b.pressed.connect(func() -> void:
 			GameAudio.play("drop")
@@ -143,6 +143,7 @@ func _row(list: VBoxContainer, text: String, it: ItemData) -> Button:
 	b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	b.custom_minimum_size = Vector2(140, 14)
 	b.add_theme_color_override("font_color", it.name_color(true))
+	b.add_theme_color_override("font_disabled_color", Color(UiKit.INK, 0.38))  # sem ouro: apagado, mas legivel
 	b.focus_entered.connect(func() -> void: _info.text = _describe(it))
 	list.add_child(b)
 	return b
